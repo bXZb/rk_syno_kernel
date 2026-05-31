@@ -46,6 +46,10 @@ config SYNO_RTD1619B
 	depends on ARM64
 	select SYNO_LSP_RTD1619B
 
+config SYNO_RK3399_DSM
+	bool "Rockchip RK3399 DSM loader"
+	depends on ARM64 && ARCH_ROCKCHIP
+
 config SYNO_ICELAKED
        bool "INTEL ICELAKE-D"
        depends on X86_64
@@ -87,4 +91,3 @@ config SYNO_LSP_RTD1619B
 	depends on ARM64
 
 endmenu #Platform Features
-
