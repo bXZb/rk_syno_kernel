@@ -1,0 +1,23 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * FriendlyElec NanoPC-T4 DSM loader device tree overlay target.
+ *
+ * Keep the real hardware compatible string so Rockchip platform drivers bind,
+ * but expose the model DSM expects from the DS124 junior ramdisk.
+ */
+
+/dts-v1/;
+#include "rk3399-nanopc-t4.dts"
+
+/ {
+	model = "synology_rtd1619b_ds124";
+	compatible = "friendlyarm,nanopc-t4", "rockchip,rk3399";
+
+	internal_slot@1 {
+		protocol_type = "sata";
+
+		rtk_ahci {
+			ata_port = <0x01>;
+		};
+	};
+};
