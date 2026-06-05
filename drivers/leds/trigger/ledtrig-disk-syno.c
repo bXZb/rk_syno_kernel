@@ -76,6 +76,9 @@ static ssize_t led_activated_show(struct device *dev,
 
 void ledtrig_syno_disk_led_on(struct led_classdev *led_cdev, bool active)
 {
+	if (!led_cdev)
+		return;
+
 	led_cdev->activated = active;
 
 	if (active) {
@@ -120,6 +123,9 @@ ATTRIBUTE_GROUPS(syno_disk_trig);
 
 void ledtrig_syno_disk_activity_on(struct led_classdev *led_cdev)
 {
+	if (!led_cdev)
+		return;
+
 	if (!led_cdev->activated) {
 		return ;
 	}
