@@ -125,6 +125,7 @@ obj-$(CONFIG_GPIO_RCAR)			+= gpio-rcar.o
 obj-$(CONFIG_GPIO_RDA)			+= gpio-rda.o
 obj-$(CONFIG_GPIO_RDC321X)		+= gpio-rdc321x.o
 obj-$(CONFIG_GPIO_REG)			+= gpio-reg.o
+obj-$(CONFIG_GPIO_ROCKCHIP)		+= gpio-rockchip.o
 ifeq ($(CONFIG_SYNO_LSP_RTD1619B), y)
 obj-$(CONFIG_GPIO_RTD)			+= gpio-rtd.o
 endif # CONFIG_SYNO_LSP_RTD1619B

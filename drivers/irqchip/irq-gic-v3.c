@@ -45,14 +45,6 @@
 
 #define GIC_IRQ_TYPE_PARTITION	(GIC_IRQ_TYPE_LPI + 1)
 
-#if defined(MY_ABC_HERE)
-static unsigned int GICR_ISENABLER0_REG;
-static unsigned int GIC_ISENABLER0_REG;
-static unsigned int GIC_ISENABLER1_REG;
-static unsigned int GIC_ISENABLER2_REG;
-static unsigned int GIC_ISENABLER3_REG;
-
-#endif /* MY_ABC_HERE */
 struct redist_region {
 	void __iomem		*redist_base;
 	phys_addr_t		phys_base;
@@ -1331,36 +1323,6 @@ static int gic_retrigger(struct irq_data *data)
 static int gic_cpu_pm_notifier(struct notifier_block *self,
 			       unsigned long cmd, void *v)
 {
-#if defined(MY_ABC_HERE)
-	void __iomem *rbase;
-
-	rbase = gic_data_rdist_sgi_base();
-	if (cmd == CPU_PM_EXIT) {
-		pr_err("GICR_ISENABLER0 = %x\n", GICR_ISENABLER0_REG);
-		pr_err("GIC_ISENABLER0 = %x\n", GIC_ISENABLER0_REG);
-		pr_err("GIC_ISENABLER1 = %x\n", GIC_ISENABLER1_REG);
-		pr_err("GIC_ISENABLER2 = %x\n", GIC_ISENABLER2_REG);
-		pr_err("GIC_ISENABLER3 = %x\n", GIC_ISENABLER3_REG);
-		writel_relaxed(GICR_ISENABLER0_REG, rbase + GICR_ISENABLER0);
-		writel_relaxed(GIC_ISENABLER0_REG, gic_data.dist_base + 0x100);
-		writel_relaxed(GIC_ISENABLER1_REG, gic_data.dist_base + 0x104);
-		writel_relaxed(GIC_ISENABLER2_REG, gic_data.dist_base + 0x108);
-		writel_relaxed(GIC_ISENABLER3_REG, gic_data.dist_base + 0x10C);
-
-	} else if (cmd == CPU_PM_ENTER) {
-		GICR_ISENABLER0_REG = readl_relaxed(rbase + GICR_ISENABLER0);
-		GIC_ISENABLER0_REG = readl_relaxed(gic_data.dist_base + 0x100);
-		GIC_ISENABLER1_REG = readl_relaxed(gic_data.dist_base + 0x104);
-		GIC_ISENABLER2_REG = readl_relaxed(gic_data.dist_base + 0x108);
-		GIC_ISENABLER3_REG = readl_relaxed(gic_data.dist_base + 0x10C);
-		pr_err("GICR_ISENABLER0 = %x\n", GICR_ISENABLER0_REG);
-		pr_err("GIC_ISENABLER0 = %x\n", GIC_ISENABLER0_REG);
-		pr_err("GIC_ISENABLER1 = %x\n", GIC_ISENABLER1_REG);
-		pr_err("GIC_ISENABLER2 = %x\n", GIC_ISENABLER2_REG);
-		pr_err("GIC_ISENABLER3 = %x\n", GIC_ISENABLER3_REG);
-	}
-
-#endif /* MY_ABC_HERE */
 	if (cmd == CPU_PM_EXIT) {
 		if (gic_dist_security_disabled())
 			gic_enable_redist(true);
