@@ -11,7 +11,11 @@
 
 / {
 	model = "synology_rtd1619b_ds124";
-	compatible = "friendlyarm,nanopc-t4", "rockchip,rk3399";
+	compatible = "friendlyelec,nanopc-t4", "friendlyarm,nanopc-t4", "rockchip,rk3399";
+
+	ir-receiver {
+		status = "disabled";
+	};
 
 	internal_slot@1 {
 		protocol_type = "sata";
@@ -20,4 +24,72 @@
 			ata_port = <0x01>;
 		};
 	};
+};
+
+&fusb0 {
+	status = "disabled";
+};
+
+&tcphy0 {
+	status = "disabled";
+};
+
+&tcphy1 {
+	status = "disabled";
+};
+
+&u2phy0 {
+	status = "disabled";
+};
+
+&u2phy0_host {
+	status = "disabled";
+};
+
+&u2phy0_otg {
+	status = "disabled";
+};
+
+&u2phy1 {
+	status = "disabled";
+};
+
+&u2phy1_host {
+	status = "disabled";
+};
+
+&u2phy1_otg {
+	status = "disabled";
+};
+
+&usbdrd3_0 {
+	status = "disabled";
+};
+
+&usbdrd3_1 {
+	status = "disabled";
+};
+
+&usbdrd_dwc3_0 {
+	status = "disabled";
+};
+
+&usbdrd_dwc3_1 {
+	status = "disabled";
+};
+
+&usb_host0_ehci {
+	status = "disabled";
+};
+
+&usb_host0_ohci {
+	status = "disabled";
+};
+
+&usb_host1_ehci {
+	status = "disabled";
+};
+
+&usb_host1_ohci {
+	status = "disabled";
 };
