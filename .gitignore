@@ -1,0 +1,36 @@
+# Local build artifacts
+*.o
+*.a
+*.cmd
+*.ko
+*.mod
+*.mod.c
+*.mod.o
+*.symtypes
+*.order
+*.lst
+*.su
+*.dtb
+*.dtbo
+*.tmp
+*.tmp_*
+*.bak-*
+
+# Kbuild outputs
+Module.symvers
+modules.order
+vmlinux
+vmlinux.o
+vmlinux.a
+vmlinuz
+System.map
+.version
+.old_version
+.tmp_versions/
+
+# Generated dependency/metadata files
+.cache.mk
+.built-in.a.cmd
+
+# Local config backups
+arch/arm64/configs/*.bak-*
