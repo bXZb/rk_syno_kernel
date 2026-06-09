@@ -203,4 +203,9 @@ config SYNO_BLOCK_SOFTIRQ_ON_STACK
 	bool "fix imbalance caused by redundant wakeup migration"
 	default y
 
+config SYNO_DEFAULT_EXTEND_IPCNMI
+	bool "default extend ipcmni"
+	depends on SYSVIPC_SYSCTL
+	default y
+
 endmenu #Kernel Core Enhancements

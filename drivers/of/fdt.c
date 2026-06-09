@@ -50,6 +50,10 @@ extern int gSynoSmbusSwitchCount;
 extern int gSynoSmbusSwitchAdapters[SMBUS_SWITCH_MAX_COUNT+1];
 extern int gSynoSmbusSwitchAddrs[SMBUS_SWITCH_MAX_COUNT+1];
 extern int gSynoSmbusSwitchVals[SMBUS_SWITCH_MAX_COUNT+1];
+extern int gSynoHostPresentAdapter;
+extern int gSynoHostPresentAddr;
+extern int gSynoHostPresentReg;
+extern int gSynoHostPresentVal;
 #endif /*MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
@@ -58,6 +62,10 @@ extern int giSynoSpinupGroup[SYNO_SPINUP_GROUP_MAX];
 extern int giSynoSpinupGroupNum;
 extern int giSynoSpinupGroupDelay;
 #endif /* MY_ABC_HERE */
+
+#ifdef MY_DEF_HERE
+extern bool g_support_syno_dpm;
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 void __init syno_init_internal_hdd_number(void)
@@ -88,6 +96,7 @@ void __init syno_init_smbus_hdd_pwrctl(void)
 	int smbusSwitchAdapter = 0;
 	int smbusSwitchAddr = 0;
 	int smbusSwitchVal = 0;
+	int result = 0;
 
 	smbushddtype = (char *)of_get_property(of_root, DT_SYNO_HDD_SMBUS_TYPE, NULL);
 
@@ -106,6 +115,30 @@ void __init syno_init_smbus_hdd_pwrctl(void)
 	if (0 == retReadDT) {
 		gSynoSmbusHddAddress = smbushddaddress;
 		printk("SYNO Smbus Hdd Address: 0x%02x\n", gSynoSmbusHddAddress);
+	}
+
+	retReadDT = of_property_read_u32_index(of_root, DT_SYNO_HOST_PRESENT_ADAPTER, 0, &result);
+	if (0 == retReadDT) {
+		gSynoHostPresentAdapter = result;
+		printk("SYNO Host Present Adapter: %d\n", gSynoHostPresentAdapter);
+	}
+
+	retReadDT = of_property_read_u32_index(of_root, DT_SYNO_HOST_PRESENT_ADDR, 0, &result);
+	if (0 == retReadDT) {
+		gSynoHostPresentAddr = result;
+		printk("SYNO Host Present Address: 0x%02x\n", gSynoHostPresentAddr);
+	}
+
+	retReadDT = of_property_read_u32_index(of_root, DT_SYNO_HOST_PRESENT_REG, 0, &result);
+	if (0 == retReadDT) {
+		gSynoHostPresentReg = result;
+		printk("SYNO Host Present Register: %d\n", gSynoHostPresentReg);
+	}
+
+	retReadDT = of_property_read_u32_index(of_root, DT_SYNO_HOST_PRESENT_VAL, 0, &result);
+	if (0 == retReadDT) {
+		gSynoHostPresentVal = result;
+		printk("SYNO Host Present Value: 0x%02x\n", gSynoHostPresentVal);
 	}
 	// set the smbus switch settings to open the switches early
 	// the last position in the array is used to handle the errors
@@ -187,6 +220,20 @@ void __init syno_init_spinup_group(void)
 	}
 }
 #endif /* MY_ABC_HERE */
+
+#ifdef MY_DEF_HERE
+void __init syno_init_support_syno_dpm(void)
+{
+	struct device_node *dpm_node = NULL;
+
+	dpm_node = of_find_node_by_name(NULL, DT_SYNO_DISK_POWER_MANAGER);
+	if (dpm_node) {
+		printk("Support Synology Disk Power Manager");
+		g_support_syno_dpm = true;
+		of_node_put(dpm_node);
+	}
+}
+#endif /* MY_DEF_HERE */
 
 /*
  * of_fdt_limit_memory - limit the number of regions in the /memory node
@@ -1403,6 +1450,9 @@ void __init unflatten_device_tree(void)
 #ifdef MY_ABC_HERE
 	syno_init_spinup_group();
 #endif /* MY_ABC_HERE */
+#ifdef MY_DEF_HERE
+	syno_init_support_syno_dpm();
+#endif /* MY_DEF_HERE */
 }
 
 /**

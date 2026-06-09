@@ -33,11 +33,11 @@
  */
 #define SD_MAX_RETRIES		5
 #define SD_PASSTHROUGH_RETRIES	1
-#ifdef CONFIG_SYNO_KVMX64_MAX_MEDIUM_ACCESS_TIMEOUTS
+#ifdef MY_DEF_HERE
 #define SD_MAX_MEDIUM_TIMEOUTS	1024
 #else
 #define SD_MAX_MEDIUM_TIMEOUTS	2
-#endif /* CONFIG_SYNO_KVMX64_MAX_MEDIUM_ACCESS_TIMEOUTS */
+#endif /* MY_DEF_HERE */
 
 /*
  * Size of the initial data buffer for mode and read capacity data

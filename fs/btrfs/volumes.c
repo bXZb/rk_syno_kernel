@@ -4139,6 +4139,28 @@ out_overflow:
 	kfree(buf);
 }
 
+#ifdef MY_ABC_HERE
+int has_unfinished_drop(struct btrfs_fs_info *fs_info)
+{
+	struct btrfs_root *root;
+	int ret;
+
+	spin_lock(&fs_info->trans_lock);
+	if (list_empty(&fs_info->dead_roots)) {
+		spin_unlock(&fs_info->trans_lock);
+		return 0;
+	}
+	root = list_first_entry(&fs_info->dead_roots,
+			struct btrfs_root, root_list);
+	if (!test_bit(BTRFS_ROOT_UNFINISHED_DROP, &root->state))
+		ret = 0;
+	else
+		ret = 1;
+	spin_unlock(&fs_info->trans_lock);
+	return ret;
+}
+#endif /* MY_ABC_HERE */
+
 /*
  * Should be called with balance mutexe held
  */
@@ -4293,8 +4315,74 @@ int btrfs_balance(struct btrfs_fs_info *fs_info,
 	describe_balance_start_or_resume(fs_info);
 	mutex_unlock(&fs_info->balance_mutex);
 
+#ifdef MY_ABC_HERE
+	/*
+	* relocate_mutex is a heavy lock used to ensure that the balance
+	* operation is not interfered with by the cleaner at any point in time.
+	*/
+	/*
+	* A balance operation with BTRFS_BALANCE_DONT_WAIT_DROP_ROOT will terminate
+	* prematurely under the following conditions:
+	* 1. cleaner_mutex or relocate_mutex is hold by other (probably by cleaner)
+	* 2. The root tree has not been cleaned up yet.
+	* 3. There are unfinished dropping subvolumes present.
+	*/
+	if (fs_info->balance_ctl->flags & BTRFS_BALANCE_DONT_WAIT_DROP_ROOT) {
+		if (!mutex_trylock(&fs_info->relocate_mutex)) {
+			ret = -EAGAIN;
+			goto out1;
+		}
+		if (!mutex_trylock(&fs_info->cleaner_mutex)) {
+			mutex_unlock(&fs_info->relocate_mutex);
+			ret = -EAGAIN;
+			goto out1;
+		}
+		if (!fs_info->syno_orphan_cleanup.root_tree_cleanup || has_unfinished_drop(fs_info)) {
+			mutex_unlock(&fs_info->cleaner_mutex);
+			mutex_unlock(&fs_info->relocate_mutex);
+			btrfs_info(fs_info, "Early exit because unfinished-drop-subvolume was found");
+			ret = -EAGAIN;
+			goto out1;
+		}
+	} else {
+		mutex_lock(&fs_info->relocate_mutex);
+		mutex_lock(&fs_info->cleaner_mutex);
+
+		if (!fs_info->syno_orphan_cleanup.root_tree_cleanup) {
+			ret = btrfs_find_orphan_roots(fs_info);
+			if (ret) {
+				mutex_unlock(&fs_info->cleaner_mutex);
+				mutex_unlock(&fs_info->relocate_mutex);
+				btrfs_err(fs_info, "Failed to btrfs find orphan roots, ret:%d", ret);
+				goto out1;
+			}
+
+			fs_info->syno_orphan_cleanup.root_tree_cleanup = true;
+
+			down_read(&fs_info->cleanup_work_sem);
+			ret = btrfs_orphan_cleanup(fs_info->tree_root);
+			up_read(&fs_info->cleanup_work_sem);
+			if (ret) {
+				mutex_unlock(&fs_info->cleaner_mutex);
+				mutex_unlock(&fs_info->relocate_mutex);
+				btrfs_err(fs_info, "Failed to btrfs orphan cleanup with tree_root, ret:%d", ret);
+				goto out1;
+			}
+		}
+
+		while (has_unfinished_drop(fs_info)) {
+			btrfs_clean_one_deleted_snapshot(fs_info->tree_root);
+			btrfs_info(fs_info, "Cleanup one unfinished-drop-subvolume before balance starts");
+		}
+	}
+	mutex_unlock(&fs_info->cleaner_mutex);
+#endif /* MY_ABC_HERE */
 	ret = __btrfs_balance(fs_info);
 
+#ifdef MY_ABC_HERE
+	mutex_unlock(&fs_info->relocate_mutex);
+out1:
+#endif /* MY_ABC_HERE */
 	mutex_lock(&fs_info->balance_mutex);
 	if (ret == -ECANCELED && atomic_read(&fs_info->balance_pause_req))
 		btrfs_info(fs_info, "balance: paused");
@@ -7227,11 +7315,11 @@ int btrfs_read_sys_array(struct btrfs_fs_info *fs_info)
 	 * fixed to BTRFS_SUPER_INFO_SIZE. If nodesize > sb size, this will
 	 * overallocate but we can keep it as-is, only the first page is used.
 	 */
-	sb = btrfs_find_create_tree_block(fs_info, BTRFS_SUPER_INFO_OFFSET);
+	sb = btrfs_find_create_tree_block(fs_info, BTRFS_SUPER_INFO_OFFSET,
+					  root->root_key.objectid, 0);
 	if (IS_ERR(sb))
 		return PTR_ERR(sb);
 	set_extent_buffer_uptodate(sb);
-	btrfs_set_buffer_lockdep_class(root->root_key.objectid, sb, 0);
 	/*
 	 * The sb extent buffer is artificial and just used to read the system array.
 	 * set_extent_buffer_uptodate() call does not properly mark all it's
@@ -7395,12 +7483,8 @@ static void readahead_tree_node_children(struct extent_buffer *node)
 	int i;
 	const int nr_items = btrfs_header_nritems(node);
 
-	for (i = 0; i < nr_items; i++) {
-		u64 start;
-
-		start = btrfs_node_blockptr(node, i);
-		readahead_tree_block(node->fs_info, start);
-	}
+	for (i = 0; i < nr_items; i++)
+		btrfs_readahead_node_child(node, i);
 }
 
 int btrfs_read_chunk_tree(struct btrfs_fs_info *fs_info)

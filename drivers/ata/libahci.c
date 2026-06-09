@@ -125,6 +125,15 @@ static irqreturn_t syno_ahci_multi_irqs_intr_hard_jmb(int irq, void *dev_instanc
 static irqreturn_t (*syno_ahci_multi_irqs_intr)(int, void *);
 #endif /* MY_ABC_HERE */
 
+#ifdef MY_ABC_HERE
+static irqreturn_t ahci_port_thread_fn(int irq, void *dev_instance);
+#ifdef MY_ABC_HERE
+static irqreturn_t syno_ahci_multi_irqs_intr_thread_jmb(int irq, void *dev_instance);
+#else /* MY_ABC_HERE */
+static irqreturn_t ahci_multi_irqs_intr_thread(int irq, void *dev_instance);
+#endif /* MY_ABC_HERE */
+#endif /* MY_ABC_HERE */
+
 #ifdef MY_DEF_HERE
 static void syno_internal_ahci_handle_port_interrupt(struct ata_port *ap,
 				       void __iomem *port_mmio, u32 status);
@@ -133,7 +142,7 @@ static void ahci_handle_port_interrupt(struct ata_port *ap,
 #endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
-static void syno_ahci_force_intr(struct ata_port *ap);
+static int syno_ahci_force_intr(struct ata_port *ap);
 #endif /* MY_ABC_HERE */
 
 static DEVICE_ATTR(ahci_host_caps, S_IRUGO, ahci_show_host_caps, NULL);
@@ -1647,6 +1656,24 @@ static void ahci_port_init(struct device *dev, struct ata_port *ap,
 		ap->pflags |= ATA_PFLAG_EXTERNAL;
 }
 
+#ifdef MY_ABC_HERE
+bool syno_hard_irq_check(void)
+{
+	const char *ahci_irq_type;
+	bool blRet = true;
+
+	if (of_property_read_string(of_root, SZ_DTS_AHCI_IRQ, &ahci_irq_type)) {
+		goto END;
+	}
+	if (0 == strcmp(ahci_irq_type, SZ_AHCI_THREADED_IRQ)) {
+		blRet = false;
+	}
+
+END:
+	return blRet;
+}
+#endif /* MY_ABC_HERE */
+
 void ahci_init_controller(struct ata_host *host)
 {
 	struct ahci_host_priv *hpriv = host->private_data;
@@ -1892,6 +1919,14 @@ int ahci_do_softreset(struct ata_link *link, unsigned int *class,
 	if (-EBUSY == rc) {
 		ata_link_printk(link, KERN_ERR, "SRST fail, set srst fail flag\n");
 		link->uiSflags |= ATA_SYNO_FLAG_SRST_FAIL;
+	}
+#endif /* MY_ABC_HERE */
+
+#ifdef MY_ABC_HERE
+	if (tf.ctl & ATA_SRST) {
+		ata_msleep(ap, 1);
+		tf.ctl &= ~ATA_SRST;
+		ahci_exec_polled_cmd(ap, pmp, &tf, 0, 0, 0);
 	}
 #endif /* MY_ABC_HERE */
 
@@ -2165,6 +2200,54 @@ static int irqoff_error_case (struct ata_port *ap, u32 irq_stat)
 }
 #endif /* MY_ABC_HERE || MY_ABC_HERE */
 
+#ifdef MY_ABC_HERE
+static int ata_link_abort_mv92x5_wa(struct ata_link *link)
+{
+	struct ata_port *ap = link->ap;
+	void __iomem *port_mmio = ahci_port_base(ap);
+	int tag, nr_aborted = 0;
+	u32 qc_active = 0;
+	u32 done_mask = 0;
+
+	WARN_ON(!ap->ops->error_handler);
+
+	/* we're gonna abort all commands, no need for fast drain */
+	/* XXX: copy from ata_eh_set_pending(ap, 0) */
+	if (!(ap->pflags & ATA_PFLAG_EH_PENDING)) {
+		ap->pflags |= ATA_PFLAG_EH_PENDING;
+	}
+
+	if (ap->qc_active) {
+		qc_active = readl(port_mmio + PORT_SCR_ACT);
+		qc_active |= readl(port_mmio + PORT_CMD_ISSUE);
+		done_mask = ap->qc_active ^ qc_active;
+	}
+
+	for (tag = 0; tag < ATA_MAX_QUEUE; tag++) {
+		struct ata_queued_cmd *qc = ata_qc_from_tag(ap, tag);
+
+		if (qc) {
+			if (qc->dev->link == link) {
+				qc->flags |= ATA_QCFLAG_FAILED;
+				ata_qc_complete(qc);
+				nr_aborted++;
+			} else {
+				// qc at other link already done, complete it normally.
+				if (done_mask & (1 << tag)) {
+					ata_qc_complete(qc);
+				}
+			}
+		}
+	}
+
+	// no command abort, EH directly
+	if (!nr_aborted)
+		ata_port_schedule_eh(ap);
+
+	return nr_aborted;
+}
+#endif /* MY_ABC_HERE */
+
 static void ahci_error_intr(struct ata_port *ap, u32 irq_stat)
 {
 	struct ahci_host_priv *hpriv = ap->host->private_data;
@@ -2317,7 +2400,15 @@ static void ahci_error_intr(struct ata_port *ap, u32 irq_stat)
 	if (irq_stat & PORT_IRQ_FREEZE)
 		ata_port_freeze(ap);
 	else if (fbs_need_dec) {
+#ifdef MY_ABC_HERE
+		if (0 == syno_mv92x5_check(ap->host->vendor, ap->host->device)) {
+			ata_link_abort_mv92x5_wa(link);
+		} else {
+			ata_link_abort(link);
+		}
+#else /* MY_ABC_HERE*/
 		ata_link_abort(link);
+#endif /* MY_ABC_HERE */
 		ahci_fbs_dec_intr(ap);
 	} else
 		ata_port_abort(ap);
@@ -2336,6 +2427,15 @@ static void ahci_handle_port_interrupt(struct ata_port *ap,
 	/* ignore BAD_PMP while resetting */
 	if (unlikely(resetting))
 		status &= ~PORT_IRQ_BAD_PMP;
+
+#ifdef MY_ABC_HERE
+	/* ignore BAD_PMP if JMB58x */
+	if (unlikely(status & PORT_IRQ_BAD_PMP)) {
+		if (0 == syno_jmb58x_check(ap->host->vendor, ap->host->device)) {
+			status &= ~PORT_IRQ_BAD_PMP;
+		}
+	}
+#endif /* MY_ABC_HERE */
 
 	if (sata_lpm_ignore_phy_events(&ap->link)) {
 		status &= ~PORT_IRQ_PHYRDY;
@@ -2497,10 +2597,11 @@ static void ahci_port_intr(struct ata_port *ap)
 }
 
 #ifdef MY_ABC_HERE
-static void syno_ahci_force_intr(struct ata_port *ap)
+static int syno_ahci_force_intr(struct ata_port *ap)
 {
 	void __iomem *port_mmio = ahci_port_base(ap);
 	u32 status;
+	struct ata_eh_info *host_ehi = &ap->link.eh_info;
 
 	ata_port_err(ap, "do detect tries %d\n", ap->syno_recover_tries);
 
@@ -2512,8 +2613,53 @@ static void syno_ahci_force_intr(struct ata_port *ap)
 		ahci_scr_write(&ap->link, SCR_ERROR, SERR_PHYRDY_CHG);
 	}
 
+	// Re-enable link before recover
+	host_ehi->action |= ATA_EH_ENABLE_LINK;
+
 	ahci_error_intr(ap, status);
+
+	return 0;
 }
+#endif /* MY_ABC_HERE */
+
+#ifdef MY_ABC_HERE
+#ifdef MY_ABC_HERE
+static irqreturn_t syno_ahci_multi_irqs_intr_thread_jmb(int irq, void *dev_instance)
+{
+	struct ata_port *ap = dev_instance;
+	void __iomem *port_mmio = ahci_port_base(ap);
+	struct ahci_port_priv *pp = ap->private_data;
+	u32 status;
+	VPRINTK("ENTER\n");
+
+	status = readl(port_mmio + PORT_IRQ_STAT);
+	writel(status & ~(PORT_IRQ_PHYRDY | PORT_IRQ_CONNECT), port_mmio + PORT_IRQ_STAT);
+	atomic_or(status, &pp->intr_status);
+
+	VPRINTK("EXIT\n");
+
+	return IRQ_WAKE_THREAD;
+}
+#else /* MY_ABC_HERE */
+static irqreturn_t ahci_multi_irqs_intr_thread(int irq, void *dev_instance)
+{
+	struct ata_port *ap = dev_instance;
+	void __iomem *port_mmio = ahci_port_base(ap);
+	struct ahci_port_priv *pp = ap->private_data;
+	u32 status;
+
+	VPRINTK("ENTER\n");
+
+	status = readl(port_mmio + PORT_IRQ_STAT);
+	writel(status, port_mmio + PORT_IRQ_STAT);
+
+	atomic_or(status, &pp->intr_status);
+
+	VPRINTK("EXIT\n");
+
+	return IRQ_WAKE_THREAD;
+}
+#endif /* MY_ABC_HERE */
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
@@ -3193,6 +3339,32 @@ void ahci_set_em_messages(struct ahci_host_priv *hpriv,
 }
 EXPORT_SYMBOL_GPL(ahci_set_em_messages);
 
+#ifdef MY_ABC_HERE
+static irqreturn_t ahci_port_thread_fn(int irq, void *dev_instance)
+{
+	struct ata_port *ap = dev_instance;
+	struct ahci_port_priv *pp = ap->private_data;
+	void __iomem *port_mmio = ahci_port_base(ap);
+	u32 status;
+
+	status = atomic_xchg(&pp->intr_status, 0);
+	if (!status)
+		return IRQ_NONE;
+
+	spin_lock_bh(ap->lock);
+#ifdef MY_DEF_HERE
+	if (likely(ap->syno_ahci_handle_port_interrupt)) {
+		ap->syno_ahci_handle_port_interrupt(ap, port_mmio, status);
+	}
+#else /* MY_DEF_HERE */
+	ahci_handle_port_interrupt(ap, port_mmio, status);
+#endif /* MY_DEF_HERE */
+	spin_unlock_bh(ap->lock);
+
+	return IRQ_HANDLED;
+}
+#endif /* MY_ABC_HERE */
+
 static int ahci_host_activate_multi_irqs(struct ata_host *host,
 					 struct scsi_host_template *sht)
 {
@@ -3216,6 +3388,26 @@ static int ahci_host_activate_multi_irqs(struct ata_host *host,
 			continue;
 		}
 
+#ifdef MY_ABC_HERE
+		if (syno_hard_irq_check()) {
+			rc = devm_request_irq(host->dev, irq,
+#ifdef MY_ABC_HERE
+				syno_ahci_multi_irqs_intr,
+#else /* MY_ABC_HERE */
+				ahci_multi_irqs_intr_hard,
+#endif /* MY_ABC_HERE */
+				0, pp->irq_desc, host->ports[i]);
+		} else {
+			rc = devm_request_threaded_irq(host->dev, irq,
+#ifdef MY_ABC_HERE
+					syno_ahci_multi_irqs_intr_thread_jmb,
+#else /* MY_ABC_HERE */
+					ahci_multi_irqs_intr_thread,
+#endif /* MY_ABC_HERE */
+					ahci_port_thread_fn, 0,
+					pp->irq_desc, host->ports[i]);
+		}
+#else /* MY_ABC_HERE */
 		rc = devm_request_irq(host->dev, irq,
 #ifdef MY_ABC_HERE
 				syno_ahci_multi_irqs_intr,
@@ -3223,6 +3415,7 @@ static int ahci_host_activate_multi_irqs(struct ata_host *host,
 				ahci_multi_irqs_intr_hard,
 #endif /* MY_ABC_HERE */
 				0, pp->irq_desc, host->ports[i]);
+#endif /* MY_ABC_HERE */
 
 		if (rc)
 			return rc;

@@ -140,108 +140,10 @@ struct async_submit_bio {
 	struct btrfs_work work;
 	blk_status_t status;
 #ifdef MY_ABC_HERE
-	bool throttle;
 	struct btrfs_fs_info *fs_info;
+	bool throttle;
 #endif /* MY_ABC_HERE */
 };
-
-/*
- * Lockdep class keys for extent_buffer->lock's in this root.  For a given
- * eb, the lockdep key is determined by the btrfs_root it belongs to and
- * the level the eb occupies in the tree.
- *
- * Different roots are used for different purposes and may nest inside each
- * other and they require separate keysets.  As lockdep keys should be
- * static, assign keysets according to the purpose of the root as indicated
- * by btrfs_root->root_key.objectid.  This ensures that all special purpose
- * roots have separate keysets.
- *
- * Lock-nesting across peer nodes is always done with the immediate parent
- * node locked thus preventing deadlock.  As lockdep doesn't know this, use
- * subclass to avoid triggering lockdep warning in such cases.
- *
- * The key is set by the readpage_end_io_hook after the buffer has passed
- * csum validation but before the pages are unlocked.  It is also set by
- * btrfs_init_new_buffer on freshly allocated blocks.
- *
- * We also add a check to make sure the highest level of the tree is the
- * same as our lockdep setup here.  If BTRFS_MAX_LEVEL changes, this code
- * needs update as well.
- */
-#ifdef CONFIG_DEBUG_LOCK_ALLOC
-# if BTRFS_MAX_LEVEL != 8
-#  error
-# endif
-
-static struct btrfs_lockdep_keyset {
-	u64			id;		/* root objectid */
-	const char		*name_stem;	/* lock name stem */
-	char			names[BTRFS_MAX_LEVEL + 1][20];
-	struct lock_class_key	keys[BTRFS_MAX_LEVEL + 1];
-} btrfs_lockdep_keysets[] = {
-	{ .id = BTRFS_ROOT_TREE_OBJECTID,	.name_stem = "root"	},
-	{ .id = BTRFS_EXTENT_TREE_OBJECTID,	.name_stem = "extent"	},
-	{ .id = BTRFS_CHUNK_TREE_OBJECTID,	.name_stem = "chunk"	},
-	{ .id = BTRFS_DEV_TREE_OBJECTID,	.name_stem = "dev"	},
-	{ .id = BTRFS_FS_TREE_OBJECTID,		.name_stem = "fs"	},
-	{ .id = BTRFS_CSUM_TREE_OBJECTID,	.name_stem = "csum"	},
-	{ .id = BTRFS_QUOTA_TREE_OBJECTID,	.name_stem = "quota"	},
-#ifdef MY_ABC_HERE
-	{ .id = BTRFS_SYNO_QUOTA_V2_TREE_OBJECTID,   .name_stem = "syno-v2-quota" },
-	{ .id = BTRFS_SYNO_USRQUOTA_V2_TREE_OBJECTID,   .name_stem = "syno-v2-usrquota" },
-#endif /* MY_ABC_HERE */
-	{ .id = BTRFS_TREE_LOG_OBJECTID,	.name_stem = "log"	},
-	{ .id = BTRFS_TREE_RELOC_OBJECTID,	.name_stem = "treloc"	},
-	{ .id = BTRFS_DATA_RELOC_TREE_OBJECTID,	.name_stem = "dreloc"	},
-	{ .id = BTRFS_UUID_TREE_OBJECTID,	.name_stem = "uuid"	},
-	{ .id = BTRFS_FREE_SPACE_TREE_OBJECTID,	.name_stem = "free-space" },
-#ifdef MY_ABC_HERE
-	{ .id = BTRFS_BLOCK_GROUP_HINT_TREE_OBJECTID, .name_stem = "block-group-hint" },
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
-	{ .id = BTRFS_BLOCK_GROUP_CACHE_TREE_OBJECTID, .name_stem = "block-group-cache" },
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
-	{ .id = BTRFS_SYNO_USAGE_TREE_OBJECTID,	.name_stem = "syno-usage" },
-	{ .id = BTRFS_SYNO_EXTENT_USAGE_TREE_OBJECTID,	.name_stem = "syno-extent-usage" },
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
-	{ .id = BTRFS_SYNO_FEATURE_TREE_OBJECTID,	.name_stem = "syno-feat-tree" },
-#endif /* MY_ABC_HERE */
-	{ .id = 0,				.name_stem = "tree"	},
-};
-
-void __init btrfs_init_lockdep(void)
-{
-	int i, j;
-
-	/* initialize lockdep class names */
-	for (i = 0; i < ARRAY_SIZE(btrfs_lockdep_keysets); i++) {
-		struct btrfs_lockdep_keyset *ks = &btrfs_lockdep_keysets[i];
-
-		for (j = 0; j < ARRAY_SIZE(ks->names); j++)
-			snprintf(ks->names[j], sizeof(ks->names[j]),
-				 "btrfs-%s-%02d", ks->name_stem, j);
-	}
-}
-
-void btrfs_set_buffer_lockdep_class(u64 objectid, struct extent_buffer *eb,
-				    int level)
-{
-	struct btrfs_lockdep_keyset *ks;
-
-	BUG_ON(level >= ARRAY_SIZE(ks->keys));
-
-	/* find the matching keyset, id 0 is the default entry */
-	for (ks = btrfs_lockdep_keysets; ks->id; ks++)
-		if (ks->id == objectid)
-			break;
-
-	lockdep_set_class_and_name(&eb->lock,
-				   &ks->keys[level], ks->names[level]);
-}
-
-#endif
 
 /*
  * Compute the csum of a btree block and store the result to provided buffer.
@@ -515,13 +417,24 @@ static int btree_read_extent_buffer_pages(struct extent_buffer *eb,
 			break;
 	}
 
-	if (failed && !ret && failed_mirror)
-		btrfs_repair_eb_io_failure(eb, failed_mirror);
 #ifdef MY_ABC_HERE
-	else if (failed) {
-		clear_bit(EXTENT_BUFFER_SHOULD_REPAIR, &eb->bflags);
-	}
+        if (unlikely(failed)) {
+                if (!ret && failed_mirror)
+                        btrfs_repair_eb_io_failure(eb, failed_mirror);
+                else
+                        clear_bit(EXTENT_BUFFER_SHOULD_REPAIR, &eb->bflags);
+        }
+#else
+        if (failed && !ret && failed_mirror)
+                btrfs_repair_eb_io_failure(eb, failed_mirror);
+#endif /* MY_ABC_HERE */
 
+#ifdef MY_ABC_HERE
+        if (unlikely(test_bit(EXTENT_BUFFER_CORRUPT, &eb->bflags) && !ret))
+                btrfs_repair_eb_io_failure(eb, 1);
+#endif /* MY_ABC_HERE */
+
+#ifdef MY_ABC_HERE
 	if (-EIO == ret && test_bit(BTRFS_FS_OPEN, &fs_info->flags)
 			&& !sb_rdonly(fs_info->sb)
 			&& !test_bit(BTRFS_FS_STATE_TRANS_ABORTED, &fs_info->fs_state)
@@ -717,9 +630,6 @@ int btrfs_validate_metadata_buffer(struct btrfs_io_bio *io_bio, u64 phy_offset,
 		goto err;
 	}
 
-	btrfs_set_buffer_lockdep_class(btrfs_header_owner(eb),
-				       eb, found_level);
-
 #ifdef MY_ABC_HERE
 #else /* MY_ABC_HERE */
 	csum_tree_block(eb, result);
@@ -772,8 +682,15 @@ int btrfs_validate_metadata_buffer(struct btrfs_io_bio *io_bio, u64 phy_offset,
 		ret = -EIO;
 	}
 
+#ifdef MY_ABC_HERE
+	if (found_level > 0 && btrfs_check_node(eb)) {
+		set_bit(EXTENT_BUFFER_CORRUPT, &eb->bflags);
+		ret = -EIO;
+	}
+#else
 	if (found_level > 0 && btrfs_check_node(eb))
 		ret = -EIO;
+#endif /* MY_ABC_HERE */
 
 	if (!ret)
 		set_extent_buffer_uptodate(eb);
@@ -918,12 +835,26 @@ static void end_workqueue_bio(struct bio *bio)
 		else
 			wq = fs_info->endio_write_workers;
 	} else {
+#ifdef MY_ABC_HERE
+		if (end_io_wq->metadata == BTRFS_WQ_ENDIO_RAID56) {
+			wq = fs_info->endio_raid56_workers;
+		} else if (end_io_wq->metadata) {
+			if (unlikely(fs_info->can_fix_meta_key == DOING_FIX_META_KEY)) {
+				wq = fs_info->endio_meta_fix_workers;
+			} else {
+				wq = fs_info->endio_meta_workers;
+			}
+		} else {
+			wq = fs_info->endio_workers;
+		}
+#else
 		if (end_io_wq->metadata == BTRFS_WQ_ENDIO_RAID56)
 			wq = fs_info->endio_raid56_workers;
 		else if (end_io_wq->metadata)
 			wq = fs_info->endio_meta_workers;
 		else
 			wq = fs_info->endio_workers;
+#endif /* MY_ABC_HERE */
 	}
 
 	btrfs_init_work(&end_io_wq->work, end_workqueue_fn, NULL, NULL);
@@ -1047,7 +978,7 @@ blk_status_t btrfs_wq_submit_bio
 #ifdef MY_ABC_HERE
 	async->fs_info = fs_info;
 	async->throttle = throttle;
-	if (async->throttle)
+	if (async->fs_info && async->throttle)
 		atomic_inc(&fs_info->syno_async_submit_nr);
 #endif /* MY_ABC_HERE */
 
@@ -1278,54 +1209,34 @@ static const struct address_space_operations btree_aops = {
 	.set_page_dirty = btree_set_page_dirty,
 };
 
-void readahead_tree_block(struct btrfs_fs_info *fs_info, u64 bytenr)
-{
-	struct extent_buffer *buf = NULL;
-	int ret;
-#ifdef MY_ABC_HERE
-	bool can_retry = false;
-#endif /* MY_ABC_HERE */
-
-	buf = btrfs_find_create_tree_block(fs_info, bytenr);
-	if (IS_ERR(buf))
-		return;
-
-	ret = read_extent_buffer_pages(buf, WAIT_NONE, 0
-#ifdef MY_ABC_HERE
-			, &can_retry, 0
-#endif /* MY_ABC_HERE */
-			);
-	if (ret < 0)
-		free_extent_buffer_stale(buf);
-	else
-		free_extent_buffer(buf);
-}
 
 struct extent_buffer *btrfs_find_create_tree_block(
 						struct btrfs_fs_info *fs_info,
-						u64 bytenr)
+						u64 bytenr, u64 owner_root,
+						int level)
 {
 	if (btrfs_is_testing(fs_info))
 		return alloc_test_extent_buffer(fs_info, bytenr);
-	return alloc_extent_buffer(fs_info, bytenr);
+	return alloc_extent_buffer(fs_info, bytenr, owner_root, level);
 }
 
 /*
  * Read tree block at logical address @bytenr and do variant basic but critical
  * verification.
  *
+ * @owner_root:		the objectid of the root owner for this block.
  * @parent_transid:	expected transid of this tree block, skip check if 0
  * @level:		expected level, mandatory check
  * @first_key:		expected key in slot 0, skip check if NULL
  */
 struct extent_buffer *read_tree_block(struct btrfs_fs_info *fs_info, u64 bytenr,
-				      u64 parent_transid, int level,
-				      struct btrfs_key *first_key)
+				      u64 owner_root, u64 parent_transid,
+				      int level, struct btrfs_key *first_key)
 {
 	struct extent_buffer *buf = NULL;
 	int ret;
 
-	buf = btrfs_find_create_tree_block(fs_info, bytenr);
+	buf = btrfs_find_create_tree_block(fs_info, bytenr, owner_root, level);
 	if (IS_ERR(buf))
 		return buf;
 
@@ -1685,7 +1596,7 @@ static struct btrfs_root *read_tree_root_path(struct btrfs_root *tree_root,
 	level = btrfs_root_level(&root->root_item);
 	root->node = read_tree_block(fs_info,
 				     btrfs_root_bytenr(&root->root_item),
-				     generation, level, NULL);
+				     key->objectid, generation, level, NULL);
 	if (IS_ERR(root->node)) {
 		ret = PTR_ERR(root->node);
 		root->node = NULL;
@@ -2289,12 +2200,13 @@ static void btrfs_syno_orphan_cleanup(struct btrfs_fs_info *fs_info)
 
 	/* we need to run find orphan roots before snapshot cleanup */
 	if (!fs_info->syno_orphan_cleanup.root_tree_cleanup) {
-		fs_info->syno_orphan_cleanup.root_tree_cleanup = true;
 		err = btrfs_find_orphan_roots(fs_info);
 		if (err) {
 			btrfs_err(fs_info, "Failed to btrfs find orphan roots, err:%d", err);
 			goto out;
 		}
+
+		fs_info->syno_orphan_cleanup.root_tree_cleanup = true;
 
 		down_read(&fs_info->cleanup_work_sem);
 		err = btrfs_orphan_cleanup(fs_info->tree_root);
@@ -2373,10 +2285,17 @@ static int cleaner_kthread(void *arg)
 			goto sleep;
 
 #ifdef MY_ABC_HERE
+		if (!mutex_trylock(&fs_info->relocate_mutex))
+			goto sleep;
+		if (!mutex_trylock(&fs_info->cleaner_mutex)) {
+			mutex_unlock(&fs_info->relocate_mutex);
+			goto sleep;
+		}
 		btrfs_syno_orphan_cleanup(fs_info);
-#endif /* MY_ABC_HERE */
+#else /* MY_ABC_HERE */
 		if (!mutex_trylock(&fs_info->cleaner_mutex))
 			goto sleep;
+#endif /* MY_ABC_HERE */
 
 		/*
 		 * Avoid the problem that we change the status of the fs
@@ -2384,6 +2303,9 @@ static int cleaner_kthread(void *arg)
 		 */
 		if (btrfs_need_cleaner_sleep(fs_info)) {
 			mutex_unlock(&fs_info->cleaner_mutex);
+#ifdef MY_ABC_HERE
+			mutex_unlock(&fs_info->relocate_mutex);
+#endif /* MY_ABC_HERE */
 			goto sleep;
 		}
 
@@ -2396,6 +2318,9 @@ static int cleaner_kthread(void *arg)
 		again = btrfs_clean_one_deleted_snapshot(root);
 #endif /* MY_ABC_HERE */
 		mutex_unlock(&fs_info->cleaner_mutex);
+#ifdef MY_ABC_HERE
+		mutex_unlock(&fs_info->relocate_mutex);
+#endif /* MY_ABC_HERE */
 
 		/*
 		 * The defragger has dealt with the R/O remount and umount,
@@ -2737,6 +2662,9 @@ static void btrfs_stop_all_workers(struct btrfs_fs_info *fs_info)
 	 * queues can do metadata I/O operations.
 	 */
 	btrfs_destroy_workqueue(fs_info->endio_meta_workers);
+#ifdef MY_ABC_HERE
+	btrfs_destroy_workqueue(fs_info->endio_meta_fix_workers);
+#endif /* MY_ABC_HERE */
 	btrfs_destroy_workqueue(fs_info->endio_meta_write_workers);
 
 }
@@ -2957,6 +2885,11 @@ static int btrfs_init_workqueues(struct btrfs_fs_info *fs_info,
 	fs_info->endio_meta_workers =
 		btrfs_alloc_workqueue(fs_info, "endio-meta", flags,
 				      max_active, 4);
+#ifdef MY_ABC_HERE
+	fs_info->endio_meta_fix_workers =
+		btrfs_alloc_workqueue(fs_info, "endio_meta_fix", flags,
+				      max_active, 4);
+#endif /* MY_ABC_HERE */
 	fs_info->endio_meta_write_workers =
 		btrfs_alloc_workqueue(fs_info, "endio-meta-write", flags,
 				      max_active, 2);
@@ -2997,7 +2930,7 @@ static int btrfs_init_workqueues(struct btrfs_fs_info *fs_info,
 #ifdef MY_ABC_HERE
 	/* for reduce cow ordered extent contention, we limit max active with 4 */
 	fs_info->syno_cow_endio_workers =
-		btrfs_alloc_workqueue(fs_info, "syno_cow", flags, min_t(unsigned long, 4, max_active), 2);
+		btrfs_alloc_workqueue(fs_info, "syno_cow", flags, max_active, 2);
 	fs_info->syno_nocow_endio_workers =
 		btrfs_alloc_workqueue(fs_info, "syno_nocow", flags, max_active, 2);
 	fs_info->syno_high_priority_endio_workers =
@@ -3015,6 +2948,9 @@ static int btrfs_init_workqueues(struct btrfs_fs_info *fs_info,
 	if (!(fs_info->workers && fs_info->delalloc_workers &&
 	      fs_info->flush_workers &&
 	      fs_info->endio_workers && fs_info->endio_meta_workers &&
+#ifdef MY_ABC_HERE
+	      fs_info->endio_meta_fix_workers &&
+#endif /* MY_ABC_HERE */
 	      fs_info->endio_meta_write_workers &&
 	      fs_info->endio_write_workers && fs_info->endio_raid56_workers &&
 	      fs_info->endio_freespace_worker && fs_info->rmw_workers &&
@@ -3084,8 +3020,9 @@ static int btrfs_replay_log(struct btrfs_fs_info *fs_info,
 		return -ENOMEM;
 
 	log_tree_root->node = read_tree_block(fs_info, bytenr,
-					      fs_info->generation + 1,
-					      level, NULL);
+					      BTRFS_TREE_LOG_OBJECTID,
+					      fs_info->generation + 1, level,
+					      NULL);
 	if (IS_ERR(log_tree_root->node)) {
 		btrfs_warn(fs_info, "failed to read log tree");
 		ret = PTR_ERR(log_tree_root->node);
@@ -3580,6 +3517,7 @@ static int __cold init_tree_roots(struct btrfs_fs_info *fs_info)
 		generation = btrfs_super_generation(sb);
 		level = btrfs_super_root_level(sb);
 		tree_root->node = read_tree_block(fs_info, btrfs_super_root(sb),
+						  BTRFS_ROOT_TREE_OBJECTID,
 						  generation, level, NULL);
 		if (IS_ERR(tree_root->node)) {
 			handle_error = true;
@@ -3675,8 +3613,10 @@ void btrfs_init_fs_info(struct btrfs_fs_info *fs_info)
 	extent_map_tree_init(&fs_info->mapping_tree);
 #ifdef MY_ABC_HERE
 	atomic_set(&fs_info->nr_extent_maps, 0);
+#if 0
 	INIT_LIST_HEAD(&fs_info->extent_map_inode_list);
 	spin_lock_init(&fs_info->extent_map_inode_list_lock);
+#endif
 #endif /* MY_ABC_HERE */
 	btrfs_init_block_rsv(&fs_info->global_block_rsv,
 			     BTRFS_BLOCK_RSV_GLOBAL);
@@ -3796,6 +3736,9 @@ void btrfs_init_fs_info(struct btrfs_fs_info *fs_info)
 	mutex_init(&fs_info->chunk_mutex);
 	mutex_init(&fs_info->transaction_kthread_mutex);
 	mutex_init(&fs_info->cleaner_mutex);
+#ifdef MY_ABC_HERE
+	mutex_init(&fs_info->relocate_mutex);
+#endif /* MY_ABC_HERE */
 	mutex_init(&fs_info->ro_block_group_mutex);
 	init_rwsem(&fs_info->commit_root_sem);
 	init_rwsem(&fs_info->cleanup_work_sem);
@@ -4552,6 +4495,9 @@ int __cold open_ctree(struct super_block *sb, struct btrfs_fs_devices *fs_device
 	}
 #endif /* MY_ABC_HERE */
 
+#ifdef MY_ABC_HERE
+	fs_info->can_fix_meta_key = CAN_FIX_META_KEY;
+#endif /* MY_ABC_HERE */
 	ret = btrfs_init_workqueues(fs_info, fs_devices);
 	if (ret) {
 		err = ret;
@@ -4578,6 +4524,7 @@ int __cold open_ctree(struct super_block *sb, struct btrfs_fs_devices *fs_device
 
 	chunk_root->node = read_tree_block(fs_info,
 					   btrfs_super_chunk_root(disk_super),
+					   BTRFS_CHUNK_TREE_OBJECTID,
 					   generation, level, NULL);
 	if (IS_ERR(chunk_root->node) ||
 	    !extent_buffer_uptodate(chunk_root->node)) {
@@ -4996,6 +4943,13 @@ int __cold open_ctree(struct super_block *sb, struct btrfs_fs_devices *fs_device
 	}
 
 	set_bit(BTRFS_FS_OPEN, &fs_info->flags);
+
+#ifdef MY_ABC_HERE
+#else /* MY_ABC_HERE */
+	/* Kick the cleaner thread so it'll start deleting snapshots. */
+	if (test_bit(BTRFS_FS_UNFINISHED_DROPS, &fs_info->flags))
+		wake_up_process(fs_info->cleaner_kthread);
+#endif /* MY_ABC_HERE */
 
 clear_oneshot:
 	btrfs_clear_oneshot_options(fs_info);
@@ -5692,6 +5646,15 @@ void __cold close_ctree(struct btrfs_fs_info *fs_info)
 	 * still try to wake up the cleaner.
 	 */
 	kthread_park(fs_info->cleaner_kthread);
+
+#ifdef MY_ABC_HERE
+#else /* MY_ABC_HERE */
+	/*
+	 * If we had UNFINISHED_DROPS we could still be processing them, so
+	 * clear that bit and wake up relocation so it can stop.
+	 */
+	btrfs_wake_unfinished_drop(fs_info);
+#endif /* MY_ABC_HERE */
 
 	/* wait for the qgroup rescan worker to stop */
 	btrfs_qgroup_wait_for_completion(fs_info, false);

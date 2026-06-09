@@ -698,6 +698,9 @@ void btrfs_drop_extent_cache(struct btrfs_inode *inode, u64 start, u64 end,
 	unsigned long flags;
 	int compressed = 0;
 	bool modified;
+#ifdef MY_ABC_HERE
+	bool throttle = false;
+#endif /* MY_ABC_HERE */
 
 	WARN_ON(end < start);
 	if (end == (u64)-1) {
@@ -812,6 +815,10 @@ void btrfs_drop_extent_cache(struct btrfs_inode *inode, u64 start, u64 end,
 			} else {
 				ret = add_extent_mapping(em_tree, split,
 							 modified);
+#ifdef MY_ABC_HERE
+				if (!ret)
+					throttle = true;
+#endif /* MY_ABC_HERE */
 				ASSERT(ret == 0); /* Logic error */
 			}
 			free_extent_map(split);
@@ -831,6 +838,12 @@ next:
 		free_extent_map(split);
 	if (split2)
 		free_extent_map(split2);
+
+#ifdef MY_ABC_HERE
+	if (throttle)
+		btrfs_extent_map_throttle(&inode->vfs_inode);
+#endif /* MY_ABC_HERE */
+
 }
 
 /*
@@ -2486,6 +2499,9 @@ static noinline ssize_t btrfs_buffered_write(struct kiocb *iocb,
 		size_t dirty_sectors;
 		size_t num_sectors;
 		int extents_locked;
+#ifdef MY_ABC_HERE
+		bool reservation_with_no_commit;
+#endif /* MY_ABC_HERE */
 
 		WARN_ON(num_pages > nrptrs);
 
@@ -2502,11 +2518,23 @@ static noinline ssize_t btrfs_buffered_write(struct kiocb *iocb,
 		sector_offset = pos & (fs_info->sectorsize - 1);
 		reserve_bytes = round_up(write_bytes + sector_offset,
 				fs_info->sectorsize);
+#ifdef MY_ABC_HERE
+		reservation_with_no_commit = false;
+		if (BTRFS_I(inode)->flags & (BTRFS_INODE_NODATACOW | BTRFS_INODE_PREALLOC))
+			reservation_with_no_commit = true;
+#endif /* MY_ABC_HERE */
 
 		extent_changeset_release(data_reserved);
-		ret = btrfs_check_data_free_space(BTRFS_I(inode),
-						  &data_reserved, pos,
-						  write_bytes);
+#ifdef MY_ABC_HERE
+		/* If necessary, ecryptfs_zero_copy and syno_recvfile can also add this logic. */
+reserve_again:
+		if (reservation_with_no_commit)
+			ret = btrfs_check_data_free_space_with_no_commit(BTRFS_I(inode), &data_reserved, pos, write_bytes);
+		else
+#endif /* MY_ABC_HERE */
+			ret = btrfs_check_data_free_space(BTRFS_I(inode),
+							  &data_reserved, pos,
+							  write_bytes);
 		if (ret < 0) {
 			if (btrfs_check_nocow_lock(BTRFS_I(inode), pos,
 						   &write_bytes) > 0) {
@@ -2525,6 +2553,12 @@ static noinline ssize_t btrfs_buffered_write(struct kiocb *iocb,
 							 sector_offset,
 							 fs_info->sectorsize);
 			} else {
+#ifdef MY_ABC_HERE
+				if (reservation_with_no_commit) {
+					reservation_with_no_commit = false;
+					goto reserve_again;
+				}
+#endif /* MY_ABC_HERE */
 				break;
 			}
 		}
@@ -3413,6 +3447,10 @@ out:
 			write_lock(&em_tree->lock);
 			ret = add_extent_mapping(em_tree, hole_em, 1);
 			write_unlock(&em_tree->lock);
+#ifdef MY_ABC_HERE
+			if (!ret)
+				btrfs_extent_map_throttle(&inode->vfs_inode);
+#endif /* MY_ABC_HERE */
 		} while (ret == -EEXIST);
 		free_extent_map(hole_em);
 		if (ret)

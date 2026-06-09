@@ -1,6 +1,9 @@
 #include <linux/atomic.h>
 #include <linux/bug.h>
 #include <linux/jiffies.h>
+#include <linux/mutex.h>
+#include <linux/list.h>
+#include <linux/synolib.h>
 
 atomic_t syno_disk_not_ready_count = ATOMIC_INIT(0);
 

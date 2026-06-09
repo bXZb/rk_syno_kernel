@@ -327,6 +327,9 @@ struct ahci_port_priv {
 #ifdef MY_ABC_HERE
 	int			(*syno_set_blink)(struct ata_port* ap, u32 state);
 #endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+	atomic_t		intr_status;	/* interrupts to handle */
+#endif /* MY_ABC_HERE */
 };
 
 struct ahci_host_priv {
@@ -468,5 +471,16 @@ static inline int syno_jmb58x_check(unsigned short vendor, unsigned short device
 	return (PCI_VENDOR_ID_JMICRON == vendor && ( 0x0585 == device || 0x0582 == device)) ? 0 : -1;
 }
 #endif /* MY_ABC_HERE || MY_ABC_HERE|| MY_ABC_HERE */
+
+#ifdef MY_ABC_HERE
+static inline int syno_mv92x5_check(unsigned short vendor, unsigned short device)
+{
+	return (0x1b4b == vendor && (0x9235 == device || 0x9215 == device)) ? 0 : -1;
+}
+#endif /* MY_ABC_HERE */
+
+#ifdef MY_DEF_HERE
+extern bool syno_is_pci_dev_rx1224rp(struct pci_dev *pdev);
+#endif /* MY_DEF_HERE */
 
 #endif /* _AHCI_H */

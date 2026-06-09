@@ -6185,8 +6185,9 @@ btrfs_init_new_buffer(struct btrfs_trans_handle *trans, struct btrfs_root *root,
 {
 	struct btrfs_fs_info *fs_info = root->fs_info;
 	struct extent_buffer *buf;
+	u64 lockdep_owner = owner;
 
-	buf = btrfs_find_create_tree_block(fs_info, bytenr);
+	buf = btrfs_find_create_tree_block(fs_info, bytenr, owner, level);
 	if (IS_ERR(buf))
 		return buf;
 
@@ -6203,7 +6204,27 @@ btrfs_init_new_buffer(struct btrfs_trans_handle *trans, struct btrfs_root *root,
 		return ERR_PTR(-EUCLEAN);
 	}
 
-	btrfs_set_buffer_lockdep_class(owner, buf, level);
+	/*
+	 * The reloc trees are just snapshots, so we need them to appear to be
+	 * just like any other fs tree WRT lockdep.
+	 *
+	 * The exception however is in replace_path() in relocation, where we
+	 * hold the lock on the original fs root and then search for the reloc
+	 * root.  At that point we need to make sure any reloc root buffers are
+	 * set to the BTRFS_TREE_RELOC_OBJECTID lockdep class in order to make
+	 * lockdep happy.
+	 */
+	if (lockdep_owner == BTRFS_TREE_RELOC_OBJECTID &&
+	    !test_bit(BTRFS_ROOT_RESET_LOCKDEP_CLASS, &root->state))
+		lockdep_owner = BTRFS_FS_TREE_OBJECTID;
+
+	/*
+	 * This needs to stay, because we could allocate a freed block from an
+	 * old tree into a new tree, so we need to make sure this new block is
+	 * set to the appropriate level and owner.
+	 */
+	btrfs_set_buffer_lockdep_class(lockdep_owner, buf, level);
+
 	__btrfs_tree_lock(buf, nest);
 	btrfs_clean_tree_block(buf);
 	clear_bit(EXTENT_BUFFER_STALE, &buf->bflags);
@@ -6429,7 +6450,7 @@ static noinline void reada_walk_down(struct btrfs_trans_handle *trans,
 				continue;
 		}
 reada:
-		readahead_tree_block(fs_info, bytenr);
+		btrfs_readahead_node_child(eb, slot);
 		nread++;
 	}
 	wc->reada_slot = slot;
@@ -6592,12 +6613,10 @@ static noinline int do_walk_down(struct btrfs_trans_handle *trans,
 
 	next = find_extent_buffer(fs_info, bytenr);
 	if (!next) {
-		next = btrfs_find_create_tree_block(fs_info, bytenr);
+		next = btrfs_find_create_tree_block(fs_info, bytenr,
+				root->root_key.objectid, level - 1);
 		if (IS_ERR(next))
 			return PTR_ERR(next);
-
-		btrfs_set_buffer_lockdep_class(root->root_key.objectid, next,
-					       level - 1);
 		reada = 1;
 	}
 	btrfs_tree_lock(next);
@@ -6652,8 +6671,8 @@ static noinline int do_walk_down(struct btrfs_trans_handle *trans,
 	if (!next) {
 		if (reada && level == 1)
 			reada_walk_down(trans, root, wc, path);
-		next = read_tree_block(fs_info, bytenr, generation, level - 1,
-				       &first_key);
+		next = read_tree_block(fs_info, bytenr, root->root_key.objectid,
+				       generation, level - 1, &first_key);
 		if (IS_ERR(next)) {
 			return PTR_ERR(next);
 		} else if (!extent_buffer_uptodate(next)) {
@@ -7022,6 +7041,10 @@ int btrfs_drop_snapshot(struct btrfs_root *root, int update_ref, int for_reloc)
 	bool use_cleaner_rsv = false;
 	int updates;
 #endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+#else /* MY_ABC_HERE */
+	bool unfinished_drop = false;
+#endif /* MY_ABC_HERE */
 
 	btrfs_debug(fs_info, "Drop subvolume %llu", root->root_key.objectid);
 
@@ -7093,6 +7116,11 @@ int btrfs_drop_snapshot(struct btrfs_root *root, int update_ref, int for_reloc)
 	 * already dropped.
 	 */
 	set_bit(BTRFS_ROOT_DELETING, &root->state);
+#ifdef MY_ABC_HERE
+#else /* MY_ABC_HERE */
+	unfinished_drop = test_bit(BTRFS_ROOT_UNFINISHED_DROP, &root->state);
+#endif /* MY_ABC_HERE */
+
 	if (btrfs_disk_key_objectid(&root_item->drop_progress) == 0) {
 		level = btrfs_header_level(root->node);
 		path->nodes[level] = btrfs_lock_root_node(root);
@@ -7390,6 +7418,16 @@ out:
 	btrfs_syno_block_rsv_refill(fs_info, global_rsv, -1);
 	btrfs_syno_block_rsv_refill(fs_info, cleaner_rsv, -1);
 #endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+#else /* MY_ABC_HERE */
+	/*
+	 * We were an unfinished drop root, check to see if there are any
+	 * pending, and if not clear and wake up any waiters.
+	 */
+	if (!err && unfinished_drop)
+		btrfs_maybe_wake_unfinished_drop(fs_info);
+#endif /* MY_ABC_HERE */
+
 	/*
 	 * So if we need to stop dropping the snapshot for whatever reason we
 	 * need to make sure to add it back to the dead root list so that we
@@ -7410,11 +7448,14 @@ out:
 #endif /* MY_ABC_HERE */
 
 	if (!for_reloc && !root_dropped)
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+	{
+		set_bit(BTRFS_ROOT_UNFINISHED_DROP, &root->state);
 		btrfs_add_dead_root_head(root);
-#else /* MY_ABC_HERE || MY_ABC_HERE */
+	}
+#else /* MY_ABC_HERE || MY_ABC_HERE || MY_ABC_HERE*/
 		btrfs_add_dead_root(root);
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* MY_ABC_HERE || MY_ABC_HERE || MY_ABC_HERE*/
 	return err;
 }
 
@@ -7530,7 +7571,7 @@ int btrfs_error_unpin_extent_range(struct btrfs_fs_info *fs_info,
 }
 
 #ifdef MY_ABC_HERE
-#define MAX_SYNO_HINT_BYTES 		round_down(UINT_MAX, 512)
+#define MAX_SYNO_HINT_BYTES 		SZ_2G
 #endif /* MY_ABC_HERE */
 
 /*
@@ -7553,6 +7594,7 @@ int btrfs_error_unpin_extent_range(struct btrfs_fs_info *fs_info,
  * it while performing the free space search since we have already
  * held back allocations.
  */
+#ifdef MY_ABC_HERE
 static int btrfs_trim_free_extents(struct btrfs_device *device, u64 *trimmed
 #ifdef MY_ABC_HERE
 				   , enum trim_act act
@@ -7692,6 +7734,7 @@ static int btrfs_trim_free_extents(struct btrfs_device *device, u64 *trimmed
 
 	return ret;
 }
+#endif /* MY_ABC_HERE */
 
 /*
  * Trim the whole filesystem by:
@@ -7709,8 +7752,10 @@ int btrfs_trim_fs(struct btrfs_fs_info *fs_info, struct fstrim_range *range
 		  )
 {
 	struct btrfs_block_group *cache = NULL;
+#ifdef MY_ABC_HERE
 	struct btrfs_device *device;
 	struct list_head *devices;
+#endif /* MY_ABC_HERE */
 	u64 group_trimmed;
 	u64 range_end = U64_MAX;
 	u64 start;
@@ -7736,6 +7781,8 @@ int btrfs_trim_fs(struct btrfs_fs_info *fs_info, struct fstrim_range *range
 		mutex_lock(&fs_info->fs_devices->device_list_mutex);
 		devices = &fs_info->fs_devices->devices;
 		list_for_each_entry(device, devices, dev_list) {
+			if (test_bit(BTRFS_DEV_STATE_MISSING, &device->dev_state))
+				continue;
 			ret = btrfs_trim_free_extents(device, &group_trimmed,
 						      TRIM_SEND_HINT);
 			if (ret)
@@ -7798,6 +7845,7 @@ int btrfs_trim_fs(struct btrfs_fs_info *fs_info, struct fstrim_range *range
 		goto done;
 #endif /* MY_ABC_HERE */
 
+#if 0
 	mutex_lock(&fs_info->fs_devices->device_list_mutex);
 	devices = &fs_info->fs_devices->devices;
 	list_for_each_entry(device, devices, dev_list) {
@@ -7818,6 +7866,7 @@ int btrfs_trim_fs(struct btrfs_fs_info *fs_info, struct fstrim_range *range
 		trimmed += group_trimmed;
 	}
 	mutex_unlock(&fs_info->fs_devices->device_list_mutex);
+#endif
 
 #ifdef MY_ABC_HERE
 done:

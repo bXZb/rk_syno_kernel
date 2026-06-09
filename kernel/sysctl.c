@@ -152,6 +152,14 @@ int gSynoSmbusSwitchAddrs[SMBUS_SWITCH_MAX_COUNT+1];
 EXPORT_SYMBOL(gSynoSmbusSwitchAddrs);
 int gSynoSmbusSwitchVals[SMBUS_SWITCH_MAX_COUNT+1];
 EXPORT_SYMBOL(gSynoSmbusSwitchVals);
+int gSynoHostPresentAdapter = -1;
+EXPORT_SYMBOL(gSynoHostPresentAdapter);
+int gSynoHostPresentAddr = -1;
+EXPORT_SYMBOL(gSynoHostPresentAddr);
+int gSynoHostPresentReg = -1;
+EXPORT_SYMBOL(gSynoHostPresentReg);
+int gSynoHostPresentVal = -1;
+EXPORT_SYMBOL(gSynoHostPresentVal);
 #endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
@@ -350,6 +358,20 @@ static int proc_dointvec_disk_ready_check(struct ctl_table *table, int write,
 }
 #endif /* MY_DEF_HERE */
 
+#ifdef MY_DEF_HERE
+int gSynoUsbEunitCheck = 1;
+EXPORT_SYMBOL(gSynoUsbEunitCheck);
+extern int syno_usb_eunit_ready_check(void);
+
+static int proc_dointvec_usb_eunit_check(struct ctl_table *table, int write,
+				void __user *buffer, size_t *lenp,
+				loff_t *ppos)
+{
+	gSynoUsbEunitCheck = syno_usb_eunit_ready_check();
+	return proc_dointvec(table, write, buffer, lenp, ppos);
+}
+#endif /* MY_DEF_HERE */
+
 #ifdef MY_ABC_HERE
 unsigned int SynoDiskSeqValidBytesThreshold = (1024 * 1024);
 EXPORT_SYMBOL(SynoDiskSeqValidBytesThreshold);
@@ -378,6 +400,13 @@ void SYNOLP3943I2CMutex (bool lock)
 }
 EXPORT_SYMBOL(SYNOLP3943I2CMutex);
 #endif /* MY_ABC_HERE */
+
+#ifdef MY_DEF_HERE
+int g_syno_dpm_debug_level = 0;
+bool g_support_syno_dpm = false;
+EXPORT_SYMBOL(g_syno_dpm_debug_level);
+EXPORT_SYMBOL(g_support_syno_dpm);
+#endif /* MY_DEF_HERE */
 
 static int __maybe_unused neg_one = -1;
 static int __maybe_unused two = 2;
@@ -3402,6 +3431,15 @@ static struct ctl_table kern_table[] = {
 		.maxlen		= sizeof(int),
 		.mode		= 0444,
 		.proc_handler	= proc_dointvec_disk_ready_check,
+	},
+#endif /* MY_DEF_HERE */
+#ifdef MY_DEF_HERE
+	{
+		.procname	= "syno_usb_eunit_check",
+		.data		= &gSynoUsbEunitCheck,
+		.maxlen		= sizeof(int),
+		.mode		= 0444,
+		.proc_handler	= proc_dointvec_usb_eunit_check,
 	},
 #endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE

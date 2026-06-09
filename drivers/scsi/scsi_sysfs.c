@@ -29,6 +29,13 @@
 #include "scsi_priv.h"
 #include "scsi_logging.h"
 
+#ifdef MY_DEF_HERE
+#include "sd.h"
+#include <linux/synolib.h>
+#include <linux/synobios.h>
+extern struct syno_control_operations syno_control_operations_lists[];
+#endif /* MY_DEF_HERE */
+
 #ifdef MY_ABC_HERE
 #ifdef KERN_INFO
 #undef KERN_INFO
@@ -708,12 +715,53 @@ syno_block_info_show(struct device *device, struct device_attribute *attr, char 
 {
 	struct scsi_device *sdev = NULL;
 	ssize_t len = -EFAULT;
+#ifdef MY_DEF_HERE
+	char *control_method = NULL;
+	struct syno_control_operations *ctrl_op = NULL;
+	char unique[SYNO_EBOX_UNIQUE_MAX_LEN] = {0};
+	char syno_block_info_tmp[BLOCK_INFO_SIZE] = {0};
+	struct scsi_disk *sdkp = NULL;
+	int container_index = 0;
+#endif /* MY_DEF_HERE */
 
 	if (NULL == (sdev = to_scsi_device(device))) {
 		goto END;
 	}
 
+#ifdef MY_DEF_HERE
+	for (ctrl_op = syno_control_operations_lists; ctrl_op && strlen(ctrl_op->control_method); ctrl_op++) {
+		read_lock(&(sdev->syno_block_info_rwlock));
+		control_method = strstr(sdev->syno_block_info, ctrl_op->control_method);
+		read_unlock(&(sdev->syno_block_info_rwlock));
+		if (NULL != control_method) {
+			sdkp = dev_get_drvdata(device);
+			if (!ctrl_op->unique_get || !ctrl_op->container_index_get_by_diskname) {
+				break;
+			}
+			if (0 > ctrl_op->container_index_get_by_diskname(&container_index, sdkp->disk->disk_name)) {
+				break;
+			}
+			if (0 > ctrl_op->unique_get(EUNIT_DEVICE, container_index, unique, sizeof(unique))) {
+				break;
+			}
+
+			write_lock(&(sdev->syno_block_info_rwlock));
+			if (NULL != (control_method = strstr(sdev->syno_block_info, ctrl_op->control_method))) {
+				strncpy(syno_block_info_tmp, control_method + strlen(ctrl_op->control_method), sizeof(syno_block_info_tmp));
+				snprintf(control_method, BLOCK_INFO_SIZE - strlen(sdev->syno_block_info), "%s", unique);
+				snprintf(sdev->syno_block_info + strlen(sdev->syno_block_info),
+						BLOCK_INFO_SIZE - strlen(sdev->syno_block_info), "%s", syno_block_info_tmp);
+			}
+			write_unlock(&(sdev->syno_block_info_rwlock));
+			
+		}
+		
+	}
+#endif /* MY_DEF_HERE */
+
+	read_lock(&(sdev->syno_block_info_rwlock));
 	len = snprintf(buf, BLOCK_INFO_SIZE , "%s", sdev->syno_block_info);
+	read_unlock(&(sdev->syno_block_info_rwlock));
 END:
 	return len;
 }

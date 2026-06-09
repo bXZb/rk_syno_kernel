@@ -3747,6 +3747,12 @@ static int sd_revalidate_disk(struct gendisk *disk)
 	}
 #endif /* MY_DEF_HERE */
 
+#ifdef MY_ABC_HERE
+	if (sdp->host->hostt->syno_uas_delay_revalidate) {
+		msleep(100);
+	}
+#endif /* MY_ABC_HERE */
+
 	/*
 	 * Without media there is no reason to ask; moreover, some devices
 	 * react badly if we do.
@@ -4339,8 +4345,16 @@ static int sd_probe(struct device *dev)
 	 * fill syno_block_info if syno_sdev_info_enum exist
 	 */
 	if (NULL != sdp->host->hostt->syno_sdev_info_enum) {
+		rwlock_init(&(sdp->syno_block_info_rwlock));
 		sdp->host->hostt->syno_sdev_info_enum(sdp);
 	}
+
+#if defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
+	if (NULL != sdp->host->hostt->syno_device_list_set) {
+		sdp->host->hostt->syno_device_list_set(sdp, 1, gd->disk_name);
+	}
+#endif /* MY_DEF_HERE || MY_DEF_HERE*/
+
 #else /* MY_ABC_HERE */
 	error = sd_format_disk_name("sd", index, gd->disk_name, DISK_NAME_LEN);
 	if (error) {
@@ -4445,6 +4459,12 @@ static int sd_probe(struct device *dev)
 			sd_printk(KERN_NOTICE, sdkp, "supports TCG Opal\n");
 	}
 
+#if defined(MY_DEF_HERE) && defined(MY_DEF_HERE)
+	if (NULL != sdp->host->hostt->syno_disk_not_ready_count_decrease) {
+		sdp->host->hostt->syno_disk_not_ready_count_decrease();
+	}
+#endif /* MY_DEF_HERE && MY_DEF_HERE */
+
 	sd_printk(KERN_NOTICE, sdkp, "Attached SCSI %sdisk\n",
 		  sdp->removable ? "removable " : "");
 	scsi_autopm_put_device(sdp);
@@ -4485,6 +4505,12 @@ static int sd_remove(struct device *dev)
 	sdkp = dev_get_drvdata(dev);
 	devt = disk_devt(sdkp->disk);
 	scsi_autopm_get_device(sdkp->device);
+
+#if defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
+	if (NULL != sdkp->device->host->hostt->syno_device_list_set) {
+		sdkp->device->host->hostt->syno_device_list_set(sdkp->device, 0, sdkp->disk->disk_name);
+	}
+#endif /* MY_DEF_HERE || MY_DEF_HERE*/
 
 	async_synchronize_full_domain(&scsi_sd_pm_domain);
 	device_del(&sdkp->dev);
@@ -4639,7 +4665,9 @@ static void sd_shutdown(struct device *dev)
 	else if (system_state == SYSTEM_RESTART && sdkp->device->manage_start_stop) {
 		/* The models which support deep sleep will cut the power of sata port
 		 * when reboot the machine, so issue STOP command before reboot */
-		if (sdkp->device->power_loss_during_reboot) {
+		struct scsi_device *sdp = sdkp->device;
+		if (sdp->host->hostt->syno_disk_power_loss_when_reboot &&
+			sdp->host->hostt->syno_disk_power_loss_when_reboot(sdp) == 1) {
 #ifdef MY_ABC_HERE
 			syno_disk_paraldown_wait_inc();
 			INIT_WORK(&sdkp->syno_disk_paraldown, syno_disk_paraldown_workfn);

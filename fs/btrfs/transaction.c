@@ -25,6 +25,9 @@
 #include "qgroup.h"
 #include "block-group.h"
 #include "space-info.h"
+#ifdef MY_ABC_HERE
+#include "delayed-inode.h"
+#endif /* MY_ABC_HERE */
 
 #define BTRFS_ROOT_TRANS_TAG 0
 
@@ -1439,6 +1442,32 @@ again:
 }
 
 /*
+ * If we had a pending drop we need to see if there are any others left in our
+ * dead roots list, and if not clear our bit and wake any waiters.
+ */
+void btrfs_maybe_wake_unfinished_drop(struct btrfs_fs_info *fs_info)
+{
+	/*
+	 * We put the drop in progress roots at the front of the list, so if the
+	 * first entry doesn't have UNFINISHED_DROP set we can wake everybody
+	 * up.
+	 */
+	spin_lock(&fs_info->trans_lock);
+	if (!list_empty(&fs_info->dead_roots)) {
+		struct btrfs_root *root = list_first_entry(&fs_info->dead_roots,
+							   struct btrfs_root,
+							   root_list);
+		if (test_bit(BTRFS_ROOT_UNFINISHED_DROP, &root->state)) {
+			spin_unlock(&fs_info->trans_lock);
+			return;
+		}
+	}
+	spin_unlock(&fs_info->trans_lock);
+
+	btrfs_wake_unfinished_drop(fs_info);
+}
+
+/*
  * dead roots are old snapshots that need to be deleted.  This allocates
  * a dirty root struct and adds it into the list of dead roots that need to
  * be deleted
@@ -1450,7 +1479,12 @@ void btrfs_add_dead_root(struct btrfs_root *root)
 	spin_lock(&fs_info->trans_lock);
 	if (list_empty(&root->root_list)) {
 		btrfs_grab_root(root);
-		list_add_tail(&root->root_list, &fs_info->dead_roots);
+
+		/* We want to process the partially complete drops first. */
+		if (test_bit(BTRFS_ROOT_UNFINISHED_DROP, &root->state))
+			list_add(&root->root_list, &fs_info->dead_roots);
+		else
+			list_add_tail(&root->root_list, &fs_info->dead_roots);
 	}
 	spin_unlock(&fs_info->trans_lock);
 }
@@ -2705,6 +2739,10 @@ int btrfs_commit_transaction(struct btrfs_trans_handle *trans)
 			goto cleanup_transaction;
 		}
 	}
+
+#ifdef MY_ABC_HERE
+	btrfs_wq_run_delayed_node(fs_info->delayed_root, fs_info, -1);
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 	ktime_get_ts64(&stats.start_timestamp);
