@@ -3,93 +3,98 @@
  * FriendlyElec NanoPC-T4 DSM loader device tree overlay target.
  *
  * Keep the real hardware compatible string so Rockchip platform drivers bind,
- * but expose the model DSM expects from the DS124 junior ramdisk.
+ * but expose the model DSM expects from the DS423 junior ramdisk.
  */
 
 /dts-v1/;
 #include "rk3399-nanopc-t4.dts"
 
 / {
-	model = "synology_rtd1619b_ds124";
+	model = "synology_rtd1619b_ds423";
 	compatible = "friendlyelec,nanopc-t4", "friendlyarm,nanopc-t4", "rockchip,rk3399";
 
 	ir-receiver {
 		status = "disabled";
 	};
 
+	gpio-keys {
+		status = "disabled";
+	};
+
 	internal_slot@1 {
 		protocol_type = "sata";
 
-		rtk_ahci {
+		ahci {
+			pcie_root = "0000:00:00.0,00.0";
+			ata_port = <0x00>;
+		};
+	};
+
+	internal_slot@2 {
+		protocol_type = "sata";
+
+		ahci {
+			pcie_root = "0000:00:00.0,00.0";
 			ata_port = <0x01>;
+		};
+	};
+
+	internal_slot@3 {
+		protocol_type = "sata";
+
+		ahci {
+			pcie_root = "0000:00:00.0,00.0";
+			ata_port = <0x02>;
+		};
+	};
+
+	internal_slot@4 {
+		protocol_type = "sata";
+
+		ahci {
+			pcie_root = "0000:00:00.0,00.0";
+			ata_port = <0x03>;
+		};
+	};
+
+	internal_slot@5 {
+		protocol_type = "sata";
+
+		ahci {
+			pcie_root = "0000:00:00.0,00.0";
+			ata_port = <0x04>;
+		};
+	};
+
+	internal_slot@6 {
+		protocol_type = "sata";
+
+		ahci {
+			pcie_root = "0000:00:00.0,00.0";
+			ata_port = <0x05>;
 		};
 	};
 };
 
-&fusb0 {
-	status = "disabled";
-};
-
-&tcphy0 {
-	status = "disabled";
-};
-
-&tcphy1 {
-	status = "disabled";
-};
-
-&u2phy0 {
-	status = "disabled";
-};
-
-&u2phy0_host {
-	status = "disabled";
-};
-
-&u2phy0_otg {
-	status = "disabled";
-};
-
-&u2phy1 {
-	status = "disabled";
-};
-
-&u2phy1_host {
-	status = "disabled";
-};
-
-&u2phy1_otg {
-	status = "disabled";
-};
-
-&usbdrd3_0 {
-	status = "disabled";
-};
-
-&usbdrd3_1 {
-	status = "disabled";
-};
-
 &usbdrd_dwc3_0 {
-	status = "disabled";
+	dr_mode = "host";
+	status = "okay";
 };
 
 &usbdrd_dwc3_1 {
-	status = "disabled";
+	dr_mode = "host";
+	status = "okay";
 };
 
-&usb_host0_ehci {
-	status = "disabled";
+&vbus_typec {
+	regulator-always-on;
+	regulator-boot-on;
 };
 
-&usb_host0_ohci {
-	status = "disabled";
+&u2phy0_otg {
+	phy-supply = <&vbus_typec>;
 };
 
-&usb_host1_ehci {
-	status = "disabled";
-};
-
-&usb_host1_ohci {
-	status = "disabled";
+&u2phy1_otg {
+	phy-supply = <&vcc5v0_host0>;
 };
