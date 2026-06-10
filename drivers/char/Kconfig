@@ -30,6 +30,14 @@ config TTY_PRINTK_LEVEL
 	help
 	  Printk log level to use for ttyprintk messages.
 
+config SYNO_FAKE_SYNOBIOS
+	tristate "Fake Synology synobios"
+	depends on PROC_FS
+	help
+	  Provide a minimal /dev/synobios compatibility device for DSM boots.
+	  The module is packaged as synobios.ko and accepts Synology userspace
+	  probes without driving real hardware.
+
 config PRINTER
 	tristate "Parallel printer support"
 	depends on PARPORT
