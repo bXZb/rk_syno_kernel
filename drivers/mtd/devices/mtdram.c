@@ -40,6 +40,69 @@ MODULE_PARM_DESC(syno_msys_parts, "Register 8 Synology-style RAM MTD partitions"
 // We could store these in the mtd structure, but we only support 1 device..
 static struct mtd_info *mtd_info;
 
+extern char gszSerialNum[32];
+extern unsigned char grgbLanMac[][16];
+
+static void fill_syno_vendor(void *vendor_base)
+{
+	unsigned char *ptr = (unsigned char *)vendor_base;
+	char sn_buf[64] = {0};
+	unsigned int sum = 0;
+	unsigned char uchar_sum = 0;
+	unsigned char mac_bytes[6] = {0};
+	char local_mac[16] = {0};
+	int i;
+
+	// fallback defaults if not provided in boot cmdline
+	if (grgbLanMac[0][0] == '\0') {
+		strcpy(local_mac, "021132423001");
+	} else {
+		strncpy(local_mac, (char *)grgbLanMac[0], sizeof(local_mac) - 1);
+	}
+
+	// 1. Header (16 bytes)
+	memset(ptr, 0, 16);
+	memcpy(ptr, "SYNO!!!!", 8);
+
+	// 2. SN (32 bytes, offset 16)
+	if (strlen(gszSerialNum) > 0) {
+		for (i = 0; gszSerialNum[i] != '\0'; i++) {
+			sum += (unsigned int)gszSerialNum[i];
+		}
+		snprintf(sn_buf, sizeof(sn_buf), "SN=%s,CHK=%u", gszSerialNum, sum);
+		memset(ptr + 16, 0, 32);
+		strncpy(ptr + 16, sn_buf, 31);
+	}
+
+	// 3. Custom SN (32 bytes, offset 48)
+	memset(ptr + 48, 0, 32);
+	if (strlen(gszSerialNum) > 0) {
+		strncpy(ptr + 48, gszSerialNum, 30);
+		uchar_sum = 0;
+		for (i = 0; i < 31; i++) {
+			uchar_sum += ptr[48 + i];
+		}
+		ptr[48 + 31] = uchar_sum;
+	}
+
+	// 4. Test Flag (128 bytes, offset 80)
+	memset(ptr + 80, 0, 128);
+
+	// 5. MAC (offset 208)
+	memset(ptr + 208, 0xff, 8 * 7); // Default to 0xff
+	if (strlen(local_mac) == 12) {
+		for (i = 0; i < 6; i++) {
+			mac_bytes[i] = (hex_to_bin(local_mac[i * 2]) << 4) | hex_to_bin(local_mac[i * 2 + 1]);
+		}
+		uchar_sum = 0;
+		for (i = 0; i < 6; i++) {
+			ptr[208 + i] = mac_bytes[i];
+			uchar_sum += mac_bytes[i];
+		}
+		ptr[208 + 6] = uchar_sum;
+	}
+}
+
 struct syno_msys_fis_desc {
 	unsigned char name[16];
 	u32 flash_base;
@@ -256,8 +319,10 @@ static int __init init_mtdram(void)
 		return -ENOMEM;
 	}
 	memset(addr, 0xff, MTDRAM_TOTAL_SIZE);
-	if (syno_msys_parts)
+	if (syno_msys_parts) {
 		syno_msys_seed_fis_tables(addr);
+		fill_syno_vendor((char *)addr + 0xfd5000);
+	}
 	err = mtdram_init_device(mtd_info, addr, MTDRAM_TOTAL_SIZE, "mtdram test device");
 	if (err) {
 		vfree(addr);
