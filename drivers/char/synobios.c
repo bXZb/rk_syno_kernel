@@ -23,6 +23,24 @@
 #define SYNOBIOS_NAME "synobios"
 #define SYNOBIOS_MAJOR 201
 #define SYNOBIOS_MAX_IOCTL_COPY 16384
+#define SYNOBIOS_SERIAL_LEN 32
+#define SYNOBIOS_LEGACY_IOC_MAGIC 'A'
+
+#ifndef SYNOIO_SERIAL
+#define SYNOIO_SERIAL _IOR(SYNOBIOS_LEGACY_IOC_MAGIC, 105, int)
+#endif
+#ifndef SYNOIO_SYNOVER
+#define SYNOIO_SYNOVER _IOR(SYNOBIOS_LEGACY_IOC_MAGIC, 107, unsigned long)
+#endif
+#ifndef SYNOIO_GETSERIALNUM
+#define SYNOIO_GETSERIALNUM _IOR(SYNOBIOS_LEGACY_IOC_MAGIC, 108, off_t)
+#endif
+#ifndef SYNOIO_HWHDSUPPORT
+#define SYNOIO_HWHDSUPPORT _IOR(SYNOBIOS_LEGACY_IOC_MAGIC, 110, int)
+#endif
+#ifndef SYNOIO_HWTHERMALSUPPORT
+#define SYNOIO_HWTHERMALSUPPORT _IOR(SYNOBIOS_LEGACY_IOC_MAGIC, 111, int)
+#endif
 
 #ifndef SYNOIO_BUTTON_POWER
 #define SYNOIO_BUTTON_POWER _IOWR(SYNOBIOS_IOC_MAGIC, 7, int)
@@ -80,6 +98,9 @@ static int check_fan;
 static int system_mode;
 static struct proc_dir_entry *proc_synobios_root;
 
+extern char gszSerialNum[32];
+extern char gszCustomSerialNum[32];
+
 module_param(check_fan, int, 0644);
 MODULE_PARM_DESC(check_fan, "accepted for DSM compatibility");
 module_param(system_mode, int, 0644);
@@ -135,6 +156,39 @@ static int synobios_copy_to_user_value(unsigned long arg, const void *value,
 static int synobios_copy_int_to_user(unsigned long arg, int value)
 {
 	return synobios_copy_to_user_value(arg, &value, sizeof(value));
+}
+
+static int synobios_copy_ulong_to_user(unsigned long arg, unsigned long value)
+{
+	return synobios_copy_to_user_value(arg, &value, sizeof(value));
+}
+
+static void synobios_get_serial(char *serial, size_t size)
+{
+	const char *src = NULL;
+
+	if (!size)
+		return;
+
+	serial[0] = '\0';
+
+	if (gszCustomSerialNum[0])
+		src = gszCustomSerialNum;
+	else if (gszSerialNum[0])
+		src = gszSerialNum;
+
+	if (src)
+		strscpy(serial, src, size);
+}
+
+static int synobios_copy_serial_to_user(unsigned long arg)
+{
+	char serial[SYNOBIOS_SERIAL_LEN];
+
+	synobios_get_serial(serial, sizeof(serial));
+
+	return synobios_copy_to_user_value(arg, serial,
+					   strnlen(serial, sizeof(serial)) + 1);
 }
 
 static int synobios_get_hw_capability(unsigned long arg)
@@ -225,6 +279,14 @@ static long synobios_fake_ioctl(struct file *file, unsigned int cmd,
 	SYNO_EUP_SUPPORT eup_support = EUP_NOT_SUPPORT;
 
 	switch (cmd) {
+	case SYNOIO_GETSERIALNUM:
+		return synobios_copy_serial_to_user(arg);
+	case SYNOIO_SERIAL:
+	case SYNOIO_HWHDSUPPORT:
+	case SYNOIO_HWTHERMALSUPPORT:
+		return synobios_copy_int_to_user(arg, 1);
+	case SYNOIO_SYNOVER:
+		return synobios_copy_ulong_to_user(arg, 1);
 	case SYNOIO_CHECK_MICROP_ID:
 		return 0;
 	case SYNOIO_BUTTON_POWER:
@@ -325,6 +387,15 @@ static int synobios_proc_platform_show(struct seq_file *m, void *v)
 	return 0;
 }
 
+static int synobios_proc_serial_show(struct seq_file *m, void *v)
+{
+	char serial[SYNOBIOS_SERIAL_LEN];
+
+	synobios_get_serial(serial, sizeof(serial));
+	seq_printf(m, "%s\n", serial);
+	return 0;
+}
+
 static int synobios_proc_open_cpu_arch(struct inode *inode, struct file *file)
 {
 	return single_open(file, synobios_proc_cpu_arch_show, NULL);
@@ -338,6 +409,11 @@ static int synobios_proc_open_crypto_hw(struct inode *inode, struct file *file)
 static int synobios_proc_open_platform(struct inode *inode, struct file *file)
 {
 	return single_open(file, synobios_proc_platform_show, NULL);
+}
+
+static int synobios_proc_open_serial(struct inode *inode, struct file *file)
+{
+	return single_open(file, synobios_proc_serial_show, NULL);
 }
 
 static const struct proc_ops synobios_proc_cpu_arch_ops = {
@@ -361,6 +437,13 @@ static const struct proc_ops synobios_proc_platform_ops = {
 	.proc_release = single_release,
 };
 
+static const struct proc_ops synobios_proc_serial_ops = {
+	.proc_open = synobios_proc_open_serial,
+	.proc_read = seq_read,
+	.proc_lseek = seq_lseek,
+	.proc_release = single_release,
+};
+
 static void synobios_fake_proc_init(void)
 {
 	proc_synobios_root = proc_mkdir(SYNOBIOS_NAME, NULL);
@@ -373,6 +456,8 @@ static void synobios_fake_proc_init(void)
 		    &synobios_proc_crypto_hw_ops);
 	proc_create("syno_platform", 0444, proc_synobios_root,
 		    &synobios_proc_platform_ops);
+	proc_create("serial", 0444, proc_synobios_root,
+		    &synobios_proc_serial_ops);
 }
 
 static void synobios_fake_proc_cleanup(void)
@@ -380,6 +465,7 @@ static void synobios_fake_proc_cleanup(void)
 	if (!proc_synobios_root)
 		return;
 
+	remove_proc_entry("serial", proc_synobios_root);
 	remove_proc_entry("syno_platform", proc_synobios_root);
 	remove_proc_entry("crypto_hw", proc_synobios_root);
 	remove_proc_entry("cpu_arch", proc_synobios_root);
