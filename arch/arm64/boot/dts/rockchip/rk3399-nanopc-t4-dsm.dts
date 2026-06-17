@@ -7,6 +7,7 @@
  */
 
 /dts-v1/;
+#include <dt-bindings/usb/pd.h>
 #include "rk3399-nanopc-t4.dts"
 
 / {
@@ -162,6 +163,47 @@
 	status = "okay";
 };
 
+&fusb0 {
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			usbc0_role_sw: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&dwc3_0_role_switch>;
+			};
+		};
+	};
+
+	connector {
+		compatible = "usb-c-connector";
+		label = "USB-C";
+		data-role = "dual";
+		power-role = "dual";
+		try-power-role = "source";
+		source-pdos = <PDO_FIXED(5000, 1400, PDO_FIXED_USB_COMM)>;
+		sink-pdos = <PDO_FIXED(5000, 1000, PDO_FIXED_USB_COMM)>;
+		op-sink-microwatt = <1000000>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+				usbc0_orientation: endpoint {
+					remote-endpoint = <&tcphy0_orientation>;
+				};
+			};
+		};
+	};
+};
+
 &pinctrl {
 	headphone {
 		hp_det_h: hp-det-h {
@@ -193,8 +235,19 @@
 };
 
 &usbdrd_dwc3_0 {
-	dr_mode = "host";
+	dr_mode = "otg";
+	usb-role-switch;
 	status = "okay";
+
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		dwc3_0_role_switch: endpoint@0 {
+			reg = <0>;
+			remote-endpoint = <&usbc0_role_sw>;
+		};
+	};
 };
 
 &usbdrd_dwc3_1 {
@@ -213,6 +266,17 @@
 
 &u2phy1_otg {
 	phy-supply = <&vcc5v0_host0>;
+};
+
+&tcphy0 {
+	orientation-switch;
+	svid = /bits/ 16 <0xff01>;
+
+	port {
+		tcphy0_orientation: endpoint {
+			remote-endpoint = <&usbc0_orientation>;
+		};
+	};
 };
 
 &vopb {
