@@ -14,11 +14,33 @@
 	compatible = "friendlyelec,nanopc-t4", "friendlyarm,nanopc-t4", "rockchip,rk3399";
 
 	ir-receiver {
-		status = "disabled";
+		status = "okay";
 	};
 
 	gpio-keys {
 		status = "disabled";
+	};
+
+	rt5651_sound: rt5651-sound {
+		compatible = "rockchip,multicodecs-card";
+		rockchip,card-name = "realtek,rt5651-codec";
+		hp-det-gpio = <&gpio4 RK_PD4 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&hp_det_h>;
+		rockchip,format = "i2s";
+		rockchip,mclk-fs = <256>;
+		rockchip,cpu = <&i2s0>;
+		rockchip,codec = <&rt5651>;
+		rockchip,audio-routing =
+			"Headphone", "HPOL",
+			"Headphone", "HPOR",
+			"Speaker", "LOUTL",
+			"Speaker", "LOUTR",
+			"IN1P", "Main Mic",
+			"IN2P", "Headset Mic",
+			"IN2N", "Headset Mic",
+			"Headset Mic", "micbias1";
+		status = "okay";
 	};
 
 	reserved-memory {
@@ -118,7 +140,34 @@
 };
 
 &ir_rx {
-	rockchip,pins = <0 RK_PA6 1 &pcfg_pull_none>;
+	rockchip,pins = <0 RK_PA6 RK_FUNC_GPIO &pcfg_pull_up>;
+};
+
+&i2c1 {
+	rt5651: rt5651@1a {
+		compatible = "realtek,rt5651";
+		reg = <0x1a>;
+		clocks = <&cru SCLK_I2S_8CH_OUT>;
+		clock-names = "mclk";
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2s_8ch_mclk>;
+		#sound-dai-cells = <0>;
+	};
+};
+
+&i2s0 {
+	rockchip,playback-channels = <8>;
+	rockchip,capture-channels = <8>;
+	#sound-dai-cells = <0>;
+	status = "okay";
+};
+
+&pinctrl {
+	headphone {
+		hp_det_h: hp-det-h {
+			rockchip,pins = <4 RK_PD4 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
 };
 
 &rkvdec {
