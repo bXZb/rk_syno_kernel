@@ -21,6 +21,17 @@
 		status = "disabled";
 	};
 
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		drm_logo: drm-logo@00000000 {
+			compatible = "rockchip,drm-logo";
+			reg = <0x0 0x0 0x0 0x0>;
+		};
+	};
+
 	internal_slot@1 {
 		protocol_type = "sata";
 
@@ -76,6 +87,62 @@
 	};
 };
 
+&display_subsystem {
+	ports = <&vopb_out>;
+	logo-memory-region = <&drm_logo>;
+
+	route {
+		route_hdmi: route-hdmi {
+			status = "okay";
+			logo,uboot = "logo.bmp";
+			logo,kernel = "logo.bmp";
+			logo,mode = "center";
+			charge_logo,mode = "center";
+			connect = <&vopb_out_hdmi>;
+		};
+	};
+};
+
+&gpu {
+	compatible = "arm,mali-t860", "arm,mali-midgard";
+	operating-points-v2 = <&gpu_opp_table>;
+	status = "okay";
+};
+
+&iep {
+	status = "okay";
+};
+
+&iep_mmu {
+	status = "okay";
+};
+
+&ir_rx {
+	rockchip,pins = <0 RK_PA6 1 &pcfg_pull_none>;
+};
+
+&rkvdec {
+	status = "disabled";
+};
+
+&vdec {
+	status = "okay";
+};
+
+&vdec_mmu {
+	status = "okay";
+};
+
+&spi1 {
+	status = "okay";
+
+	spidev@0 {
+		compatible = "rohm,dh2228fv";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+	};
+};
+
 &usbdrd_dwc3_0 {
 	dr_mode = "host";
 	status = "okay";
@@ -97,4 +164,24 @@
 
 &u2phy1_otg {
 	phy-supply = <&vcc5v0_host0>;
+};
+
+&vopb {
+	rockchip,grf = <&grf>;
+};
+
+&vopl {
+	status = "disabled";
+};
+
+&vopl_mmu {
+	status = "disabled";
+};
+
+&vpu {
+	status = "okay";
+};
+
+&vpu_mmu {
+	status = "okay";
 };
