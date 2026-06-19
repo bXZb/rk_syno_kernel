@@ -159,7 +159,7 @@ static int bcm_set_baudrate(struct hci_uart *hu, unsigned int speed)
 	struct sk_buff *skb;
 	struct bcm_update_uart_baud_rate param;
 
-	if (speed > 3000000) {
+	if (speed >= 3000000) {
 		struct bcm_write_uart_clock_setting clock;
 
 		clock.type = BCM_UART_CLOCK_48MHZ;
