@@ -9,8 +9,14 @@
 
 #if IS_ENABLED(CONFIG_IPV6)
 
-#if !IS_BUILTIN(CONFIG_IPV6)
-
+#if IS_BUILTIN(CONFIG_IPV6)
+void __icmpv6_send(struct sk_buff *skb, u8 type, u8 code, __u32 info,
+		   const struct inet6_skb_parm *parm)
+{
+	icmp6_send(skb, type, code, info, NULL, parm);
+}
+EXPORT_SYMBOL(__icmpv6_send);
+#else
 static ip6_icmp_send_t __rcu *ip6_icmp_send;
 
 int inet6_register_icmp_sender(ip6_icmp_send_t *fn)

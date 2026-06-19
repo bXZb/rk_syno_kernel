@@ -141,7 +141,7 @@ int rockchip_drm_fbdev_init(struct drm_device *dev)
 		goto err_drm_fb_helper_fini;
 	}
 
-	drm_fb_helper_restore_fbdev_mode_unlocked(helper);
+	/* drm_fb_helper_restore_fbdev_mode_unlocked(helper); */
 
 	return 0;
 

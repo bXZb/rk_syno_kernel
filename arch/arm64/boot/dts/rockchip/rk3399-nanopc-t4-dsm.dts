@@ -126,6 +126,11 @@
 	};
 };
 
+&cdn_dp {
+	phys = <&tcphy0_dp>;
+	status = "okay";
+};
+
 &gpu {
 	compatible = "arm,mali-t860", "arm,mali-midgard";
 	operating-points-v2 = <&gpu_opp_table>;
@@ -196,8 +201,25 @@
 
 			port@0 {
 				reg = <0>;
-				usbc0_orientation: endpoint {
-					remote-endpoint = <&tcphy0_orientation>;
+
+				usbc0_hs: endpoint {
+					remote-endpoint = <&u2phy0_typec_hs>;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+
+				usbc0_ss: endpoint {
+					remote-endpoint = <&tcphy0_typec_ss>;
+				};
+			};
+
+			port@2 {
+				reg = <2>;
+
+				usbc0_dp: endpoint {
+					remote-endpoint = <&tcphy0_typec_dp>;
 				};
 			};
 		};
@@ -234,6 +256,22 @@
 	};
 };
 
+&uart0 {
+	/*
+	 * GPIO2_D2 is shared by BT_WAKE and PCIe CLKREQ# on NanoPC-T4.
+	 * Keep UART flow control for Broadcom Bluetooth, but leave GPIO2_D2
+	 * to PCIe so the SATA controller can enumerate at boot.
+	 */
+	pinctrl-0 = <&uart0_xfer &uart0_rts &uart0_cts>;
+
+	bluetooth {
+		compatible = "brcm,bcm43540-bt";
+		/delete-property/ device-wakeup-gpios;
+		pinctrl-0 = <&bt_reg_on_h &bt_host_wake_l>;
+		max-speed = <1500000>;
+	};
+};
+
 &usbdrd_dwc3_0 {
 	dr_mode = "otg";
 	usb-role-switch;
@@ -262,6 +300,12 @@
 
 &u2phy0_otg {
 	phy-supply = <&vbus_typec>;
+
+	port {
+		u2phy0_typec_hs: endpoint {
+			remote-endpoint = <&usbc0_hs>;
+		};
+	};
 };
 
 &u2phy1_otg {
@@ -271,10 +315,20 @@
 &tcphy0 {
 	orientation-switch;
 	svid = /bits/ 16 <0xff01>;
+};
 
+&tcphy0_dp {
 	port {
-		tcphy0_orientation: endpoint {
-			remote-endpoint = <&usbc0_orientation>;
+		tcphy0_typec_dp: endpoint {
+			remote-endpoint = <&usbc0_dp>;
+		};
+	};
+};
+
+&tcphy0_usb3 {
+	port {
+		tcphy0_typec_ss: endpoint {
+			remote-endpoint = <&usbc0_ss>;
 		};
 	};
 };

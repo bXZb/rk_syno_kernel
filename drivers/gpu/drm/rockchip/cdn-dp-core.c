@@ -1026,6 +1026,7 @@ static int cdn_dp_bind(struct device *dev, struct device *master, void *data)
 	ret = drm_dp_aux_register(&dp->aux);
 	if (ret)
 		return ret;
+	dp->aux_registered = true;
 
 	INIT_DELAYED_WORK(&dp->event_work, cdn_dp_pd_event_work);
 
@@ -1039,7 +1040,7 @@ static int cdn_dp_bind(struct device *dev, struct device *master, void *data)
 				      DRM_MODE_ENCODER_TMDS);
 	if (ret) {
 		DRM_ERROR("failed to initialize encoder with drm\n");
-		return ret;
+		goto err_unregister_aux;
 	}
 
 	drm_encoder_helper_add(encoder, &cdn_dp_encoder_helper_funcs);
@@ -1068,6 +1069,7 @@ static int cdn_dp_bind(struct device *dev, struct device *master, void *data)
 	dp->sub_dev.of_node = dev->of_node;
 	dp->sub_dev.oob_hotplug_event = cdn_dp_oob_hotplug_event;
 	rockchip_drm_register_sub_dev(&dp->sub_dev);
+	dp->sub_dev_registered = true;
 
 	pm_runtime_enable(dev);
 
@@ -1079,6 +1081,11 @@ err_free_connector:
 	drm_connector_cleanup(connector);
 err_free_encoder:
 	drm_encoder_cleanup(encoder);
+err_unregister_aux:
+	if (dp->aux_registered) {
+		drm_dp_aux_unregister(&dp->aux);
+		dp->aux_registered = false;
+	}
 	return ret;
 }
 
@@ -1090,8 +1097,16 @@ static void cdn_dp_unbind(struct device *dev, struct device *master, void *data)
 
 	cancel_delayed_work_sync(&dp->event_work);
 	cdn_dp_encoder_disable(encoder);
+	if (dp->sub_dev_registered) {
+		rockchip_drm_unregister_sub_dev(&dp->sub_dev);
+		dp->sub_dev_registered = false;
+	}
 	encoder->funcs->destroy(encoder);
 	connector->funcs->destroy(connector);
+	if (dp->aux_registered) {
+		drm_dp_aux_unregister(&dp->aux);
+		dp->aux_registered = false;
+	}
 
 	pm_runtime_disable(dev);
 	if (dp->fw_loaded)

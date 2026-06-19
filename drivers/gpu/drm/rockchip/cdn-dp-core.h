@@ -70,6 +70,8 @@ struct cdn_dp_device {
 	struct edid *edid;
 	struct drm_dp_aux aux;
 	struct rockchip_drm_sub_dev sub_dev;
+	bool aux_registered;
+	bool sub_dev_registered;
 
 	struct mutex lock;
 	bool connected;
