@@ -98,6 +98,42 @@ static int rockchip_drm_fbdev_create(struct drm_fb_helper *helper,
 		      rk_obj->kvaddr,
 		      offset, size);
 
+	{
+		struct device_node *np = dev->dev->of_node;
+		struct device_node *root, *route;
+		u32 logo_width = 0, logo_height = 0, logo_bpp = 0;
+
+		root = of_get_child_by_name(np, "route");
+		if (root) {
+			for_each_child_of_node(root, route) {
+				if (!of_device_is_available(route))
+					continue;
+				of_property_read_u32(route, "logo,width", &logo_width);
+				of_property_read_u32(route, "logo,height", &logo_height);
+				of_property_read_u32(route, "logo,bpp", &logo_bpp);
+				break;
+			}
+			of_node_put(root);
+		}
+
+		if (private->logo && private->logo->kvaddr &&
+		    logo_bpp == 32 && fb->format->cpp[0] == 4) {
+			u32 dst_x = (fb->width > logo_width) ? (fb->width - logo_width) / 2 : 0;
+			u32 dst_y = (fb->height > logo_height) ? (fb->height - logo_height) / 2 : 0;
+			u32 copy_w = min(logo_width, fb->width);
+			u32 copy_h = min(logo_height, fb->height);
+			u32 r;
+
+			memset(fbi->screen_base, 0, rk_obj->base.size - offset);
+
+			for (r = 0; r < copy_h; r++) {
+				void *dst_line = fbi->screen_base + (dst_y + r) * fb->pitches[0] + dst_x * 4;
+				void *src_line = private->logo->kvaddr + r * logo_width * 4;
+				memcpy(dst_line, src_line, copy_w * 4);
+			}
+		}
+	}
+
 	return 0;
 
 out:
@@ -141,7 +177,7 @@ int rockchip_drm_fbdev_init(struct drm_device *dev)
 		goto err_drm_fb_helper_fini;
 	}
 
-	/* drm_fb_helper_restore_fbdev_mode_unlocked(helper); */
+	drm_fb_helper_restore_fbdev_mode_unlocked(helper);
 
 	return 0;
 
