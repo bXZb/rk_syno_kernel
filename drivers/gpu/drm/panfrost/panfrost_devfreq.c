@@ -101,6 +101,9 @@ int panfrost_devfreq_init(struct panfrost_device *pfdev)
 					      pfdev->comp->num_supplies);
 	if (IS_ERR(opp_table)) {
 		ret = PTR_ERR(opp_table);
+		if (ret == -EPROBE_DEFER)
+			goto err_fini;
+
 		/* Continue if the optional regulator is missing */
 		if (ret != -ENODEV) {
 			DRM_DEV_ERROR(dev, "Couldn't set OPP regulators\n");

@@ -1310,8 +1310,7 @@ static void vop_enable_debug_irq(struct drm_crtc *crtc)
 	uint32_t irqs;
 
 	irqs = BUS_ERROR_INTR | WIN0_EMPTY_INTR | WIN1_EMPTY_INTR |
-		WIN2_EMPTY_INTR | WIN3_EMPTY_INTR | HWC_EMPTY_INTR |
-		POST_BUF_EMPTY_INTR;
+		WIN2_EMPTY_INTR | WIN3_EMPTY_INTR | HWC_EMPTY_INTR;
 	VOP_INTR_SET_TYPE(vop, clear, irqs, 1);
 	VOP_INTR_SET_TYPE(vop, enable, irqs, 1);
 }

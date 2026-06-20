@@ -2215,6 +2215,7 @@ static int rt5651_i2c_probe(struct i2c_client *i2c,
 	struct rt5651_priv *rt5651;
 	int ret;
 	int err;
+	int i;
 
 	rt5651 = devm_kzalloc(&i2c->dev, sizeof(*rt5651),
 				GFP_KERNEL);
@@ -2231,9 +2232,19 @@ static int rt5651_i2c_probe(struct i2c_client *i2c,
 		return ret;
 	}
 
-	err = regmap_read(rt5651->regmap, RT5651_DEVICE_ID, &ret);
-	if (err)
+	for (i = 0; i < 5; i++) {
+		err = regmap_read(rt5651->regmap, RT5651_DEVICE_ID, &ret);
+		if (!err)
+			break;
+
+		usleep_range(20000, 30000);
+	}
+	if (err) {
+		if (err == -ETIMEDOUT)
+			return -EPROBE_DEFER;
+
 		return err;
+	}
 
 	if (ret != RT5651_DEVICE_ID_VALUE) {
 		dev_err(&i2c->dev,
@@ -2259,15 +2270,19 @@ static int rt5651_i2c_probe(struct i2c_client *i2c,
 	if (ret)
 		return ret;
 
-	ret = devm_request_irq(&i2c->dev, rt5651->irq, rt5651_irq,
-			       IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING
-			       | IRQF_ONESHOT, "rt5651", rt5651);
-	if (ret == 0) {
-		/* Gets re-enabled by rt5651_set_jack() */
-		disable_irq(rt5651->irq);
+	if (rt5651->irq > 0) {
+		ret = devm_request_irq(&i2c->dev, rt5651->irq, rt5651_irq,
+				       IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING
+				       | IRQF_ONESHOT, "rt5651", rt5651);
+		if (ret == 0) {
+			/* Gets re-enabled by rt5651_set_jack() */
+			disable_irq(rt5651->irq);
+		} else {
+			dev_warn(&i2c->dev, "Failed to request IRQ %d: %d\n",
+				 rt5651->irq, ret);
+			rt5651->irq = -ENXIO;
+		}
 	} else {
-		dev_warn(&i2c->dev, "Failed to reguest IRQ %d: %d\n",
-			 rt5651->irq, ret);
 		rt5651->irq = -ENXIO;
 	}
 

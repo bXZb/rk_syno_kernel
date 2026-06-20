@@ -7,6 +7,7 @@
  */
 
 /dts-v1/;
+#include <dt-bindings/usb/pd.h>
 #include "rk3399-nanopc-t4.dts"
 
 / {
@@ -14,11 +15,44 @@
 	compatible = "friendlyelec,nanopc-t4", "friendlyarm,nanopc-t4", "rockchip,rk3399";
 
 	ir-receiver {
-		status = "disabled";
+		status = "okay";
 	};
 
 	gpio-keys {
 		status = "disabled";
+	};
+
+	rt5651_sound: rt5651-sound {
+		compatible = "rockchip,multicodecs-card";
+		rockchip,card-name = "realtek,rt5651-codec";
+		hp-det-gpio = <&gpio4 RK_PD4 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&hp_det_h>;
+		rockchip,format = "i2s";
+		rockchip,mclk-fs = <256>;
+		rockchip,cpu = <&i2s0>;
+		rockchip,codec = <&rt5651>;
+		rockchip,audio-routing =
+			"Headphone", "HPOL",
+			"Headphone", "HPOR",
+			"Speaker", "LOUTL",
+			"Speaker", "LOUTR",
+			"IN1P", "Main Mic",
+			"IN2P", "Headset Mic",
+			"IN2N", "Headset Mic",
+			"Headset Mic", "micbias1";
+		status = "okay";
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		drm_logo: drm-logo@00000000 {
+			compatible = "rockchip,drm-logo";
+			reg = <0x0 0x0 0x0 0x0>;
+		};
 	};
 
 	internal_slot@1 {
@@ -76,9 +110,182 @@
 	};
 };
 
-&usbdrd_dwc3_0 {
-	dr_mode = "host";
+&display_subsystem {
+	ports = <&vopb_out>;
+	logo-memory-region = <&drm_logo>;
+
+	route {
+		route_hdmi: route-hdmi {
+			status = "okay";
+			logo,uboot = "logo.bmp";
+			logo,kernel = "logo.bmp";
+			logo,mode = "center";
+			charge_logo,mode = "center";
+			connect = <&vopb_out_hdmi>;
+		};
+	};
+};
+
+&cdn_dp {
+	phys = <&tcphy0_dp>;
 	status = "okay";
+};
+
+&gpu {
+	compatible = "arm,mali-t860", "arm,mali-midgard";
+	operating-points-v2 = <&gpu_opp_table>;
+	status = "okay";
+};
+
+&iep {
+	status = "okay";
+};
+
+&iep_mmu {
+	status = "okay";
+};
+
+&ir_rx {
+	rockchip,pins = <0 RK_PA6 RK_FUNC_GPIO &pcfg_pull_up>;
+};
+
+&i2c1 {
+	rt5651: rt5651@1a {
+		compatible = "realtek,rt5651";
+		reg = <0x1a>;
+		clocks = <&cru SCLK_I2S_8CH_OUT>;
+		clock-names = "mclk";
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2s_8ch_mclk>;
+		#sound-dai-cells = <0>;
+	};
+};
+
+&i2s0 {
+	rockchip,playback-channels = <8>;
+	rockchip,capture-channels = <8>;
+	#sound-dai-cells = <0>;
+	status = "okay";
+};
+
+&fusb0 {
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			usbc0_role_sw: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&dwc3_0_role_switch>;
+			};
+		};
+	};
+
+	connector {
+		compatible = "usb-c-connector";
+		label = "USB-C";
+		data-role = "dual";
+		power-role = "dual";
+		try-power-role = "source";
+		source-pdos = <PDO_FIXED(5000, 1400, PDO_FIXED_USB_COMM)>;
+		sink-pdos = <PDO_FIXED(5000, 1000, PDO_FIXED_USB_COMM)>;
+		op-sink-microwatt = <1000000>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				usbc0_hs: endpoint {
+					remote-endpoint = <&u2phy0_typec_hs>;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+
+				usbc0_ss: endpoint {
+					remote-endpoint = <&tcphy0_typec_ss>;
+				};
+			};
+
+			port@2 {
+				reg = <2>;
+
+				usbc0_dp: endpoint {
+					remote-endpoint = <&tcphy0_typec_dp>;
+				};
+			};
+		};
+	};
+};
+
+&pinctrl {
+	headphone {
+		hp_det_h: hp-det-h {
+			rockchip,pins = <4 RK_PD4 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+};
+
+&rkvdec {
+	status = "disabled";
+};
+
+&vdec {
+	status = "okay";
+};
+
+&vdec_mmu {
+	status = "okay";
+};
+
+&spi1 {
+	status = "okay";
+
+	spidev@0 {
+		compatible = "rohm,dh2228fv";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+	};
+};
+
+&uart0 {
+	/*
+	 * GPIO2_D2 is shared by BT_WAKE and PCIe CLKREQ# on NanoPC-T4.
+	 * Keep UART flow control for Broadcom Bluetooth, but leave GPIO2_D2
+	 * to PCIe so the SATA controller can enumerate at boot.
+	 */
+	pinctrl-0 = <&uart0_xfer &uart0_rts &uart0_cts>;
+
+	bluetooth {
+		compatible = "brcm,bcm43540-bt";
+		/delete-property/ device-wakeup-gpios;
+		pinctrl-0 = <&bt_reg_on_h &bt_host_wake_l>;
+		max-speed = <1500000>;
+	};
+};
+
+&usbdrd_dwc3_0 {
+	dr_mode = "otg";
+	usb-role-switch;
+	status = "okay";
+
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		dwc3_0_role_switch: endpoint@0 {
+			reg = <0>;
+			remote-endpoint = <&usbc0_role_sw>;
+		};
+	};
 };
 
 &usbdrd_dwc3_1 {
@@ -93,8 +300,65 @@
 
 &u2phy0_otg {
 	phy-supply = <&vbus_typec>;
+
+	port {
+		u2phy0_typec_hs: endpoint {
+			remote-endpoint = <&usbc0_hs>;
+		};
+	};
 };
 
 &u2phy1_otg {
 	phy-supply = <&vcc5v0_host0>;
 };
+
+&tcphy0 {
+	orientation-switch;
+	svid = /bits/ 16 <0xff01>;
+};
+
+&tcphy0_dp {
+	port {
+		tcphy0_typec_dp: endpoint {
+			remote-endpoint = <&usbc0_dp>;
+		};
+	};
+};
+
+&tcphy0_usb3 {
+	port {
+		tcphy0_typec_ss: endpoint {
+			remote-endpoint = <&usbc0_ss>;
+		};
+	};
+};
+
+&vopb {
+	rockchip,grf = <&grf>;
+};
+
+&vopl {
+	status = "disabled";
+};
+
+&vopl_mmu {
+	status = "disabled";
+};
+
+&vpu {
+	status = "okay";
+};
+
+&vpu_mmu {
+	status = "okay";
+};
+
+&sdhci {
+	/delete-property/ mmc-hs400-1_8v;
+	/delete-property/ mmc-hs400-enhanced-strobe;
+
+	disable-cqe;
+	disable-cqe-dcmd;
+	mmc-hs200-1_8v;
+};
+
