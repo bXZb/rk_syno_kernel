@@ -4691,6 +4691,6 @@ CONFIG_BT_HCIUART_H4=y
 CONFIG_BT_HCIUART_NOKIA=y
 CONFIG_BT_HCIUART_BCSP=y
 CONFIG_BT_HCIUART_BCM=y
-CONFIG_EXTRA_FIRMWARE="brcm/brcmfmac4356-sdio.bin brcm/brcmfmac4356-sdio.txt brcm/brcmfmac4356-sdio.friendlyelec,nanopc-t4.txt brcm/BCM4356A2.hcd"
+CONFIG_EXTRA_FIRMWARE="brcm/fw_bcm4356a2_ag_mfg.bin brcm/brcmfmac4356-sdio.bin brcm/brcmfmac4356-sdio.txt brcm/brcmfmac4356-sdio.friendlyelec,nanopc-t4.txt brcm/BCM4356A2.hcd"
 CONFIG_EXTRA_FIRMWARE_DIR="firmware"
 CONFIG_FRAMEBUFFER_CONSOLE_DEFERRED_TAKEOVER=y
