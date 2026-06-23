@@ -9,15 +9,21 @@
  * action.
  */
 
+#include <linux/cpufreq.h>
+#include <linux/cpumask.h>
+#include <linux/cpu.h>
+#include <linux/ctype.h>
 #include <linux/fs.h>
 #include <linux/ioctl.h>
 #include <linux/module.h>
+#include <linux/of.h>
 #include <linux/poll.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/synobios.h>
+#include <linux/thermal.h>
 #include <linux/uaccess.h>
 
 #define SYNOBIOS_NAME "synobios"
@@ -25,6 +31,10 @@
 #define SYNOBIOS_MAX_IOCTL_COPY 16384
 #define SYNOBIOS_SERIAL_LEN 32
 #define SYNOBIOS_LEGACY_IOC_MAGIC 'A'
+#define SYNOBIOS_CPU_CLOCK_FALLBACK_MHZ 1000
+#define SYNOBIOS_CPU_VENDOR_FALLBACK "ARM"
+#define SYNOBIOS_CPU_FAMILY_FALLBACK "Cortex"
+#define SYNOBIOS_CPU_SERIES_FALLBACK "SoC"
 
 #ifndef SYNOIO_SERIAL
 #define SYNOIO_SERIAL _IOR(SYNOBIOS_LEGACY_IOC_MAGIC, 105, int)
@@ -97,9 +107,12 @@
 static int check_fan;
 static int system_mode;
 static struct proc_dir_entry *proc_synobios_root;
+static struct proc_dir_entry *proc_syno_cpu_arch;
 
 extern char gszSerialNum[32];
 extern char gszCustomSerialNum[32];
+extern unsigned int gSynoCPUInfoCore;
+extern char gSynoCPUInfoClock[16];
 
 module_param(check_fan, int, 0644);
 MODULE_PARM_DESC(check_fan, "accepted for DSM compatibility");
@@ -181,6 +194,233 @@ static void synobios_get_serial(char *serial, size_t size)
 		strscpy(serial, src, size);
 }
 
+static int synobios_read_thermal_zone(const char *name, int fallback)
+{
+	struct thermal_zone_device *tz;
+	int temp;
+
+	tz = thermal_zone_get_zone_by_name(name);
+	if (IS_ERR(tz))
+		return fallback;
+
+	if (thermal_zone_get_temp(tz, &temp))
+		return fallback;
+
+	return temp / 1000;
+}
+
+static int synobios_read_cpu_temp(void)
+{
+	return synobios_read_thermal_zone("cpu-thermal", 40);
+}
+
+static int synobios_read_sys_temp(void)
+{
+	return synobios_read_thermal_zone("gpu-thermal",
+					  synobios_read_cpu_temp());
+}
+
+static bool synobios_has_pwm_fan(void)
+{
+	struct device_node *np;
+
+	np = of_find_compatible_node(NULL, NULL, "pwm-fan");
+	if (!np)
+		return false;
+
+	of_node_put(np);
+	return true;
+}
+
+static int synobios_read_fan_rpm(void)
+{
+	struct device_node *np;
+	u32 max_rpm = 0;
+	u32 level = 0;
+	int count;
+
+	np = of_find_compatible_node(NULL, NULL, "pwm-fan");
+	if (!np)
+		return 0;
+
+	of_property_read_u32(np, "estimated-max-rpm", &max_rpm);
+	count = of_property_count_u32_elems(np, "cooling-levels");
+	if (count > 0)
+		of_property_read_u32_index(np, "cooling-levels", count - 1,
+					   &level);
+	of_node_put(np);
+
+	if (!max_rpm)
+		max_rpm = 5000;
+	if (!level)
+		level = 255;
+
+	return DIV_ROUND_CLOSEST(level * max_rpm, 255);
+}
+
+static void synobios_copy_capitalized(char *dst, size_t size, const char *src,
+				      size_t len, bool upper)
+{
+	size_t i;
+
+	if (!size)
+		return;
+
+	for (i = 0; i + 1 < size && i < len; i++) {
+		if (upper)
+			dst[i] = toupper(src[i]);
+		else if (i == 0)
+			dst[i] = toupper(src[i]);
+		else
+			dst[i] = src[i];
+	}
+	dst[i] = '\0';
+}
+
+static bool synobios_is_soc_compatible(const char *compatible)
+{
+	return !strncmp(compatible, "rockchip,", strlen("rockchip,"));
+}
+
+static bool synobios_get_root_compatible(const char **compatible)
+{
+	const char *first = NULL;
+	const char *compat;
+	int count;
+	int i;
+
+	if (!of_root)
+		return false;
+
+	count = of_property_count_strings(of_root, "compatible");
+	if (count <= 0)
+		return false;
+
+	for (i = 0; i < count; i++) {
+		if (of_property_read_string_index(of_root, "compatible", i,
+						  &compat))
+			continue;
+
+		if (!first)
+			first = compat;
+		if (synobios_is_soc_compatible(compat)) {
+			*compatible = compat;
+			return true;
+		}
+	}
+
+	if (!first)
+		return false;
+
+	*compatible = first;
+	return true;
+}
+
+static bool synobios_get_compatible_cpu_arch(char *buf, size_t size)
+{
+	const char *compatible;
+	const char *comma;
+	char vendor[24];
+	char family[24];
+
+	if (!of_root || !size)
+		return false;
+
+	if (!synobios_get_root_compatible(&compatible))
+		return false;
+
+	comma = strchr(compatible, ',');
+	if (!comma || comma == compatible || !comma[1])
+		return false;
+
+	synobios_copy_capitalized(vendor, sizeof(vendor), compatible,
+				  comma - compatible, false);
+	synobios_copy_capitalized(family, sizeof(family), comma + 1,
+				  strlen(comma + 1), true);
+	snprintf(buf, size, "%s, %s, %s", vendor, family,
+		 SYNOBIOS_CPU_SERIES_FALLBACK);
+	return true;
+}
+
+static unsigned int synobios_read_cpu_opp_max_mhz(void)
+{
+	struct device_node *opp_np;
+	struct device_node *np;
+	unsigned long long max_hz = 0;
+	unsigned int cpu;
+
+	for_each_possible_cpu(cpu) {
+		struct device *dev = get_cpu_device(cpu);
+
+		if (!dev || !dev->of_node)
+			continue;
+
+		opp_np = of_parse_phandle(dev->of_node, "operating-points-v2",
+					  0);
+		if (!opp_np)
+			continue;
+
+		for_each_available_child_of_node(opp_np, np) {
+			u64 hz;
+
+			if (!of_property_read_u64(np, "opp-hz", &hz) &&
+			    hz > max_hz)
+				max_hz = hz;
+		}
+
+		of_node_put(opp_np);
+	}
+
+	return DIV_ROUND_CLOSEST_ULL(max_hz, 1000000);
+}
+
+static unsigned int synobios_read_cpu_max_mhz(void)
+{
+	unsigned int cpu;
+	unsigned int max_khz = 0;
+	unsigned int max_mhz;
+
+	for_each_possible_cpu(cpu) {
+		unsigned int khz;
+
+		khz = cpufreq_quick_get_max(cpu);
+		if (!khz)
+			khz = cpufreq_quick_get(cpu);
+		if (khz > max_khz)
+			max_khz = khz;
+	}
+
+	if (!max_khz)
+		max_mhz = synobios_read_cpu_opp_max_mhz();
+	else
+		max_mhz = DIV_ROUND_CLOSEST(max_khz, 1000);
+
+	return max_mhz ?: SYNOBIOS_CPU_CLOCK_FALLBACK_MHZ;
+}
+
+static void synobios_init_cpu_info(void)
+{
+	if (!gSynoCPUInfoCore)
+		gSynoCPUInfoCore = num_possible_cpus();
+	if (!gSynoCPUInfoClock[0])
+		snprintf(gSynoCPUInfoClock, sizeof(gSynoCPUInfoClock), "%u",
+			 synobios_read_cpu_max_mhz());
+}
+
+static void synobios_get_cpu_arch(char *buf, size_t size)
+{
+	if (!size)
+		return;
+
+	if (synobios_get_compatible_cpu_arch(buf, size))
+		return;
+
+	snprintf(buf, size, "%s, %s, %s",
+		 SYNOBIOS_CPU_VENDOR_FALLBACK,
+		 SYNOBIOS_CPU_FAMILY_FALLBACK,
+		 SYNOBIOS_CPU_SERIES_FALLBACK);
+}
+
 static int synobios_copy_serial_to_user(unsigned long arg)
 {
 	char serial[SYNOBIOS_SERIAL_LEN];
@@ -205,8 +445,10 @@ static int synobios_get_hw_capability(unsigned long arg)
 	switch (capability.id) {
 	case CAPABILITY_THERMAL:
 	case CAPABILITY_CPU_TEMP:
-	case CAPABILITY_FAN_RPM_RPT:
 		capability.support = 1;
+		break;
+	case CAPABILITY_FAN_RPM_RPT:
+		capability.support = synobios_has_pwm_fan();
 		break;
 	default:
 		capability.support = 0;
@@ -222,7 +464,7 @@ static int synobios_get_cpu_temperature(unsigned long arg)
 	SYNOCPUTEMP temperature = {
 		.blSurface = 0,
 		.cpu_num = 1,
-		.cpu_temp = { 40, 0 },
+		.cpu_temp = { synobios_read_cpu_temp(), 0 },
 	};
 
 	return synobios_copy_to_user_value(arg, &temperature,
@@ -243,8 +485,10 @@ static int synobios_get_hwmon_support(unsigned long arg)
 	switch (support.id) {
 	case HWMON_CPU_TEMP:
 	case HWMON_SYS_THERMAL:
-	case HWMON_FAN_SPEED_RPM:
 		support.support = 1;
+		break;
+	case HWMON_FAN_SPEED_RPM:
+		support.support = synobios_has_pwm_fan();
 		break;
 	default:
 		support.support = 0;
@@ -277,6 +521,7 @@ static long synobios_fake_ioctl(struct file *file, unsigned int cmd,
 {
 	EUNIT_PWRON_TYPE eunit_type = EUNIT_NOT_SUPPORT;
 	SYNO_EUP_SUPPORT eup_support = EUP_NOT_SUPPORT;
+	char value[MAX_SENSOR_VALUE];
 
 	switch (cmd) {
 	case SYNOIO_GETSERIALNUM:
@@ -295,9 +540,9 @@ static long synobios_fake_ioctl(struct file *file, unsigned int cmd,
 	case SYNOIO_GET_COPY_BUTTON:
 		return synobios_copy_int_to_user(arg, 1);
 	case SYNOIO_GET_TEMPERATURE:
-		return synobios_copy_int_to_user(arg, 35);
+		return synobios_copy_int_to_user(arg, synobios_read_sys_temp());
 	case SYNOIO_GET_FAN_NUM:
-		return synobios_copy_int_to_user(arg, 1);
+		return synobios_copy_int_to_user(arg, synobios_has_pwm_fan());
 	case SYNOIO_GET_HW_CAPABILITY:
 		return synobios_get_hw_capability(arg);
 	case SYNOIO_GET_CPU_TEMPERATURE:
@@ -315,14 +560,21 @@ static long synobios_fake_ioctl(struct file *file, unsigned int cmd,
 	case HWMON_GET_SUPPORT:
 		return synobios_get_hwmon_support(arg);
 	case HWMON_GET_CPU_TEMPERATURE:
+		snprintf(value, sizeof(value), "%d", synobios_read_cpu_temp());
 		return synobios_copy_hwmon_sensor(arg, HWMON_CPU_TEMP_NAME,
-						  "cpu_temp", "40");
+						  "cpu_temp", value);
 	case HWMON_GET_FAN_SPEED_RPM:
+		if (!synobios_has_pwm_fan())
+			return synobios_copy_hwmon_sensor(arg,
+							  HWMON_SYS_FAN_RPM_NAME,
+							  NULL, NULL);
+		snprintf(value, sizeof(value), "%d", synobios_read_fan_rpm());
 		return synobios_copy_hwmon_sensor(arg, HWMON_SYS_FAN_RPM_NAME,
-						  HWMON_SYS_FAN1_RPM, "1200");
+						  HWMON_SYS_FAN1_RPM, value);
 	case HWMON_GET_SYS_THERMAL:
+		snprintf(value, sizeof(value), "%d", synobios_read_sys_temp());
 		return synobios_copy_hwmon_sensor(arg, HWMON_SYS_THERMAL_NAME,
-						  "temperature", "35");
+						  "temperature", value);
 	case HWMON_GET_PSU_STATUS:
 		return synobios_copy_hwmon_sensor(arg, HWMON_PSU_STATUS_NAME,
 						  NULL, NULL);
@@ -371,7 +623,11 @@ static const struct file_operations synobios_fake_fops = {
 
 static int synobios_proc_cpu_arch_show(struct seq_file *m, void *v)
 {
-	seq_puts(m, "arm64\n");
+	char cpu_arch[64];
+
+	synobios_get_cpu_arch(cpu_arch, sizeof(cpu_arch));
+	seq_printf(m, "%s, %u\n", cpu_arch, num_possible_cpus());
+
 	return 0;
 }
 
@@ -446,12 +702,13 @@ static const struct proc_ops synobios_proc_serial_ops = {
 
 static void synobios_fake_proc_init(void)
 {
+	proc_syno_cpu_arch = proc_create("syno_cpu_arch", 0444, NULL,
+					 &synobios_proc_cpu_arch_ops);
+
 	proc_synobios_root = proc_mkdir(SYNOBIOS_NAME, NULL);
 	if (!proc_synobios_root)
 		return;
 
-	proc_create("cpu_arch", 0444, proc_synobios_root,
-		    &synobios_proc_cpu_arch_ops);
 	proc_create("crypto_hw", 0444, proc_synobios_root,
 		    &synobios_proc_crypto_hw_ops);
 	proc_create("syno_platform", 0444, proc_synobios_root,
@@ -462,13 +719,17 @@ static void synobios_fake_proc_init(void)
 
 static void synobios_fake_proc_cleanup(void)
 {
+	if (proc_syno_cpu_arch) {
+		remove_proc_entry("syno_cpu_arch", NULL);
+		proc_syno_cpu_arch = NULL;
+	}
+
 	if (!proc_synobios_root)
 		return;
 
 	remove_proc_entry("serial", proc_synobios_root);
 	remove_proc_entry("syno_platform", proc_synobios_root);
 	remove_proc_entry("crypto_hw", proc_synobios_root);
-	remove_proc_entry("cpu_arch", proc_synobios_root);
 	remove_proc_entry(SYNOBIOS_NAME, NULL);
 	proc_synobios_root = NULL;
 }
@@ -511,6 +772,8 @@ static int __init synobios_fake_init(void)
 {
 	int ret;
 
+	synobios_init_cpu_info();
+
 	ret = register_chrdev(SYNOBIOS_MAJOR, SYNOBIOS_NAME,
 			      &synobios_fake_fops);
 	if (ret < 0) {
@@ -538,7 +801,7 @@ static void __exit synobios_fake_exit(void)
 module_init(synobios_fake_init);
 module_exit(synobios_fake_exit);
 
-MODULE_AUTHOR("syno-rk3399-patchkit");
+MODULE_AUTHOR("syno-rockchip-patchkit");
 MODULE_DESCRIPTION("Fake Synology synobios compatibility device");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("synobios");

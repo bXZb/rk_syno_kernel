@@ -10,11 +10,15 @@
  */
 
 #include <linux/module.h>
+#include <linux/fs.h>
+#include <linux/blkdev.h>
+#include <linux/backing-dev.h>
 #include <linux/slab.h>
 #include <linux/ioport.h>
 #include <linux/vmalloc.h>
 #include <linux/mm.h>
 #include <linux/init.h>
+#include <linux/mount.h>
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/mtdram.h>
 #include <linux/mtd/partitions.h>
@@ -24,8 +28,15 @@ static unsigned long total_size = CONFIG_MTDRAM_TOTAL_SIZE;
 static unsigned long erase_size = CONFIG_MTDRAM_ERASE_SIZE;
 static unsigned long writebuf_size = 64;
 static bool syno_msys_parts = true;
+static char *syno_rd_upgrade_dev = "PARTLABEL=rdnew";
 #define MTDRAM_TOTAL_SIZE (total_size * 1024)
 #define MTDRAM_ERASE_SIZE (erase_size * 1024)
+#define SYNO_MSYS_RD_OFFSET 0x8d0000
+#define SYNO_MSYS_RD_SIZE 0x705000
+#define SYNO_RDUP_MAGIC 0x52445550 /* RDUP */
+#define SYNO_RDUP_VERSION 1
+#define SYNO_RDUP_HDR_SIZE 4096
+#define SYNO_RDUP_FLAG_COMPLETE BIT(0)
 #define SYNO_MSYS_FIS_DIRECTORY_OFFSET 0xfff000
 
 module_param(total_size, ulong, 0);
@@ -36,9 +47,22 @@ module_param(writebuf_size, ulong, 0);
 MODULE_PARM_DESC(writebuf_size, "Device write buf size in Bytes (Default: 64)");
 module_param(syno_msys_parts, bool, 0);
 MODULE_PARM_DESC(syno_msys_parts, "Register 8 Synology-style RAM MTD partitions");
+module_param(syno_rd_upgrade_dev, charp, 0644);
+MODULE_PARM_DESC(syno_rd_upgrade_dev, "Block device for mirrored Synology rd.gz upgrade image");
 
 // We could store these in the mtd structure, but we only support 1 device..
 static struct mtd_info *mtd_info;
+static u32 syno_rdup_image_size;
+
+struct syno_rdup_header {
+	__le32 magic;
+	__le32 version;
+	__le32 header_size;
+	__le32 image_size;
+	__le32 image_crc32;
+	__le32 flags;
+	__le32 reserved[10];
+};
 
 extern char gszSerialNum[32];
 extern unsigned char grgbLanMac[][16];
@@ -229,11 +253,193 @@ static int ram_read(struct mtd_info *mtd, loff_t from, size_t len,
 	return 0;
 }
 
+static bool syno_msys_rd_write_range(loff_t to, size_t len, loff_t *pos,
+				     size_t *mirror_len, size_t *buf_off)
+{
+	loff_t start;
+	size_t remain;
+
+	if (!syno_msys_parts || !syno_rd_upgrade_dev || !*syno_rd_upgrade_dev)
+		return false;
+	if (!len || to >= SYNO_MSYS_RD_OFFSET + SYNO_MSYS_RD_SIZE)
+		return false;
+
+	start = max_t(loff_t, to, SYNO_MSYS_RD_OFFSET);
+	*pos = start - SYNO_MSYS_RD_OFFSET;
+	*buf_off = start - to;
+	if (*buf_off >= len)
+		return false;
+
+	remain = SYNO_MSYS_RD_SIZE - *pos;
+	*mirror_len = min_t(size_t, len - *buf_off, remain);
+
+	return true;
+}
+
+static int syno_rdup_open_bdev(struct block_device **bdev)
+{
+	const fmode_t mode = FMODE_READ | FMODE_WRITE;
+	dev_t devt;
+
+	*bdev = blkdev_get_by_path(syno_rd_upgrade_dev, mode, mtd_info);
+	if (!IS_ERR(*bdev))
+		return 0;
+
+	devt = name_to_dev_t(syno_rd_upgrade_dev);
+	if (!devt)
+		return PTR_ERR(*bdev);
+
+	*bdev = blkdev_get_by_dev(devt, mode, mtd_info);
+	if (IS_ERR(*bdev))
+		return PTR_ERR(*bdev);
+
+	return 0;
+}
+
+static int syno_rdup_bdev_write(struct block_device *bdev, loff_t to,
+				const u_char *buf, size_t len)
+{
+	struct address_space *mapping = bdev->bd_inode->i_mapping;
+	struct page *page;
+	pgoff_t index = to >> PAGE_SHIFT;
+	size_t offset = to & (PAGE_SIZE - 1);
+	size_t cpylen;
+
+	while (len) {
+		cpylen = min_t(size_t, len, PAGE_SIZE - offset);
+
+		page = read_mapping_page(mapping, index, NULL);
+		if (IS_ERR(page))
+			return PTR_ERR(page);
+
+		lock_page(page);
+		memcpy(page_address(page) + offset, buf, cpylen);
+		set_page_dirty(page);
+		unlock_page(page);
+		put_page(page);
+
+		balance_dirty_pages_ratelimited(mapping);
+		buf += cpylen;
+		len -= cpylen;
+		offset = 0;
+		index++;
+	}
+
+	return 0;
+}
+
+static void syno_rdup_write_header(struct block_device *bdev)
+{
+	struct syno_rdup_header header = {
+		.magic = cpu_to_le32(SYNO_RDUP_MAGIC),
+		.version = cpu_to_le32(SYNO_RDUP_VERSION),
+		.header_size = cpu_to_le32(SYNO_RDUP_HDR_SIZE),
+		.image_size = cpu_to_le32(0),
+		.image_crc32 = cpu_to_le32(0),
+		.flags = cpu_to_le32(0),
+	};
+	int ret;
+
+	ret = syno_rdup_bdev_write(bdev, 0, (u_char *)&header, sizeof(header));
+	if (ret)
+		pr_warn_ratelimited("mtdram: failed to write rd upgrade header: %d\n",
+				    ret);
+}
+
+static void syno_rdup_update_size(struct block_device *bdev, u32 image_size)
+{
+	__le32 size = cpu_to_le32(image_size);
+	int ret;
+
+	ret = syno_rdup_bdev_write(bdev, offsetof(struct syno_rdup_header,
+						  image_size),
+				   (u_char *)&size, sizeof(size));
+	if (ret)
+		pr_warn_ratelimited("mtdram: failed to update rd upgrade size: %d\n",
+				    ret);
+}
+
+static void syno_rdup_update_flags(struct block_device *bdev, u32 flags)
+{
+	__le32 value = cpu_to_le32(flags);
+	int ret;
+
+	ret = syno_rdup_bdev_write(bdev, offsetof(struct syno_rdup_header,
+						  flags),
+				   (u_char *)&value, sizeof(value));
+	if (ret)
+		pr_warn_ratelimited("mtdram: failed to update rd upgrade flags: %d\n",
+				    ret);
+}
+
+static void syno_msys_mirror_rd_write(loff_t to, size_t len, const u_char *buf)
+{
+	struct block_device *bdev;
+	loff_t pos, image_end;
+	size_t mirror_len;
+	size_t buf_off;
+	int ret;
+
+	if (!syno_msys_rd_write_range(to, len, &pos, &mirror_len, &buf_off))
+		return;
+
+	ret = syno_rdup_open_bdev(&bdev);
+	if (ret) {
+		pr_warn_ratelimited("mtdram: failed to open rd upgrade block device %s: %d\n",
+				    syno_rd_upgrade_dev, ret);
+		return;
+	}
+
+	if (!pos) {
+		syno_rdup_image_size = 0;
+		syno_rdup_write_header(bdev);
+	}
+
+	ret = syno_rdup_bdev_write(bdev, SYNO_RDUP_HDR_SIZE + pos,
+				   buf + buf_off, mirror_len);
+	if (ret) {
+		pr_warn_ratelimited("mtdram: failed to mirror rd.gz write: %d\n",
+				    ret);
+		goto out_put;
+	}
+
+	image_end = pos + mirror_len;
+	if (image_end <= U32_MAX) {
+		syno_rdup_image_size = max_t(u32, syno_rdup_image_size,
+					     image_end);
+		syno_rdup_update_size(bdev, image_end);
+	}
+
+	sync_blockdev(bdev);
+
+out_put:
+	blkdev_put(bdev, FMODE_READ | FMODE_WRITE);
+}
+
+static void ram_sync(struct mtd_info *mtd)
+{
+	struct block_device *bdev;
+	int ret;
+
+	if (!syno_rdup_image_size)
+		return;
+
+	ret = syno_rdup_open_bdev(&bdev);
+	if (ret)
+		return;
+
+	syno_rdup_update_size(bdev, syno_rdup_image_size);
+	syno_rdup_update_flags(bdev, SYNO_RDUP_FLAG_COMPLETE);
+	sync_blockdev(bdev);
+	blkdev_put(bdev, FMODE_READ | FMODE_WRITE);
+}
+
 static int ram_write(struct mtd_info *mtd, loff_t to, size_t len,
 		size_t *retlen, const u_char *buf)
 {
 	memcpy((char *)mtd->priv + to, buf, len);
 	*retlen = len;
+	syno_msys_mirror_rd_write(to, len, buf);
 	return 0;
 }
 
@@ -282,6 +488,7 @@ int mtdram_init_device(struct mtd_info *mtd, void *mapped_address,
 	mtd->_unpoint = ram_unpoint;
 	mtd->_read = ram_read;
 	mtd->_write = ram_write;
+	mtd->_sync = ram_sync;
 	mtd->_lock = ram_lock;
 	mtd->_unlock = ram_unlock;
 	mtd->_is_locked = ram_is_locked;

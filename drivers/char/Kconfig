@@ -32,7 +32,7 @@ config TTY_PRINTK_LEVEL
 
 config SYNO_FAKE_SYNOBIOS
 	tristate "Fake Synology synobios"
-	depends on PROC_FS
+	depends on PROC_FS && OF && THERMAL
 	help
 	  Provide a minimal /dev/synobios compatibility device for DSM boots.
 	  The module is packaged as synobios.ko and accepts Synology userspace

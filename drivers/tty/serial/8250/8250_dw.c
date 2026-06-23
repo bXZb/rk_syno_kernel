@@ -51,6 +51,7 @@ struct dw8250_data {
 
 	unsigned int		skip_autocfg:1;
 	unsigned int		uart_16550_compatible:1;
+	unsigned int		fixed_baudrate;
 };
 
 static inline struct dw8250_data *to_dw8250_data(struct dw8250_port_data *data)
@@ -329,10 +330,18 @@ dw8250_do_pm(struct uart_port *port, unsigned int state, unsigned int old)
 static void dw8250_set_termios(struct uart_port *p, struct ktermios *termios,
 			       struct ktermios *old)
 {
-	unsigned long newrate = tty_termios_baud_rate(termios) * 16;
 	struct dw8250_data *d = to_dw8250_data(p->private_data);
+	unsigned int baud = tty_termios_baud_rate(termios);
+	unsigned long newrate;
 	long rate;
 	int ret;
+
+	if (d->fixed_baudrate && baud != d->fixed_baudrate) {
+		baud = d->fixed_baudrate;
+		tty_termios_encode_baud_rate(termios, baud, baud);
+	}
+
+	newrate = baud * 16;
 
 	clk_disable_unprepare(d->clk);
 	rate = clk_round_rate(d->clk, newrate);
@@ -483,6 +492,8 @@ static int dw8250_probe(struct platform_device *pdev)
 
 	data->uart_16550_compatible = device_property_read_bool(dev,
 						"snps,uart-16550-compatible");
+	device_property_read_u32(dev, "syno,fixed-baudrate",
+				 &data->fixed_baudrate);
 
 	err = device_property_read_u32(dev, "reg-shift", &val);
 	if (!err)

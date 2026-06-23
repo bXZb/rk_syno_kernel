@@ -704,6 +704,7 @@
 };
 
 &uart2 {
+	syno,fixed-baudrate = <1500000>;
 	status = "okay";
 };
 
