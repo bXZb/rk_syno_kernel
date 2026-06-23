@@ -33,6 +33,7 @@ struct pwm_fan_ctx {
 	u8 pulses_per_revolution;
 	ktime_t sample_start;
 	struct timer_list rpm_timer;
+	unsigned int estimated_max_rpm;
 
 	unsigned int pwm_value;
 	unsigned int pwm_fan_state;
@@ -133,8 +134,13 @@ static ssize_t rpm_show(struct device *dev,
 			struct device_attribute *attr, char *buf)
 {
 	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
+	unsigned int rpm = ctx->rpm;
 
-	return sprintf(buf, "%u\n", ctx->rpm);
+	if (ctx->irq <= 0 && ctx->estimated_max_rpm)
+		rpm = DIV_ROUND_CLOSEST(ctx->pwm_value * ctx->estimated_max_rpm,
+					MAX_PWM);
+
+	return sprintf(buf, "%u\n", rpm);
 }
 
 static SENSOR_DEVICE_ATTR_RW(pwm1, pwm, 0);
@@ -152,8 +158,8 @@ static umode_t pwm_fan_attrs_visible(struct kobject *kobj, struct attribute *a,
 	struct device *dev = container_of(kobj, struct device, kobj);
 	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
 
-	/* Hide fan_input in case no interrupt is available  */
-	if (n == 1 && ctx->irq <= 0)
+	/* Hide fan_input if neither tachometer nor board estimate is available. */
+	if (n == 1 && ctx->irq <= 0 && !ctx->estimated_max_rpm)
 		return 0;
 
 	return a->mode;
@@ -350,6 +356,8 @@ static int pwm_fan_probe(struct platform_device *pdev)
 		return ret;
 
 	of_property_read_u32(dev->of_node, "pulses-per-revolution", &ppr);
+	of_property_read_u32(dev->of_node, "estimated-max-rpm",
+			     &ctx->estimated_max_rpm);
 	ctx->pulses_per_revolution = ppr;
 	if (!ctx->pulses_per_revolution) {
 		dev_err(dev, "pulses-per-revolution can't be zero.\n");

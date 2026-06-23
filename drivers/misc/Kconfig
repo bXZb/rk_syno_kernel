@@ -65,6 +65,18 @@ config DUMMY_IRQ
 	  The sole purpose of this module is to help with debugging of systems on
 	  which spurious IRQs would happen on disabled IRQ vector.
 
+config I2C_OLED_MONITOR
+	bool "I2C OLED system monitor"
+	depends on I2C && THERMAL
+	select FONT_SUPPORT
+	select FONT_6x8
+	help
+	  Say Y here to drive a small SSD1306 compatible 128x64 I2C OLED
+	  panel as a kernel system monitor. It periodically displays CPU
+	  temperature, CPU usage, memory usage, uptime, time, and network
+	  state. A sysfs message attribute allows userspace to add one
+	  custom status line.
+
 config IBM_ASM
 	tristate "Device driver for IBM RSA service processor"
 	depends on X86 && PCI && INPUT
