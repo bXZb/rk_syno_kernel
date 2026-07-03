@@ -1,0 +1,101 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * DSM wrapper for the RK3566 OEC BOX WXY4 board.
+ */
+
+/dts-v1/;
+
+#include "rk3566-oec-box.dtsi"
+
+/ {
+	model = "synology_rk3566_oec_box_wxy4";
+	compatible = "synology,rk3566-oec-box-wxy4",
+		     "rockchip,rk3566-oec-box-wxy4",
+		     "rockchip,rk3566";
+
+	internal_slot@1 {
+		protocol_type = "sata";
+
+		rtk_ahci {
+			#address-cells = <1>;
+			ata_port = <0>;
+		};
+	};
+
+	internal_slot@2 {
+		protocol_type = "sata";
+
+		rtk_ahci {
+			ata_port = <1>;
+		};
+	};
+
+	internal_slot@3 {
+		protocol_type = "sata";
+
+		rtk_ahci {
+			ata_port = <2>;
+		};
+	};
+
+	internal_slot@4 {
+		protocol_type = "sata";
+
+		rtk_ahci {
+			ata_port = <3>;
+		};
+	};
+};
+
+&mpp_srv {
+	status = "okay";
+};
+
+&vdpu {
+	status = "okay";
+};
+
+&vdpu_mmu {
+	status = "okay";
+};
+
+&vepu {
+	status = "okay";
+};
+
+&vepu_mmu {
+	status = "okay";
+};
+
+&rkvdec {
+	status = "okay";
+};
+
+&rkvdec_mmu {
+	status = "okay";
+};
+
+&rkvenc {
+	status = "okay";
+};
+
+&rkvenc_mmu {
+	status = "okay";
+};
+
+&jpegd {
+	status = "okay";
+};
+
+&jpegd_mmu {
+	status = "okay";
+};
+
+&iep {
+	status = "okay";
+};
+
+&iep_mmu {
+	status = "okay";
+};
+

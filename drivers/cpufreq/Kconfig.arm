@@ -272,6 +272,16 @@ config ARM_SCMI_CPUFREQ
 	  This driver uses SCMI Message Protocol driver to interact with the
 	  firmware providing the CPU DVFS functionality.
 
+config ARM_ROCKCHIP_CPUFREQ
+	tristate "Rockchip CPUFreq support"
+	depends on ARCH_ROCKCHIP && CPUFREQ_DT
+	select PM_OPP
+	help
+	  This adds Rockchip-specific OPP initialization and registers the
+	  generic cpufreq-dt driver with Rockchip platform callbacks.
+
+	  If in doubt, say N.
+
 config ARM_SPEAR_CPUFREQ
 	bool "SPEAr CPUFreq support"
 	depends on PLAT_SPEAR

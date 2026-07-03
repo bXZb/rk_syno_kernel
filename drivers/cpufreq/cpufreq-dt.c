@@ -260,8 +260,8 @@ static int dt_cpufreq_early_init(struct device *dev, int cpu)
 	priv->opp_table = dev_pm_opp_get_opp_table(cpu_dev);
 	if (IS_ERR(priv->opp_table)) {
 		ret = PTR_ERR(priv->opp_table);
-		if (ret != -EPROBE_DEFER)
-			dev_err(cpu_dev, "failed to get OPP table: %d\n", ret);
+		dev_err(cpu_dev, "cpufreq-dt: failed to get OPP table: %d\n",
+			ret);
 		goto free_cpumask;
 	}
 
@@ -275,9 +275,8 @@ static int dt_cpufreq_early_init(struct device *dev, int cpu)
 								&reg_name, 1);
 		if (IS_ERR(priv->reg_opp_table)) {
 			ret = PTR_ERR(priv->reg_opp_table);
-			if (ret != -EPROBE_DEFER)
-				dev_err(cpu_dev, "failed to set regulators: %d\n",
-					ret);
+			dev_err(cpu_dev, "cpufreq-dt: failed to set regulators: %d\n",
+				ret);
 			goto put_table;
 		}
 	}
@@ -286,8 +285,11 @@ static int dt_cpufreq_early_init(struct device *dev, int cpu)
 	/* Get OPP-sharing information from "operating-points-v2" bindings */
 	ret = dev_pm_opp_of_get_sharing_cpus(cpu_dev, priv->cpus);
 	if (ret) {
-		if (ret != -ENOENT)
+		if (ret != -ENOENT) {
+			dev_err(cpu_dev, "cpufreq-dt: failed to get sharing cpus: %d\n",
+				ret);
 			goto put_reg;
+		}
 
 		/*
 		 * operating-points-v2 not supported, fallback to all CPUs share
@@ -342,8 +344,11 @@ static int dt_cpufreq_probe(struct platform_device *pdev)
 	/* Request resources early so we can return in case of -EPROBE_DEFER */
 	for_each_possible_cpu(cpu) {
 		ret = dt_cpufreq_early_init(&pdev->dev, cpu);
-		if (ret)
+		if (ret) {
+			dev_err(&pdev->dev, "cpufreq-dt: early init failed for cpu%d: %d\n",
+				cpu, ret);
 			goto err;
+		}
 	}
 
 	if (data) {

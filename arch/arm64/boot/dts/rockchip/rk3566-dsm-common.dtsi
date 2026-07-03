@@ -1,0 +1,478 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Common RK3566 DSM/NAS support.
+ *
+ * Keep display, HDMI audio and board-only connectors out of this file.
+ */
+
+#include "rk3566.dtsi"
+#include <dt-bindings/input/rk-input.h>
+
+/ {
+	adc_keys: adc-keys {
+		compatible = "adc-keys";
+		io-channels = <&saradc 0>;
+		io-channel-names = "buttons";
+		keyup-threshold-microvolt = <1800000>;
+		poll-interval = <100>;
+
+		vol-up-key {
+			label = "volume up";
+			linux,code = <KEY_VOLUMEUP>;
+			press-threshold-microvolt = <1750>;
+		};
+
+		vol-down-key {
+			label = "volume down";
+			linux,code = <KEY_VOLUMEDOWN>;
+			press-threshold-microvolt = <297500>;
+		};
+	};
+
+	dc_12v: dc-12v {
+		compatible = "regulator-fixed";
+		regulator-name = "dc_12v";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <12000000>;
+		regulator-max-microvolt = <12000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		rknpu_reserved: rknpu {
+			compatible = "shared-dma-pool";
+			inactive;
+			reusable;
+			size = <0x0 0x20000000>;
+			alignment = <0x0 0x1000>;
+			status = "disabled";
+		};
+	};
+
+	vcc3v3_sys: vcc3v3-sys {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v3_sys";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&dc_12v>;
+	};
+
+	vcc5v0_sys: vcc5v0-sys {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc5v0_sys";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		vin-supply = <&dc_12v>;
+	};
+
+	vcc_1v8: vcc_1v8 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc_1v8";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		vin-supply = <&vcc5v0_sys>;
+	};
+
+	vcc_3v3: vcc_3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc_3v3";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&vcc5v0_sys>;
+	};
+
+	vdd_fixed: vdd-fixed {
+		compatible = "regulator-fixed";
+		regulator-name = "vdd_fixed";
+		regulator-min-microvolt = <950000>;
+		regulator-max-microvolt = <950000>;
+		regulator-always-on;
+		regulator-boot-on;
+		vin-supply = <&vcc5v0_sys>;
+	};
+
+	vdd_cpu: vdd-cpu {
+		compatible = "pwm-regulator";
+		pwms = <&pwm0 0 5000 1>;
+		regulator-name = "vdd_cpu";
+		regulator-min-microvolt = <800000>;
+		regulator-max-microvolt = <1200000>;
+		regulator-init-microvolt = <950000>;
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-settling-time-up-us = <250>;
+		regulator-ramp-delay = <2300>;
+		pwm-supply = <&vcc5v0_sys>;
+		status = "okay";
+	};
+
+	vdd_logic: vdd-logic {
+		compatible = "pwm-regulator";
+		pwms = <&pwm1 0 5000 1>;
+		regulator-name = "vdd_logic";
+		regulator-min-microvolt = <800000>;
+		regulator-max-microvolt = <1100000>;
+		regulator-init-microvolt = <950000>;
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-settling-time-up-us = <250>;
+		regulator-ramp-delay = <6001>;
+		pwm-supply = <&vcc5v0_sys>;
+		status = "okay";
+	};
+};
+
+&bus_npu {
+	status = "disabled";
+};
+
+&cpu0 {
+	clocks = <&cru ARMCLK>;
+	cpu-supply = <&vdd_cpu>;
+};
+
+&cpu1 {
+	clocks = <&cru ARMCLK>;
+};
+
+&cpu2 {
+	clocks = <&cru ARMCLK>;
+};
+
+&cpu3 {
+	clocks = <&cru ARMCLK>;
+};
+
+&cpu0_opp_table {
+	/delete-property/ rockchip,supported-hw;
+	/delete-node/ opp-1992000000;
+	/delete-node/ opp-j-1008000000;
+	/delete-node/ opp-j-1416000000;
+	/delete-node/ opp-m-1608000000;
+
+	opp-408000000 {
+		/delete-property/ opp-supported-hw;
+		opp-hz = /bits/ 64 <408000000>;
+		opp-microvolt = <850000 850000 1200000>;
+	};
+
+	opp-600000000 {
+		/delete-property/ opp-supported-hw;
+		opp-hz = /bits/ 64 <600000000>;
+		opp-microvolt = <850000 850000 1200000>;
+	};
+
+	opp-816000000 {
+		/delete-property/ opp-supported-hw;
+		opp-hz = /bits/ 64 <816000000>;
+		opp-microvolt = <850000 850000 1200000>;
+	};
+
+	opp-1104000000 {
+		/delete-property/ opp-supported-hw;
+		opp-hz = /bits/ 64 <1104000000>;
+		opp-microvolt = <900000 900000 1200000>;
+	};
+
+	opp-1416000000 {
+		/delete-property/ opp-supported-hw;
+		opp-hz = /bits/ 64 <1416000000>;
+		opp-microvolt = <1025000 1025000 1200000>;
+	};
+
+	opp-1608000000 {
+		/delete-property/ opp-supported-hw;
+		opp-hz = /bits/ 64 <1608000000>;
+		opp-microvolt = <1100000 1100000 1200000>;
+	};
+
+	opp-1800000000 {
+		/delete-property/ opp-supported-hw;
+		opp-hz = /bits/ 64 <1800000000>;
+		opp-microvolt = <1150000 1150000 1200000>;
+	};
+};
+
+&dfi {
+	status = "okay";
+};
+
+&dmc {
+	auto-freq-en = <0>;
+	center-supply = <&vdd_fixed>;
+	status = "okay";
+};
+
+&gpu {
+	clocks = <&cru CLK_GPU>;
+	clock-names = "clk_mali";
+	mali-supply = <&vdd_fixed>;
+	status = "okay";
+};
+
+&gpu_opp_table {
+	/delete-node/ opp-700000000;
+	/delete-node/ opp-800000000;
+	/delete-node/ opp-j-600000000;
+	/delete-node/ opp-m-800000000;
+
+	opp-200000000 {
+		/delete-property/ opp-supported-hw;
+		opp-hz = /bits/ 64 <200000000>;
+		opp-microvolt = <850000 850000 1000000>;
+	};
+
+	opp-300000000 {
+		/delete-property/ opp-supported-hw;
+		opp-hz = /bits/ 64 <300000000>;
+		opp-microvolt = <850000 850000 1000000>;
+	};
+
+	opp-400000000 {
+		/delete-property/ opp-supported-hw;
+		opp-hz = /bits/ 64 <400000000>;
+		opp-microvolt = <850000 850000 1000000>;
+	};
+
+	opp-500000000 {
+		opp-hz = /bits/ 64 <500000000>;
+		opp-microvolt = <900000 900000 1000000>;
+	};
+
+	opp-600000000 {
+		/delete-property/ opp-supported-hw;
+		opp-hz = /bits/ 64 <600000000>;
+		opp-microvolt = <900000 900000 1000000>;
+	};
+};
+
+&pwm0 {
+	status = "okay";
+	pinctrl-names = "active";
+};
+
+&pwm1 {
+	status = "okay";
+	pinctrl-names = "active";
+};
+
+&rk_rga {
+	clock-names = "aclk", "hclk", "sclk";
+	resets = <&cru SRST_RGA_CORE>, <&cru SRST_A_RGA>, <&cru SRST_H_RGA>;
+	reset-names = "core", "axi", "ahb";
+	status = "okay";
+};
+
+&mpp_srv {
+	status = "okay";
+};
+
+&vdpu {
+	status = "okay";
+};
+
+&vdpu_mmu {
+	status = "okay";
+};
+
+&jpegd {
+	status = "okay";
+};
+
+&jpegd_mmu {
+	status = "okay";
+};
+
+&vepu {
+	status = "okay";
+};
+
+&vepu_mmu {
+	status = "okay";
+};
+
+&iep {
+	status = "okay";
+};
+
+&iep_mmu {
+	status = "okay";
+};
+
+&rkvenc {
+	status = "okay";
+};
+
+&rkvenc_mmu {
+	status = "okay";
+};
+
+&rkvdec {
+	dynamic-power-coefficient = <200>;
+	status = "okay";
+
+	power-model {
+		compatible = "simple-power-model";
+		thermal-zone = "soc-thermal";
+		static-coefficient = <100000>;
+		dynamic-coefficient = <200>;
+		ts = <32000 4700 (-80) 2>;
+		ref-leakage = <50>;
+	};
+};
+
+&rkvdec_mmu {
+	status = "okay";
+};
+
+&rknpu {
+	clocks = <&cru CLK_NPU>, <&cru ACLK_NPU>, <&cru HCLK_NPU>;
+	clock-names = "clk", "aclk", "hclk";
+	dynamic-power-coefficient = <250>;
+	memory-region = <&rknpu_reserved>;
+	rknpu-supply = <&vdd_fixed>;
+	status = "okay";
+
+	power-model {
+		compatible = "simple-power-model";
+		thermal-zone = "soc-thermal";
+		static-coefficient = <100000>;
+		dynamic-coefficient = <250>;
+		ts = <32000 4700 (-80) 2>;
+		ref-leakage = <4>;
+	};
+};
+
+&rknpu_mmu {
+	status = "okay";
+};
+
+&npu_opp_table {
+	/delete-property/ rockchip,supported-hw;
+	/delete-node/ opp-1000000000;
+	/delete-node/ opp-j-600000000;
+	/delete-node/ opp-m-900000000;
+
+	opp-200000000 {
+		/delete-property/ opp-supported-hw;
+	};
+
+	opp-300000000 {
+		/delete-property/ opp-supported-hw;
+	};
+
+	opp-400000000 {
+		/delete-property/ opp-supported-hw;
+	};
+
+	opp-600000000 {
+		/delete-property/ opp-supported-hw;
+	};
+
+	opp-700000000 {
+		/delete-property/ opp-supported-hw;
+	};
+
+	opp-800000000 {
+		/delete-property/ opp-supported-hw;
+	};
+
+	opp-900000000 {
+		/delete-property/ opp-supported-hw;
+	};
+};
+
+&rockchip_suspend {
+	status = "okay";
+	rockchip,sleep-mode-config = <
+		(0
+		| RKPM_SLP_CENTER_OFF
+		| RKPM_SLP_HW_PLLS_OFF
+		| RKPM_SLP_PMUALIVE_32K
+		| RKPM_SLP_PMIC_LP
+		| RKPM_SLP_32K_PVTM
+		)
+	>;
+	rockchip,wakeup-config = <
+		(0
+		| RKPM_PWM0_WKUP_EN
+		| RKPM_CPU0_WKUP_EN
+		)
+	>;
+};
+
+&saradc {
+	status = "okay";
+	vref-supply = <&vcc_1v8>;
+};
+
+&sdhci {
+	bus-width = <8>;
+	no-sdio;
+	no-sd;
+	non-removable;
+	pinctrl-names = "default";
+	pinctrl-0 = <&emmc_bus8 &emmc_clk &emmc_cmd
+		     &emmc_datastrobe &emmc_rstnout>;
+	status = "okay";
+};
+
+&sfc {
+	status = "okay";
+
+	flash@0 {
+		compatible = "spi-nand";
+		reg = <0>;
+		spi-max-frequency = <75000000>;
+		spi-rx-bus-width = <4>;
+		spi-tx-bus-width = <1>;
+	};
+};
+
+&tsadc {
+	status = "okay";
+};
+
+&u2phy0_host {
+	status = "okay";
+};
+
+&u2phy0_otg {
+	status = "okay";
+};
+
+&usb2phy0 {
+	status = "okay";
+};
+
+&usbdrd30 {
+	status = "okay";
+};
+
+&usbdrd_dwc3 {
+	dr_mode = "otg";
+	phys = <&u2phy0_otg>;
+	maximum-speed = "high-speed";
+	extcon = <&usb2phy0>;
+	status = "okay";
+};
+
+&usbhost30 {
+	status = "okay";
+};
+
+&usbhost_dwc3 {
+	status = "okay";
+};
