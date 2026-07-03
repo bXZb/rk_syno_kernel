@@ -4691,6 +4691,7 @@ CONFIG_TEE=y
 CONFIG_OPTEE=y
 CONFIG_ROCKCHIP_IPA=y
 CONFIG_ROCKCHIP_OPP=y
+CONFIG_ROCKCHIP_SYSTEM_MONITOR=y
 CONFIG_NO_GKI=y
 
 # Rockchip MPP driver
@@ -4708,3 +4709,5 @@ CONFIG_ROCKCHIP_MPP_IEP2=y
 CONFIG_ROCKCHIP_MPP_JPGDEC=y
 CONFIG_ROCKCHIP_MPP_AV1DEC=y
 CONFIG_ARM_ROCKCHIP_CPUFREQ=y
+CONFIG_EXTRA_FIRMWARE="regulatory.db regulatory.db.p7s brcm/fw_bcm4356a2_ag_mfg.bin brcm/brcmfmac4356-sdio.bin brcm/brcmfmac4356-sdio.txt brcm/brcmfmac4356-sdio.friendlyelec,nanopc-t4.txt brcm/BCM4356A2.hcd"
+CONFIG_EXTRA_FIRMWARE_DIR="firmware"

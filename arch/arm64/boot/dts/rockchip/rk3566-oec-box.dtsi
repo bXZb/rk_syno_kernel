@@ -148,6 +148,10 @@
 	mali-supply = <&vdd_logic>;
 };
 
+&rknpu {
+	reg = <0x0 0xfde40000 0x0 0xb000>;
+};
+
 &i2s0_8ch {
 	status = "okay";
 };

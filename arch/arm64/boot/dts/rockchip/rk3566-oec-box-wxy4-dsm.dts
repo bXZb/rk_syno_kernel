@@ -16,6 +16,11 @@
 	internal_slot@1 {
 		protocol_type = "sata";
 
+		ahci {
+			pcie_root = "0000:00:00.0,00.0";
+			ata_port = <0>;
+		};
+
 		rtk_ahci {
 			#address-cells = <1>;
 			ata_port = <0>;
@@ -25,6 +30,11 @@
 	internal_slot@2 {
 		protocol_type = "sata";
 
+		ahci {
+			pcie_root = "0000:00:00.0,00.0";
+			ata_port = <1>;
+		};
+
 		rtk_ahci {
 			ata_port = <1>;
 		};
@@ -33,6 +43,11 @@
 	internal_slot@3 {
 		protocol_type = "sata";
 
+		ahci {
+			pcie_root = "0000:00:00.0,00.0";
+			ata_port = <2>;
+		};
+
 		rtk_ahci {
 			ata_port = <2>;
 		};
@@ -40,6 +55,11 @@
 
 	internal_slot@4 {
 		protocol_type = "sata";
+
+		ahci {
+			pcie_root = "0000:00:00.0,00.0";
+			ata_port = <3>;
+		};
 
 		rtk_ahci {
 			ata_port = <3>;
@@ -98,4 +118,3 @@
 &iep_mmu {
 	status = "okay";
 };
-
