@@ -387,6 +387,7 @@ static ssize_t ata_link_syno_info_show(struct device *dev,
 {
 	struct ata_link *link = transport_class_to_link(dev);
 	struct ata_port *ap = link->ap;
+	unsigned int syno_port_no = ap->port_no;
 	char kv_ata_port_no[32] = {0};
 	char kv_pmp_info[SYNO_DTS_PROPERTY_CONTENT_LENGTH] = {0};
 	char kv_pci_pattern[SYNO_DTS_PROPERTY_CONTENT_LENGTH] = {0};
@@ -394,7 +395,12 @@ static ssize_t ata_link_syno_info_show(struct device *dev,
 	if (ap->dev->bus && !strcmp("pci", ap->dev->bus->name)) {
 		syno_pciepath_enum(ap->dev, kv_pci_pattern);
 	}
-	snprintf(kv_ata_port_no, sizeof(kv_ata_port_no), "ata_port_no=%u\n", ap->port_no);
+	if (ap->nr_pmp_links && !ata_is_host_link(link)) {
+		syno_port_no = link->pmp;
+		snprintf(kv_pmp_info, sizeof(kv_pmp_info),
+			"pmp_link=%u\n", link->pmp);
+	}
+	snprintf(kv_ata_port_no, sizeof(kv_ata_port_no), "ata_port_no=%u\n", syno_port_no);
 	if (syno_is_synology_pm(ap)) {
 		snprintf(kv_pmp_info, sizeof(kv_pmp_info),
 			"is_syno_pmp=1\npmp_link=%u\nEMID=%u\n", link->pmp, ap->PMSynoEMID);

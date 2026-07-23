@@ -50,6 +50,13 @@ unsigned int mpp_dev_debug;
 module_param(mpp_dev_debug, uint, 0644);
 MODULE_PARM_DESC(mpp_dev_debug, "bit switch for mpp debug information");
 
+static char *mpp_devnode(struct device *dev, umode_t *mode)
+{
+	if (mode)
+		*mode = 0666;
+	return NULL;
+}
+
 static const char mpp_version[] = MPP_VERSION;
 
 static int mpp_init_grf(struct device_node *np,
@@ -407,6 +414,7 @@ static int mpp_service_probe(struct platform_device *pdev)
 	srv->cls = class_create(THIS_MODULE, MPP_CLASS_NAME);
 	if (PTR_ERR_OR_ZERO(srv->cls))
 		return PTR_ERR(srv->cls);
+	srv->cls->devnode = mpp_devnode;
 
 	of_property_read_u32(np, "rockchip,taskqueue-count",
 			     &srv->taskqueue_cnt);

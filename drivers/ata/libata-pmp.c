@@ -1634,11 +1634,10 @@ END:
 u32
 syno_pmp_ports_num(struct ata_port *ap)
 {
-	u32 ret = 1;
+	u32 ret;
 
+	ret = sata_pmp_gscr_ports(ap->link.device->gscr);
 	if (syno_is_synology_pm(ap)) {
-		ret = sata_pmp_gscr_ports(ap->link.device->gscr);
-
 		if (syno_pm_is_synology_9705(ap)) {
 			/* it would read 6 ports from GSCR,
 			 * but this is not what we want

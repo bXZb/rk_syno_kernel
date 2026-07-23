@@ -43,6 +43,9 @@
 		#size-cells = <2>;
 		ranges;
 
+		/delete-node/ drm-logo@00000000;
+		/delete-node/ drm-cubic-lut@00000000;
+
 		rknpu_reserved: rknpu {
 			compatible = "shared-dma-pool";
 			inactive;
@@ -312,7 +315,18 @@
 };
 
 &rkvenc {
+	dynamic-power-coefficient = <200>;
+	venc-supply = <&vdd_logic>;
 	status = "okay";
+
+	power-model {
+		compatible = "simple-power-model";
+		thermal-zone = "soc-thermal";
+		static-coefficient = <100000>;
+		dynamic-coefficient = <200>;
+		ts = <32000 4700 (-80) 2>;
+		ref-leakage = <50>;
+	};
 };
 
 &rkvenc_mmu {
@@ -321,6 +335,13 @@
 
 &rkvdec {
 	dynamic-power-coefficient = <200>;
+	resets = <&cru SRST_A_RKVDEC_NIU>, <&cru SRST_H_RKVDEC_NIU>,
+		 <&cru SRST_A_RKVDEC>, <&cru SRST_H_RKVDEC>,
+		 <&cru SRST_RKVDEC_CA>, <&cru SRST_RKVDEC_CORE>,
+		 <&cru SRST_RKVDEC_HEVC_CA>;
+	reset-names = "niu_a", "niu_h", "video_a", "video_h",
+		      "video_cabac", "video_core", "video_hevc_cabac";
+	vdec-supply = <&vdd_logic>;
 	status = "okay";
 
 	power-model {
@@ -466,6 +487,7 @@
 	phys = <&u2phy0_otg>;
 	maximum-speed = "high-speed";
 	extcon = <&usb2phy0>;
+	snps,dev_force_20_clk_for_30_clk;
 	status = "okay";
 };
 

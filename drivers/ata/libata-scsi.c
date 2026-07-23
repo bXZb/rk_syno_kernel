@@ -8279,6 +8279,7 @@ static void syno_ata_info_enum(struct ata_port *ap, struct scsi_device *sdev) {
 #ifdef MY_ABC_HERE
 	struct ata_device *dev = NULL;
 #endif /* MY_ABC_HERE */
+	unsigned int syno_port_no;
 #ifdef MY_DEF_HERE
 	struct syno_control_operations *ctrl_op = NULL;
 #endif /* MY_DEF_HERE */
@@ -8287,10 +8288,16 @@ static void syno_ata_info_enum(struct ata_port *ap, struct scsi_device *sdev) {
 		return;
 	}
 
-	snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%sata_port_no=%u\n", sdev->syno_block_info, ap->port_no);
-
+	syno_port_no = ap->port_no;
 #ifdef MY_ABC_HERE
 	dev = ata_scsi_find_dev(ap, sdev);
+	if (ap->nr_pmp_links && NULL != dev && NULL != dev->link) {
+		syno_port_no = dev->link->pmp;
+	}
+#endif /* MY_ABC_HERE */
+	snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%sata_port_no=%u\n", sdev->syno_block_info, syno_port_no);
+
+#ifdef MY_ABC_HERE
 	if (syno_is_synology_pm(ap) && NULL != dev && NULL != dev->link) {
 		snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%sis_syno_pmp=1\n", sdev->syno_block_info);
 		snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%spmp_link=%u\n", sdev->syno_block_info, dev->link->pmp);
@@ -8319,6 +8326,8 @@ static void syno_ata_info_enum(struct ata_port *ap, struct scsi_device *sdev) {
 	} else if (syno_is_ap_rx1224rp(ap)) {
 		snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%sunique=%s\n", sdev->syno_block_info, EBOX_INFO_UNIQUE_RX1224RP);
 #endif /* MY_DEF_HERE */
+	} else if (ap->nr_pmp_links && NULL != dev && NULL != dev->link) {
+		snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%spmp_link=%u\n", sdev->syno_block_info, dev->link->pmp);
 	}
 #endif /* MY_ABC_HERE */
 }
