@@ -1325,6 +1325,7 @@ static int rknpu_probe(struct platform_device *pdev)
 	rknpu_dev->miscdev.minor = MISC_DYNAMIC_MINOR;
 	rknpu_dev->miscdev.name = "rknpu";
 	rknpu_dev->miscdev.fops = &rknpu_fops;
+	rknpu_dev->miscdev.mode = 0666;
 
 	ret = misc_register(&rknpu_dev->miscdev);
 	if (ret) {

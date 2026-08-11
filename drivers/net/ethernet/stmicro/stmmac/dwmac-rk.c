@@ -25,7 +25,6 @@
 #include <linux/regmap.h>
 #include <linux/pm_runtime.h>
 #include <linux/soc/rockchip/rk_vendor_storage.h>
-#include <soc/rockchip/rockchip_csu.h>
 #include "stmmac_platform.h"
 #include "dwmac-rk-tool.h"
 
@@ -81,9 +80,6 @@ struct rk_priv_data {
 
 	unsigned char otp_data;
 	unsigned int bgs_increment;
-
-	struct csu_clk *csu_aclk;
-	struct csu_clk *csu_pclk;
 };
 
 /* XPCS */
@@ -1768,6 +1764,28 @@ static const struct rk_gmac_ops rk3562_ops = {
 #define RK3568_PIPE_GRF_XPCS_SGMII_MAC_SEL	GRF_BIT(1)
 #define RK3568_PIPE_GRF_XPCS_PHY_READY		GRF_BIT(2)
 
+static void rk3568_dump_gmac_grf(struct rk_priv_data *bsp_priv,
+				 const char *tag)
+{
+	struct device *dev = &bsp_priv->pdev->dev;
+	u32 con0_offset, con1_offset, con0 = 0, con1 = 0;
+	int ret0, ret1;
+
+	if (IS_ERR(bsp_priv->grf))
+		return;
+
+	con0_offset = bsp_priv->bus_id == 1 ? RK3568_GRF_GMAC1_CON0 :
+					      RK3568_GRF_GMAC0_CON0;
+	con1_offset = bsp_priv->bus_id == 1 ? RK3568_GRF_GMAC1_CON1 :
+					      RK3568_GRF_GMAC0_CON1;
+
+	ret0 = regmap_read(bsp_priv->grf, con0_offset, &con0);
+	ret1 = regmap_read(bsp_priv->grf, con1_offset, &con1);
+	dev_info(dev, "rk3568 gmac%d %s grf con0@0x%x=%s0x%08x con1@0x%x=%s0x%08x\n",
+		 bsp_priv->bus_id, tag, con0_offset, ret0 ? "err:" : "",
+		 con0, con1_offset, ret1 ? "err:" : "", con1);
+}
+
 static void rk3568_set_to_sgmii(struct rk_priv_data *bsp_priv)
 {
 	struct device *dev = &bsp_priv->pdev->dev;
@@ -1824,6 +1842,8 @@ static void rk3568_set_to_rgmii(struct rk_priv_data *bsp_priv,
 
 	regmap_write(bsp_priv->grf, offset_con0,
 		     DELAY_VALUE(RK3568, tx_delay, rx_delay));
+
+	rk3568_dump_gmac_grf(bsp_priv, "rgmii");
 }
 
 static void rk3568_set_to_rmii(struct rk_priv_data *bsp_priv)
@@ -1867,6 +1887,10 @@ static void rk3568_set_gmac_speed(struct rk_priv_data *bsp_priv, int speed)
 	if (ret)
 		dev_err(dev, "%s: set clk_mac_speed rate %ld failed %d\n",
 			__func__, rate, ret);
+	else
+		dev_info(dev, "rk3568 gmac%d speed %d clk_mac_speed=%lu target=%lu\n",
+			 bsp_priv->bus_id, speed,
+			 clk_get_rate(bsp_priv->clk_mac_speed), rate);
 }
 
 static const struct rk_gmac_ops rk3568_ops = {
@@ -2326,21 +2350,6 @@ static int rk_gmac_clk_init(struct plat_stmmacenet_data *plat)
 	return 0;
 }
 
-static int rk_gmac_csu_init(struct plat_stmmacenet_data *plat)
-{
-	struct rk_priv_data *bsp_priv = plat->bsp_priv;
-	struct device *dev = &bsp_priv->pdev->dev;
-
-	bsp_priv->csu_aclk = rockchip_csu_get(dev, "aclk");
-	if (IS_ERR(bsp_priv->csu_aclk))
-		bsp_priv->csu_aclk = NULL;
-	bsp_priv->csu_pclk = rockchip_csu_get(dev, "pclk");
-	if (IS_ERR(bsp_priv->csu_pclk))
-		bsp_priv->csu_pclk = NULL;
-
-	return 0;
-}
-
 static int gmac_clk_enable(struct rk_priv_data *bsp_priv, bool enable)
 {
 	int phy_iface = bsp_priv->phy_iface;
@@ -2386,15 +2395,21 @@ static int gmac_clk_enable(struct rk_priv_data *bsp_priv, bool enable)
 				bsp_priv->ops->set_clock_selection(bsp_priv,
 					       bsp_priv->clock_input, true);
 
-			rockchip_csu_disable(bsp_priv->csu_aclk);
-			rockchip_csu_disable(bsp_priv->csu_pclk);
-
 			/**
 			 * if (!IS_ERR(bsp_priv->clk_mac))
 			 *	clk_prepare_enable(bsp_priv->clk_mac);
 			 */
 			usleep_range(100, 200);
 			bsp_priv->clk_enabled = true;
+			dev_info(&bsp_priv->pdev->dev,
+				 "gmac%d clocks: mac_rx=%ld mac_tx=%ld mac_speed=%ld aclk=%ld pclk=%ld stmmaceth=%ld\n",
+				 bsp_priv->bus_id,
+				 IS_ERR(bsp_priv->mac_clk_rx) ? -1L : clk_get_rate(bsp_priv->mac_clk_rx),
+				 IS_ERR(bsp_priv->mac_clk_tx) ? -1L : clk_get_rate(bsp_priv->mac_clk_tx),
+				 IS_ERR(bsp_priv->clk_mac_speed) ? -1L : clk_get_rate(bsp_priv->clk_mac_speed),
+				 IS_ERR(bsp_priv->aclk_mac) ? -1L : clk_get_rate(bsp_priv->aclk_mac),
+				 IS_ERR(bsp_priv->pclk_mac) ? -1L : clk_get_rate(bsp_priv->pclk_mac),
+				 IS_ERR(bsp_priv->clk_mac) ? -1L : clk_get_rate(bsp_priv->clk_mac));
 		}
 	} else {
 		if (bsp_priv->clk_enabled) {
@@ -2423,9 +2438,6 @@ static int gmac_clk_enable(struct rk_priv_data *bsp_priv, bool enable)
 			clk_disable_unprepare(bsp_priv->pclk_xpcs);
 
 			clk_disable_unprepare(bsp_priv->clk_xpcs_eee);
-
-			rockchip_csu_enable(bsp_priv->csu_aclk);
-			rockchip_csu_enable(bsp_priv->csu_pclk);
 
 			/**
 			 * if (!IS_ERR(bsp_priv->clk_mac))
@@ -2805,8 +2817,6 @@ static int rk_gmac_probe(struct platform_device *pdev)
 		ret = PTR_ERR(plat_dat->bsp_priv);
 		goto err_remove_config_dt;
 	}
-
-	rk_gmac_csu_init(plat_dat);
 
 	ret = rk_gmac_clk_init(plat_dat);
 	if (ret)

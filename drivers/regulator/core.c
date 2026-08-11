@@ -5909,8 +5909,22 @@ unlock:
 	return 0;
 }
 
+static bool board_wants_unused_regulators_kept_on;
+
+static int __init regulator_has_unused_setup(char *str)
+{
+	board_wants_unused_regulators_kept_on = true;
+	return 1;
+}
+__setup("regulator_ignore_unused", regulator_has_unused_setup);
+
 static void regulator_init_complete_work_function(struct work_struct *work)
 {
+	if (board_wants_unused_regulators_kept_on) {
+		pr_info("regulator: ignore unused regulators\n");
+		return;
+	}
+
 	/*
 	 * Regulators may had failed to resolve their input supplies
 	 * when were registered, either because the input supply was

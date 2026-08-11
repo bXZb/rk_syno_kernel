@@ -82,6 +82,29 @@ config PCIE_DW_PLAT_EP
 	  order to enable device-specific features PCI_DW_PLAT_EP must be
 	  selected.
 
+config PCIE_DW_ROCKCHIP
+	tristate "Rockchip DesignWare PCIe controller"
+	depends on ARCH_ROCKCHIP && OF
+	depends on PCI_MSI_IRQ_DOMAIN
+	select PCIE_DW_HOST
+	help
+	  Enables support for the DesignWare PCIe controller used by
+	  Rockchip SoCs such as RK3562 and RK3568.
+
+config PCIE_RK_THREADED_INIT
+	bool "Threaded initialize Rockchip DW based PCIe controller"
+	depends on PCIE_DW_ROCKCHIP
+	default y
+	help
+	  Enables threaded initialize Rockchip DW based PCIe controller.
+
+config PCIE_DW_DMATEST
+	bool "DesignWare PCIe DMA test"
+	depends on PCIE_DW_ROCKCHIP
+	depends on !ROCKCHIP_PCIE_DMA_OBJ
+	help
+	  Enables support for the Rockchip DesignWare PCIe DMA test helper.
+
 config PCI_EXYNOS
 	bool "Samsung Exynos PCIe controller"
 	depends on SOC_EXYNOS5440 || COMPILE_TEST

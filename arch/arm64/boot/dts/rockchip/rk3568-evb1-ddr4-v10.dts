@@ -1,0 +1,170 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2020 Rockchip Electronics Co., Ltd.
+ *
+ */
+
+#include "rk3568-evb1-ddr4-v10.dtsi"
+
+/ {
+	chosen {
+		stdout-path = "serial2:1500000n8";
+	};
+};
+
+&bt_sco {
+	status = "okay";
+};
+
+&bt_sound {
+	status = "okay";
+};
+
+&i2s3_2ch {
+	status = "okay";
+};
+
+/*
+ * This RK3568 DSM target does not use the EVB SDIO Wi-Fi/Bluetooth module.
+ * Leaving it enabled makes mmc3 try SDR104 tuning and fail with "All phases
+ * bad", then drags cfg80211/BT init into the boot path.
+ */
+&sdmmc2 {
+	status = "disabled";
+};
+
+&wireless_wlan {
+	status = "disabled";
+};
+
+&wireless_bluetooth {
+	status = "disabled";
+};
+
+&uart8 {
+	status = "disabled";
+};
+
+/*
+ * Disable the USB3 OTG controller for now. On this board it creates usb6 from
+ * fcc00000.dwc3 and repeatedly fails root-hub port enable during DSM init.
+ * Keep the dedicated USB3 host controller and USB2 hosts enabled.
+ */
+&u2phy0_otg {
+	status = "disabled";
+};
+
+&usbdrd_dwc3 {
+	status = "disabled";
+};
+
+&usbdrd30 {
+	status = "disabled";
+};
+
+/*
+ * Keep RK3568 display on HDMI only. The EVB include enables DSI and eDP panel
+ * paths too, but this DSM target should not bind unused display components.
+ */
+&dsi0 {
+	status = "disabled";
+};
+
+&dsi1 {
+	status = "disabled";
+};
+
+&edp {
+	status = "disabled";
+};
+
+&edp_phy {
+	status = "disabled";
+};
+
+&hdmi {
+	status = "okay";
+};
+
+&hdmi_sound {
+	status = "okay";
+};
+
+&gpu {
+	status = "okay";
+	clocks = <&cru CLK_GPU>;
+	clock-names = "clk_mali";
+	/delete-property/ operating-points-v2;
+};
+
+&route_dsi0 {
+	status = "disabled";
+};
+
+&route_edp {
+	status = "disabled";
+};
+
+&route_hdmi {
+	status = "okay";
+};
+
+&video_phy0 {
+	status = "disabled";
+};
+
+&video_phy1 {
+	status = "disabled";
+};
+
+/*
+ * Keep NPU off for the DSM RK3568 image for now. The EVB include enables
+ * rknpu/rknpu_mmu, but the NPU power domain can fail to ack during early
+ * IOMMU probe on some boards and panic the kernel.
+ */
+&bus_npu {
+	status = "okay";
+};
+
+&rknpu {
+	status = "okay";
+	/delete-property/ power-domains;
+};
+
+&rknpu_mmu {
+	status = "disabled";
+};
+
+&vcc3v3_lcd0_n {
+	regulator-always-on;
+};
+
+&vcc3v3_lcd1_n {
+	regulator-always-on;
+};
+
+&vcc3v3_pcie {
+	regulator-always-on;
+	regulator-boot-on;
+};
+
+&vcc5v0_otg {
+	regulator-always-on;
+	regulator-boot-on;
+};
+
+&uart2 {
+	status = "okay";
+	syno,fixed-baudrate = <1500000>;
+};
+
+&pmu_io_domains {
+    status = "okay";
+    pmuio2-supply = <&vcc3v3_pmu>;
+    vccio1-supply = <&vccio_acodec>;
+    vccio3-supply = <&vccio_sd>;
+    vccio4-supply = <&vcc_3v3>;
+    vccio5-supply = <&vcc_3v3>;
+    vccio6-supply = <&vcc_1v8>;
+    vccio7-supply = <&vcc_3v3>;
+};

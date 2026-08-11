@@ -153,6 +153,9 @@ static const struct of_device_id blacklist[] __initconst = {
 	{ .compatible = "qcom,msm8974", },
 	{ .compatible = "qcom,msm8960", },
 
+	{ .compatible = "rockchip,rk3566", },
+	{ .compatible = "rockchip,rk3568", },
+
 	{ }
 };
 

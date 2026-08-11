@@ -33,9 +33,9 @@ static DEFINE_IDA(iommu_group_ida);
 
 #ifdef MY_ABC_HERE
 #define IOMMU_CMD_LINE_DMA_API		BIT(0)
-static unsigned int iommu_def_domain_type __read_mostly = IOMMU_DOMAIN_IDENTITY;
+static unsigned int iommu_def_domain_type __read_mostly = IOMMU_DOMAIN_DMA;
 static bool iommu_dma_strict __read_mostly = true;
-static u32 iommu_cmd_line __read_mostly = IOMMU_CMD_LINE_DMA_API;
+static u32 iommu_cmd_line __read_mostly;
 #else /* MY_ABC_HERE */
 static unsigned int iommu_def_domain_type __read_mostly;
 static bool iommu_dma_strict __read_mostly = true;

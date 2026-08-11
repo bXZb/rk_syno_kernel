@@ -54,6 +54,8 @@ struct class *drm_class;
 
 static char *drm_devnode(struct device *dev, umode_t *mode)
 {
+	if (mode)
+		*mode = 0666;
 	return kasprintf(GFP_KERNEL, "dri/%s", dev_name(dev));
 }
 
