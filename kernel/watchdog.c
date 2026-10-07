@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Detect hard and soft lockups on a system
@@ -53,11 +50,11 @@ unsigned long *watchdog_cpumask_bits = cpumask_bits(&watchdog_cpumask);
 #ifdef CONFIG_HARDLOCKUP_DETECTOR
 
 # ifdef CONFIG_SMP
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PRINT_BACKTRACE_ON_LOCKUP
 int __read_mostly sysctl_hardlockup_all_cpu_backtrace = 1;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_PRINT_BACKTRACE_ON_LOCKUP */
 int __read_mostly sysctl_hardlockup_all_cpu_backtrace;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PRINT_BACKTRACE_ON_LOCKUP */
 # endif /* CONFIG_SMP */
 
 /*
@@ -164,11 +161,11 @@ static void lockup_detector_update_enable(void)
 #define SOFTLOCKUP_RESET	ULONG_MAX
 
 #ifdef CONFIG_SMP
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PRINT_BACKTRACE_ON_LOCKUP
 int __read_mostly sysctl_softlockup_all_cpu_backtrace = 1;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_PRINT_BACKTRACE_ON_LOCKUP */
 int __read_mostly sysctl_softlockup_all_cpu_backtrace;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PRINT_BACKTRACE_ON_LOCKUP */
 #endif
 
 static struct cpumask watchdog_allowed_mask __read_mostly;
@@ -185,9 +182,9 @@ static DEFINE_PER_CPU(struct hrtimer, watchdog_hrtimer);
 static DEFINE_PER_CPU(bool, softlockup_touch_sync);
 static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
 static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SOFTLOCKUP_COUNTER
 static DEFINE_PER_CPU(unsigned long, softlockup_counter);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SOFTLOCKUP_COUNTER */
 static unsigned long soft_lockup_nmi_warn;
 
 static int __init nowatchdog_setup(char *str)
@@ -331,7 +328,7 @@ static void watchdog_interrupt_count(void)
 	__this_cpu_inc(hrtimer_interrupts);
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_HARDLOCKUP_PANIC_ENHANCE
 /* update hrtimer for each watchdog enabled CPU */
 void watchdog_hrtimer_inc(void)
 {
@@ -341,7 +338,7 @@ void watchdog_hrtimer_inc(void)
 	}
 }
 EXPORT_SYMBOL(watchdog_hrtimer_inc);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_HARDLOCKUP_PANIC_ENHANCE */
 
 static DEFINE_PER_CPU(struct completion, softlockup_completion);
 static DEFINE_PER_CPU(struct cpu_stop_work, softlockup_stop_work);
@@ -428,7 +425,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
 				return HRTIMER_RESTART;
 		}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SOFTLOCKUP_COUNTER
 		if (__this_cpu_read(softlockup_counter) >= CONFIG_SYNO_SOFTLOCKUP_COUNTER_MAX) {
 			if (softlockup_all_cpu_backtrace) {
 				clear_bit_unlock(0, &soft_lockup_nmi_warn);
@@ -437,7 +434,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
 		} else {
 			__this_cpu_inc(softlockup_counter);
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SOFTLOCKUP_COUNTER */
 
 		/* Start period for the next softlockup warning. */
 		update_touch_ts();

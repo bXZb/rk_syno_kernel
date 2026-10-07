@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * NVM Express device driver
@@ -32,18 +29,18 @@
 
 #include "trace.h"
 #include "nvme.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OF
 #include <linux/synolib.h>
 #include <linux/of.h>
 extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath,
 					 const int size);
 extern int syno_compare_dts_pciepath(const struct pci_dev *pdev,
 				     const struct device_node *pDeviceNode);
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_OF */
+#ifdef CONFIG_SYNO_NVME_WAIT_DISK_READY
 extern void syno_disk_not_ready_count_increase(void);
 extern void syno_disk_not_ready_count_decrease(void);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NVME_WAIT_DISK_READY */
 
 #define SQ_SIZE(q)	((q)->q_depth << (q)->sqes)
 #define CQ_SIZE(q)	((q)->q_depth * sizeof(struct nvme_completion))
@@ -168,12 +165,12 @@ struct nvme_dev {
 	unsigned int nr_allocated_queues;
 	unsigned int nr_write_queues;
 	unsigned int nr_poll_queues;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NVME_SW_ACTIVITY
 	int syno_disk_index;
-#endif /* MY_DEF_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NVME_SW_ACTIVITY */
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 	struct work_struct syno_remap_work;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 };
 
 static int io_queue_depth_set(const char *val, const struct kernel_param *kp)
@@ -237,7 +234,7 @@ struct nvme_queue {
 	struct completion delete_done;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_DEVICE_INDEX
 #define SYNO_NVME_INDEX_OFFSET 1000
 int SynoNVMeGetDeviceIndex(struct gendisk *disk)
 {
@@ -250,7 +247,7 @@ int SynoNVMeGetDeviceIndex(struct gendisk *disk)
 	return ns->ctrl->instance + SYNO_NVME_INDEX_OFFSET;
 }
 EXPORT_SYMBOL(SynoNVMeGetDeviceIndex);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_DEVICE_INDEX */
 
 /*
  * The nvme_iod describes the data in an I/O.
@@ -271,12 +268,12 @@ struct nvme_iod {
 	struct scatterlist *sg;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 struct syno_nvme_remap_req {
 	struct list_head list;
 	struct request *req;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 
 static inline unsigned int nvme_dbbuf_size(struct nvme_dev *dev)
 {
@@ -1020,7 +1017,7 @@ static void nvme_pci_complete_rq(struct request *req)
 static inline bool nvme_cqe_pending(struct nvme_queue *nvmeq)
 {
 	struct nvme_completion *hcqe = &nvmeq->cqes[nvmeq->cq_head];
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT
 	if (unlikely(nvmeq->dev->ctrl.syno_force_timeout)) {
 		/*
 		 * Not respond to any IRQ to simulate the NVMe device controller
@@ -1028,7 +1025,7 @@ static inline bool nvme_cqe_pending(struct nvme_queue *nvmeq)
 		 */
 		return false;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT */
 
 	return (le16_to_cpu(READ_ONCE(hcqe->status)) & 1) == nvmeq->cq_phase;
 }
@@ -1180,7 +1177,7 @@ static void nvme_pci_submit_async_event(struct nvme_ctrl *ctrl)
 	nvme_submit_cmd(nvmeq, &c, true);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 static int get_req_error_log(struct request *req,
 		struct syno_nvme_error_log_page *log_pages, int entries,
 		struct syno_nvme_error_log_page **err_idx)
@@ -1208,9 +1205,9 @@ end:
 
 extern unsigned char
 syno_is_sector_need_auto_remap(struct gendisk *disk, sector_t lba);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_AUTO_REMAP_REPORT
 extern void syno_req_set_bio_auto_remap_flag(struct request *req, sector_t lba);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_AUTO_REMAP_REPORT */
 
 static int process_req(struct nvme_ctrl *ctrl,
 		struct syno_nvme_remap_req *remap_req,
@@ -1276,9 +1273,9 @@ static int process_req(struct nvme_ctrl *ctrl,
 		goto err;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_AUTO_REMAP_REPORT
 	syno_req_set_bio_auto_remap_flag(req, err_idx->lba);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_AUTO_REMAP_REPORT */
 
 end:
 	ret =  0;
@@ -1382,7 +1379,7 @@ err:
 	return ret;
 }
 EXPORT_SYMBOL(syno_nvme_do_remap_req);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 
 static int adapter_delete_queue(struct nvme_dev *dev, u8 opcode, u16 id)
 {
@@ -2682,12 +2679,12 @@ static int nvme_pci_enable(struct nvme_dev *dev)
 		dev->q_depth = 64;
 		dev_err(dev->ctrl.device, "detected PM1725 NVMe controller, "
                         "set queue depth=%u\n", dev->q_depth);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NVME_SAMSUNG_QDEPTH
 	} else if (pdev->vendor == PCI_VENDOR_ID_SAMSUNG && pdev->device == 0xa808) {
 		dev->q_depth = 64;
 		dev_err(dev->ctrl.device, "detected samsung 970 EVO controller, "
                         "set queue depth=%u\n", dev->q_depth);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NVME_SAMSUNG_QDEPTH */
 	}
 
 	/*
@@ -2740,11 +2737,11 @@ static void nvme_dev_disable(struct nvme_dev *dev, bool shutdown)
 	mutex_lock(&dev->shutdown_lock);
 	if (pci_is_enabled(pdev)) {
 		u32 csts = readl(dev->bar + NVME_REG_CSTS);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT
 		if (unlikely(dev->ctrl.syno_force_timeout)) {
 			csts |= NVME_CSTS_CFS;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT */
 
 		if (dev->ctrl.state == NVME_CTRL_LIVE ||
 		    dev->ctrl.state == NVME_CTRL_RESETTING) {
@@ -3140,14 +3137,14 @@ static void nvme_async_probe(void *data, async_cookie_t cookie)
 	flush_work(&dev->ctrl.scan_work);
 	nvme_put_ctrl(&dev->ctrl);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NVME_WAIT_DISK_READY
 	syno_disk_not_ready_count_decrease();
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NVME_WAIT_DISK_READY */
 
 }
 
-#ifdef MY_DEF_HERE
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_SW_ACTIVITY
+#ifdef CONFIG_SYNO_OF
 static int syno_nvme_index_get(const struct pci_dev *pdev)
 {
 	int iIndex = -1;
@@ -3182,14 +3179,14 @@ static int syno_nvme_index_get(const struct pci_dev *pdev)
 END:
 	return iIndex;
 }
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_OF */
 static int syno_nvme_index_get(const struct pci_dev *pdev)
 {
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OF */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_TRIGGER
 extern void syno_ledtrig_active_set(int iLedNum);
 extern int *gpGreenLedMap;
 
@@ -3202,10 +3199,10 @@ void syno_nvme_sw_activity_by_lp3943(struct nvme_ctrl *ctrl)
 	syno_ledtrig_active_set(gpGreenLedMap[dev->syno_disk_index]);
 }
 EXPORT_SYMBOL(syno_nvme_sw_activity_by_lp3943);
-#endif /* MY_ABC_HERE */
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_LEDS_TRIGGER */
+#endif /* CONFIG_SYNO_NVME_SW_ACTIVITY */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_BLOCK_INFO
 /* copy from driver/scsi/sd.c */
 static void syno_pciepath_enum(struct device *dev, char *buf) {
 	struct pci_dev *pdev = NULL;
@@ -3222,7 +3219,7 @@ static void syno_pciepath_enum(struct device *dev, char *buf) {
 
 	snprintf(buf, BLOCK_INFO_SIZE, "%spciepath=%s\n", buf, sztemp);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_BLOCK_INFO */
 
 static int nvme_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
@@ -3256,9 +3253,9 @@ static int nvme_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	INIT_WORK(&dev->ctrl.reset_work, nvme_reset_work);
 	INIT_WORK(&dev->remove_work, nvme_remove_dead_ctrl_work);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 	INIT_WORK(&dev->syno_remap_work, syno_nvme_remap_work);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 	mutex_init(&dev->shutdown_lock);
 
 	result = nvme_setup_prp_pools(dev);
@@ -3298,18 +3295,18 @@ static int nvme_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	if (result)
 		goto release_mempool;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_BLOCK_INFO
 	syno_pciepath_enum(&pdev->dev, dev->ctrl.syno_block_info);
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_NVME_BLOCK_INFO */
+#ifdef CONFIG_SYNO_NVME_SW_ACTIVITY
 	dev->syno_disk_index = syno_nvme_index_get(pdev) - 1;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NVME_SW_ACTIVITY */
 
 	dev_info(dev->ctrl.device, "pci function %s\n", dev_name(&pdev->dev));
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NVME_WAIT_DISK_READY
 	syno_disk_not_ready_count_increase();
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NVME_WAIT_DISK_READY */
 
 	nvme_reset_ctrl(&dev->ctrl);
 	async_schedule(nvme_async_probe, dev);
@@ -3375,9 +3372,9 @@ static void nvme_remove(struct pci_dev *pdev)
 		nvme_dev_disable(dev, true);
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 	flush_work(&dev->syno_remap_work);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 	flush_work(&dev->ctrl.reset_work);
 	nvme_stop_ctrl(&dev->ctrl);
 	nvme_remove_namespaces(&dev->ctrl);

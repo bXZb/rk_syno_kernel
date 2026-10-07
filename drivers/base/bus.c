@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * bus.c - bus driver management
@@ -590,7 +587,7 @@ static ssize_t uevent_store(struct device_driver *drv, const char *buf,
 }
 static DRIVER_ATTR_WO(uevent);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_UAS_ENABLE_CONTROL
 int syno_all_usb_uas_enabled = 0;
 EXPORT_SYMBOL(syno_all_usb_uas_enabled);
 
@@ -609,7 +606,7 @@ static ssize_t syno_all_usb_uas_enabled_store(struct bus_type *bus,
 	return count;
 }
 static BUS_ATTR_RW(syno_all_usb_uas_enabled);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_UAS_ENABLE_CONTROL */
 
 /**
  * bus_add_driver - Add a driver to the bus.
@@ -881,22 +878,22 @@ int bus_register(struct bus_type *bus)
 	if (retval)
 		goto bus_groups_fail;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_UAS_ENABLE_CONTROL
 	if (!strncmp(bus->name, "usb", 3)) {
 		retval = bus_create_file(bus, &bus_attr_syno_all_usb_uas_enabled);
 		if (retval)
 			goto bus_syno_all_usb_uas_enabled_fail;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_UAS_ENABLE_CONTROL */
 
 	pr_debug("bus: '%s': registered\n", bus->name);
 	return 0;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_UAS_ENABLE_CONTROL
 bus_syno_all_usb_uas_enabled_fail:
 	if (!strncmp(bus->name, "usb", 3))
 		bus_remove_file(bus, &bus_attr_syno_all_usb_uas_enabled);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_UAS_ENABLE_CONTROL */
 bus_groups_fail:
 	remove_probe_files(bus);
 bus_probe_files_fail:

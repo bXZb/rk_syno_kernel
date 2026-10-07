@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  hosts.c Copyright (C) 1992 Drew Eckhardt
@@ -46,9 +43,9 @@
 #include "scsi_priv.h"
 #include "scsi_logging.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_SPINDOWN_PARALLELLY
 extern int syno_disk_paraldown_wait(struct device *dev);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_SPINDOWN_PARALLELLY */
 
 static int shost_eh_deadline = -1;
 
@@ -64,19 +61,19 @@ static void scsi_host_cls_release(struct device *dev)
 	put_device(&class_to_shost(dev)->shost_gendev);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_SPINDOWN_PARALLELLY
 static int syno_scsi_host_shutdown_pre(struct device *dev)
 {
 	return syno_disk_paraldown_wait(dev);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_SPINDOWN_PARALLELLY */
 
 static struct class shost_class = {
 	.name		= "scsi_host",
 	.dev_release	= scsi_host_cls_release,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_SPINDOWN_PARALLELLY
 	.shutdown_pre	= syno_scsi_host_shutdown_pre,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_SPINDOWN_PARALLELLY */
 };
 
 /**
@@ -404,7 +401,7 @@ struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *sht, int privsize)
 
 	shost->host_lock = &shost->default_lock;
 	spin_lock_init(shost->host_lock);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP
 	/*
 	 * This special lock is used to power on eunit in deep sleep state.
 	 * The true lock configuration is setup later in ata eh, so we set 0 to eunit_lock_configured here.
@@ -415,7 +412,7 @@ struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *sht, int privsize)
 	shost->uiata_eh_flag = 0;
 	shost->eunit_lock_configured = 0;
 	shost->is_eunit_deepsleep = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP */
 	shost->shost_state = SHOST_CREATED;
 	INIT_LIST_HEAD(&shost->__devices);
 	INIT_LIST_HEAD(&shost->__targets);

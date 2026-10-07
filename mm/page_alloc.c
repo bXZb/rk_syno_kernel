@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/mm/page_alloc.c
@@ -7980,7 +7977,7 @@ int __meminit init_per_zone_wmark_min(void)
 }
 postcore_initcall(init_per_zone_wmark_min)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MULTI_KSWAPD
 int kswapd_threads_sysctl_handler(struct ctl_table *table, int write,
 	void __user *buffer, size_t *length, loff_t *ppos)
 {
@@ -7996,7 +7993,7 @@ int kswapd_threads_sysctl_handler(struct ctl_table *table, int write,
 	return 0;
 }
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MULTI_KSWAPD */
 /*
  * min_free_kbytes_sysctl_handler - just a wrapper around proc_dointvec() so
  *	that we can call two helper functions whenever min_free_kbytes

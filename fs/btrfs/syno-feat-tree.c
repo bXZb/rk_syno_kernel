@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Copyright (C) 2020 Synology Inc.  All rights reserved.
  */
@@ -134,7 +131,7 @@ int btrfs_syno_feat_tree_enable(struct btrfs_fs_info *fs_info)
 		goto out;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 	/*
 	 * Don't clean up existing feature-tree
 	 */
@@ -150,7 +147,7 @@ int btrfs_syno_feat_tree_enable(struct btrfs_fs_info *fs_info)
 			goto out;
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 
 	ret = btrfs_create_syno_feat_tree(fs_info);
 	if (ret) {
@@ -168,7 +165,7 @@ static inline int syno_feat_tree_need_stop(struct btrfs_fs_info *fs_info)
 	return sb_rdonly(fs_info->sb) || btrfs_fs_closing(fs_info);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 	/*
 	 * locker will store information in feature-tree, and we cannot provide any
 	 * abilities to remove feature-tree.
@@ -303,7 +300,7 @@ int btrfs_syno_feat_tree_disable(struct btrfs_fs_info *fs_info)
 out:
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 
 int btrfs_syno_feat_tree_load_status_from_disk(struct btrfs_fs_info *fs_info)
 {

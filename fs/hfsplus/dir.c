@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/hfsplus/dir.c
@@ -40,9 +37,9 @@ static struct dentry *hfsplus_lookup(struct inode *dir, struct dentry *dentry,
 	int err;
 	u32 cnid, linkid = 0;
 	u16 type;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 	bool nfc = false;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 
 	sb = dir->i_sb;
 
@@ -50,26 +47,26 @@ static struct dentry *hfsplus_lookup(struct inode *dir, struct dentry *dentry,
 	err = hfs_find_init(HFSPLUS_SB(sb)->cat_tree, &fd);
 	if (err)
 		return ERR_PTR(err);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 NFC:
 	err = hfsplus_cat_build_key(sb, fd.search_key, dir->i_ino,
 			&dentry->d_name, nfc);
 #else
 	err = hfsplus_cat_build_key(sb, fd.search_key, dir->i_ino,
 			&dentry->d_name);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 	if (unlikely(err < 0))
 		goto fail;
 again:
 	err = hfs_brec_read(&fd, &entry, sizeof(entry));
 	if (err) {
 		if (err == -ENOENT) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 			if (!nfc) {
 				nfc = true;
 				goto NFC;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 			hfs_find_exit(&fd);
 			/* No such entry */
 			inode = NULL;
@@ -118,7 +115,7 @@ again:
 					be32_to_cpu(entry.file.permissions.dev);
 				str.len = sprintf(name, "iNode%d", linkid);
 				str.name = name;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 				err = hfsplus_cat_build_key(sb, fd.search_key,
 					HFSPLUS_SB(sb)->hidden_dir->i_ino,
 					&str, false);
@@ -126,7 +123,7 @@ again:
 				err = hfsplus_cat_build_key(sb, fd.search_key,
 					HFSPLUS_SB(sb)->hidden_dir->i_ino,
 					&str);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 				if (unlikely(err < 0))
 					goto fail;
 				goto again;
@@ -145,11 +142,11 @@ again:
 	if (S_ISREG(inode->i_mode))
 		HFSPLUS_I(inode)->linkid = linkid;
 out:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_CASELESS
 	/* Prevent the negative dentry in the encoding case from being cached */
 	if (!inode && test_bit(HFSPLUS_SB_CASEFOLD, &HFSPLUS_SB(sb)->flags))
 		return NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_CASELESS */
 	return d_splice_alias(inode, dentry);
 fail:
 	hfs_find_exit(&fd);
@@ -437,13 +434,13 @@ static int hfsplus_unlink(struct inode *dir, struct dentry *dentry)
 	inode->i_ctime = current_time(inode);
 	mark_inode_dirty(inode);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_CASELESS
 	/* VFS negative dentries are incompatible with encoding and
 	 * case-insensitiveness
 	 */
 	if (test_bit(HFSPLUS_SB_CASEFOLD, &sbi->flags))
 		d_invalidate(dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_CASELESS */
 out:
 	mutex_unlock(&sbi->vh_mutex);
 	return res;
@@ -467,13 +464,13 @@ static int hfsplus_rmdir(struct inode *dir, struct dentry *dentry)
 	hfsplus_delete_inode(inode);
 	mark_inode_dirty(inode);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_CASELESS
 	/* VFS negative dentries are incompatible with encoding and
 	 * case-insensitiveness
 	 */
 	if (test_bit(HFSPLUS_SB_CASEFOLD, &sbi->flags))
 		d_invalidate(dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_CASELESS */
 out:
 	mutex_unlock(&sbi->vh_mutex);
 	return res;
@@ -612,11 +609,11 @@ const struct inode_operations hfsplus_dir_inode_operations = {
 	.rename			= hfsplus_rename,
 	.getattr		= hfsplus_getattr,
 	.listxattr		= hfsplus_listxattr,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_CREATE_TIME
 	.syno_getattr		= hfsplus_syno_getattr,
 	.syno_get_crtime	= hfsplus_syno_get_crtime,
 	.syno_set_crtime	= hfsplus_syno_set_crtime,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_CREATE_TIME */
 };
 
 const struct file_operations hfsplus_dir_operations = {

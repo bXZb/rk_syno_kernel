@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2011 Novell Inc.
@@ -118,7 +115,7 @@ void ovl_dentry_update_reval(struct dentry *dentry, struct dentry *upperdentry,
 
 bool ovl_dentry_weird(struct dentry *dentry)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OVERLAYFS_ALLOW_CUSTOMIZED_DENTRY_OPS
 	return dentry->d_flags & (DCACHE_NEED_AUTOMOUNT |
 				  DCACHE_MANAGE_TRANSIT);
 #else

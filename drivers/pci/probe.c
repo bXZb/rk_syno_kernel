@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * PCI detection and setup code
@@ -24,9 +21,9 @@
 #include <linux/pm_runtime.h>
 #include "pci.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PCI_ASM1806_SUBID_WORKAROUND
 #include <linux/synobios.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PCI_ASM1806_SUBID_WORKAROUND */
 
 #define CARDBUS_LATENCY_TIMER	176	/* secondary latency timer */
 #define CARDBUS_RESERVE_BUSNR	3
@@ -1739,7 +1736,7 @@ static void pci_msi_setup_pci_dev(struct pci_dev *dev)
 		pci_msix_clear_and_set_ctrl(dev, PCI_MSIX_FLAGS_ENABLE, 0);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PCI_MISSING_DEVICE
 extern int gSynoResetFlag;
 void syno_pcie_nvme_check(struct pci_dev *dev)
 {
@@ -1778,7 +1775,7 @@ void syno_pcie_nvme_check(struct pci_dev *dev)
 END:
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PCI_MISSING_DEVICE */
 
 /**
  * pci_intx_mask_broken - Test PCI_COMMAND_INTX_DISABLE writability
@@ -1822,9 +1819,9 @@ static void early_dump_pci_device(struct pci_dev *pdev)
 		       value, 256, false);
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 extern unsigned int syno_pci_dev_to_layer(struct pci_dev *);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
 
 /**
  * pci_setup_device - Fill in class and map information of a device
@@ -1977,14 +1974,14 @@ int pci_setup_device(struct pci_dev *dev)
 			pci_read_config_word(dev, pos + PCI_SSVID_DEVICE_ID, &dev->subsystem_device);
 		}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PCI_ASM1806_SUBID_WORKAROUND
 		if (syno_is_hw_version(HW_DS1621p) || syno_is_hw_version(HW_DS1520p)) {
 			if ( 0x1b21 == dev->vendor && 0x1806 == dev->device ) {
 				dev->subsystem_vendor = 0;
 				dev->subsystem_device = 0;
 			}
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PCI_ASM1806_SUBID_WORKAROUND */
 
 		break;
 
@@ -2008,13 +2005,13 @@ int pci_setup_device(struct pci_dev *dev)
 		dev->class = PCI_CLASS_NOT_DEFINED << 8;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PCI_MISSING_DEVICE
 	syno_pcie_nvme_check(dev);
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_PCI_MISSING_DEVICE */
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 	INIT_LIST_HEAD(&dev->syno_device_list);
 	syno_pci_dev_to_layer(dev);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
 	/* We found a fine healthy device, go go go... */
 	return 0;
 }

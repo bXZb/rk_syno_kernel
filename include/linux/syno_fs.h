@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2000-2022 Synology Inc.
@@ -8,7 +5,7 @@
 #ifndef _LINUX_SYNO_FS_H
 #define _LINUX_SYNO_FS_H
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_BIT
 static inline int syno_op_get_archive_bit(struct dentry *dentry, unsigned int *archive_bit)
 {
 	int err = 0;
@@ -54,9 +51,9 @@ static inline int syno_op_set_archive_bit(struct dentry *dentry, unsigned int ar
 
 long syno_archive_bit_set(struct dentry *dentry, unsigned int cmd);
 long syno_archive_bit_overwrite(struct dentry *dentry, unsigned int flags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CREATE_TIME
 static inline int syno_op_get_crtime(struct inode *inode, struct timespec64 *time)
 {
 	int error = 0;
@@ -84,9 +81,9 @@ static inline int syno_op_set_crtime(struct inode *inode, struct timespec64 *tim
 
 	return error;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CREATE_TIME */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_VERSION
 static inline int syno_op_get_sb_archive_version(struct super_block *sb,
 						 u32 *version)
 {
@@ -144,9 +141,9 @@ out_lock:
 	mutex_unlock(&inode->i_archive_version_mutex);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_LOCKER
 static inline int syno_op_locker_mode_get(struct inode *inode, enum locker_mode *mode)
 {
 	if (!inode->i_op->syno_locker_mode_get)
@@ -240,9 +237,9 @@ static inline bool syno_op_locker_is_expired(struct inode *inode)
 
 	return IS_LOCKER_STATE_EXPIRED(state);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_LOCKER */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_STAT
 static inline int syno_op_getattr(struct dentry *dentry,
 				  struct kstat *stat,
 				  unsigned int syno_flags)
@@ -259,29 +256,29 @@ static inline int syno_op_getattr(struct dentry *dentry,
 		stat->is_inline = false;
 	if (syno_flags & SYNOST_COMPRESSION)
 		stat->syno_compressed = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_BIT
 	if (syno_flags & SYNOST_ARCHIVE_BIT)
 		stat->syno_archive_bit = 0;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_FS_ARCHIVE_VERSION
 	if (syno_flags & SYNOST_ARCHIVE_VER)
 		stat->syno_archive_version = 0;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FS_ARCHIVE_VERSION */
+#ifdef CONFIG_SYNO_FS_CREATE_TIME
 	if (syno_flags & SYNOST_CREATE_TIME) {
 		stat->syno_create_time.tv_sec = 0;
 		stat->syno_create_time.tv_nsec = 0;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CREATE_TIME */
 
 	if (inode->i_op->syno_getattr)
 		return inode->i_op->syno_getattr(dentry, stat, syno_flags);
 
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_STAT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 #define IS_SYNOACL_SUPERUSER()      (uid_eq(KUIDT_INIT(0), current_fsuid()))
 
 /*
@@ -332,6 +329,6 @@ is_syno_archive_bit_enable(struct inode *inode, struct dentry * dentry,
 
 #define is_synoacl_owner(dentry)                IS_SYNOACL_OWNER_IS_GROUP(dentry)?in_group_p(dentry->d_inode->i_gid):(uid_eq(dentry->d_inode->i_uid, current_fsuid()))
 #define is_synoacl_owner_or_capable(dentry)     (is_synoacl_owner(dentry) || capable(CAP_FOWNER))
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 #endif /* _LINUX_SYNO_FS_H */

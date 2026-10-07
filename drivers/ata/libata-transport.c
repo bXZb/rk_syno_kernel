@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  Copyright 2008 ioogle, Inc.  All rights reserved.
@@ -37,24 +34,24 @@
 #include <linux/uaccess.h>
 #include <linux/pm_runtime.h>
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
 #include <linux/synolib.h>
 #include <linux/pci.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
 
 #include "libata.h"
 #include "libata-transport.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_ERROR_HANDLING_FLAG
 #define ATA_PORT_ATTRS		4
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_ERROR_HANDLING_FLAG */
 #define ATA_PORT_ATTRS		3
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_SATA_ERROR_HANDLING_FLAG */
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
 #define ATA_LINK_ATTRS		5
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_DISK_POWER_MANAGER */
 #define ATA_LINK_ATTRS		3
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
 #define ATA_DEV_ATTRS		9
 
 struct scsi_transport_template;
@@ -234,9 +231,9 @@ static DEVICE_ATTR(name, S_IRUGO, show_ata_port_##name, NULL)
 ata_port_simple_attr(nr_pmp_links, nr_pmp_links, "%d\n", int);
 ata_port_simple_attr(stats.idle_irq, idle_irq, "%ld\n", unsigned long);
 ata_port_simple_attr(local_port_no, port_no, "%u\n", unsigned int);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_ERROR_HANDLING_FLAG
 ata_port_simple_attr(error_handling, error_handling, "%u\n", unsigned int);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_ERROR_HANDLING_FLAG */
 
 static DECLARE_TRANSPORT_CLASS(ata_port_class,
 			       "ata_port", NULL, NULL, NULL);
@@ -364,7 +361,7 @@ ata_link_linkspeed_attr(hw_sata_spd_limit, fls);
 ata_link_linkspeed_attr(sata_spd_limit, fls);
 ata_link_linkspeed_attr(sata_spd, noop);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
 extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
 static void syno_pciepath_enum(struct device *dev, char *buf) {
 	struct pci_dev *pdev = NULL;
@@ -436,7 +433,7 @@ static ssize_t ata_link_dpm_slot_attr_store(struct device *dev,
 }
 
 DEVICE_ATTR(syno_dpm_slot_attr, 0644, ata_link_dpm_slot_attr_show, ata_link_dpm_slot_attr_store);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
 
 static DECLARE_TRANSPORT_CLASS(ata_link_class,
 		"ata_link", NULL, NULL, NULL);
@@ -789,10 +786,10 @@ static int ata_tdev_add(struct ata_device *ata_dev)
 
 #define SETUP_LINK_ATTRIBUTE(field)					\
 	SETUP_TEMPLATE(link_attrs, field, S_IRUGO, 1)
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
 #define SETUP_LINK_ATTRIBUTE_WRITEABLE(field)					\
 	SETUP_TEMPLATE(link_attrs, field, S_IRUGO|S_IWUSR, 1)
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
 
 #define SETUP_PORT_ATTRIBUTE(field)					\
 	SETUP_TEMPLATE(port_attrs, field, S_IRUGO, 1)
@@ -814,9 +811,9 @@ struct scsi_transport_template *ata_attach_transport(void)
 
 	i->t.eh_strategy_handler	= ata_scsi_error;
 	i->t.user_scan			= ata_scsi_user_scan;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP
 	i->t.is_eunit_deepsleep		= ata_scsi_is_eunit_deepsleep;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP */
 
 	i->t.host_attrs.ac.attrs = &i->port_attrs[0];
 	i->t.host_attrs.ac.class = &ata_port_class.class;
@@ -837,9 +834,9 @@ struct scsi_transport_template *ata_attach_transport(void)
 	SETUP_PORT_ATTRIBUTE(nr_pmp_links);
 	SETUP_PORT_ATTRIBUTE(idle_irq);
 	SETUP_PORT_ATTRIBUTE(port_no);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_ERROR_HANDLING_FLAG
 	SETUP_PORT_ATTRIBUTE(error_handling);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_ERROR_HANDLING_FLAG */
 	BUG_ON(count > ATA_PORT_ATTRS);
 	i->port_attrs[count] = NULL;
 
@@ -847,10 +844,10 @@ struct scsi_transport_template *ata_attach_transport(void)
 	SETUP_LINK_ATTRIBUTE(hw_sata_spd_limit);
 	SETUP_LINK_ATTRIBUTE(sata_spd_limit);
 	SETUP_LINK_ATTRIBUTE(sata_spd);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
 	SETUP_LINK_ATTRIBUTE(syno_ata_link_info);
 	SETUP_LINK_ATTRIBUTE_WRITEABLE(syno_dpm_slot_attr);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
 	BUG_ON(count > ATA_LINK_ATTRS);
 	i->link_attrs[count] = NULL;
 

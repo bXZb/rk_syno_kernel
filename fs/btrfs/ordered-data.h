@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
@@ -65,13 +62,13 @@ enum {
 	BTRFS_ORDERED_LOGGED_CSUM,
 	/* We wait for this extent to complete in the current transaction */
 	BTRFS_ORDERED_PENDING,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_PRIORITY_ORDERED_EXTENT
 	BTRFS_ORDERED_WORK_INITIALIZED,
 	BTRFS_ORDERED_HIGH_PRIORITY,
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_BTRFS_PRIORITY_ORDERED_EXTENT */
+#ifdef CONFIG_SYNO_BTRFS_DEDUPE
 	BTRFS_ORDERED_DEDUPED,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DEDUPE */
 };
 
 struct btrfs_ordered_extent {
@@ -138,9 +135,9 @@ struct btrfs_ordered_extent {
 	struct btrfs_work flush_work;
 	struct list_head work_list;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_PRIORITY_ORDERED_EXTENT
 	bool high_priority;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_PRIORITY_ORDERED_EXTENT */
 };
 
 /*

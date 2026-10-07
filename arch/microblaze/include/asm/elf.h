@@ -10,6 +10,14 @@
 #include <uapi/asm/elf.h>
 
 #ifndef __uClinux__
+#ifndef ELF_GREG_T
+#endif
+#ifndef ELF_NGREG
+#endif
+#ifndef ELF_GREGSET_T
+#endif
+#ifndef ELF_FPREGSET_T
+#endif
 #ifdef __MICROBLAZEEL__
 #else
 #endif

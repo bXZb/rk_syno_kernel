@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Marvell 10G 88x3310 PHY driver
@@ -31,9 +28,9 @@
 #include <linux/marvell_phy.h>
 #include <linux/phy.h>
 #include <linux/sfp.h>
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 #include <linux/netdevice.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 #define MV_PHY_ALASKA_NBT_QUIRK_MASK	0xfffffffe
 #define MV_PHY_ALASKA_NBT_QUIRK_REV	(MARVELL_PHY_ID_88X3310 | 0xa)
@@ -104,7 +101,7 @@ enum {
 	MV_V2_TEMP		= 0xf08c,
 	MV_V2_TEMP_UNKNOWN	= 0x9600, /* unknown function */
 
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	/* Vendor2 MMD registers */
 	MV_AN_CTRL1_MG		= 0x0020,
 	MV_V2_MODE_CFG          = 0xf000,
@@ -119,7 +116,7 @@ enum {
 	MV_V2_MAC_ADDR_HSB	= 0xf06d,
 	MV_V2_WOL_CTRL		= 0xf06e,
 	MV_V2_HOST_KR_TUNE      = 0xf07c,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 };
 
 struct mv3310_priv {
@@ -127,7 +124,7 @@ struct mv3310_priv {
 	char *hwmon_name;
 };
 
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 /* Some PHYs within the Alaska family like 88x3310 has problems with the
  * KR Auto-negotiation. marvell datasheet for 88x3310 section 6.2.11 says that
  * KR auto-negotitaion can be enabled to adapt to the incoming SERDES by writing
@@ -140,7 +137,8 @@ static int mv3310_amd_quirk(struct phy_device *phydev)
 
 	version = phy_read_mmd(phydev, MDIO_MMD_PMAPMD, 0xC011);
 	subversion = phy_read_mmd(phydev, MDIO_MMD_PMAPMD, 0xC012);
-	dev_dbg(&phydev->mdio.dev,"%s: Marvell FW Version: %x.%x \n", __func__, version, subversion);
+	phydev_info(phydev, "Firmware version %u.%u.%u.%u\n",
+		    version >> 8, version & 255, subversion >> 8, subversion & 255);
 
 	reg = phy_read_mmd(phydev, MDIO_MMD_PHYXS, MV_V2_HOST_KR_ENABLE);
 	reg |= 0x8000;
@@ -234,7 +232,7 @@ static int mv3310_amd_quirk(struct phy_device *phydev)
 
 	return 0;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 #ifdef NO_CONFIG_HWMON
 static umode_t mv3310_hwmon_is_visible(const void *data,
@@ -411,7 +409,7 @@ static int mv3310_probe(struct phy_device *phydev)
 
 static int mv3310_suspend(struct phy_device *phydev)
 {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 	int reg=0;
 
 	/* Set PCS, PMA/PMD to low power mode */
@@ -425,7 +423,7 @@ static int mv3310_suspend(struct phy_device *phydev)
 
 	/* delay 1s for mtu switching workaround */
 	msleep(1000);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	return phy_set_bits_mmd(phydev, MDIO_MMD_VEND2, MV_V2_PORT_CTRL,
 				MV_V2_PORT_CTRL_PWRDOWN);
 }
@@ -433,7 +431,7 @@ static int mv3310_suspend(struct phy_device *phydev)
 static int mv3310_resume(struct phy_device *phydev)
 {
 	int ret;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 	int reg=0;
 
 	// /* Set PCS, PMA/PMD to normal mode */
@@ -444,7 +442,7 @@ static int mv3310_resume(struct phy_device *phydev)
 	reg = phy_read_mmd(phydev, MDIO_MMD_PMAPMD, MDIO_CTRL1);
 	reg &= ~0x0800;
 	phy_write_mmd(phydev, MDIO_MMD_PMAPMD, MDIO_CTRL1, reg);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 	ret = phy_clear_bits_mmd(phydev, MDIO_MMD_VEND2, MV_V2_PORT_CTRL,
 				 MV_V2_PORT_CTRL_PWRDOWN);
@@ -476,9 +474,9 @@ static int mv3310_config_init(struct phy_device *phydev)
 {
 	/* Check that the PHY interface type is compatible */
 	if (
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 	    phydev->interface != PHY_INTERFACE_MODE_10GKR &&
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	    phydev->interface != PHY_INTERFACE_MODE_SGMII &&
 	    phydev->interface != PHY_INTERFACE_MODE_2500BASEX &&
 	    phydev->interface != PHY_INTERFACE_MODE_XAUI &&
@@ -486,21 +484,21 @@ static int mv3310_config_init(struct phy_device *phydev)
 	    phydev->interface != PHY_INTERFACE_MODE_10GBASER)
 		return -ENODEV;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 	mv3310_amd_quirk(phydev);
 #else
 	/* Power up so reset works */
 	err = mv3310_power_up(phydev);
 	if (err)
 		return err;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 	return 0;
 #else
 	/* Enable EDPD mode - saving 600mW */
 	return mv3310_set_edpd(phydev, ETHTOOL_PHY_EDPD_DFLT_TX_MSECS);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 }
 
 static int mv3310_get_features(struct phy_device *phydev)
@@ -644,6 +642,12 @@ static int mv3310_read_status(struct phy_device *phydev)
 	if (val < 0)
  		return val;
 
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+	val = phy_read_mmd(phydev, MDIO_MMD_AN, MDIO_STAT1);
+	if (val < 0)
+		return val;
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
+
 	if (val & MDIO_AN_STAT1_COMPLETE) {
  		val = genphy_c45_read_lpa(phydev);
  		if (val < 0)
@@ -687,9 +691,6 @@ static int mv3310_read_status(struct phy_device *phydev)
 			break;
 		}
 	}
- 
-	// /* Update the pause status */
-	// phy_resolve_aneg_pause(phydev);
 
 	mv3310_update_interface(phydev);
 
@@ -701,7 +702,7 @@ static int mv3310_soft_reset(struct phy_device *phydev) {
 	return ret;
 }
 
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 static int syno_set_wol(struct phy_device *phydev, struct ethtool_wolinfo *wol)
 {
 	int ret, val;
@@ -777,7 +778,7 @@ static int syno_set_wol(struct phy_device *phydev, struct ethtool_wolinfo *wol)
 
 	return 0;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 
 static struct phy_driver mv3310_drivers[] = {
@@ -794,9 +795,9 @@ static struct phy_driver mv3310_drivers[] = {
 		.config_aneg	= mv3310_config_aneg,
 		.aneg_done	= mv3310_aneg_done,
 		.read_status	= mv3310_read_status,
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 		.set_wol	= syno_set_wol,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	},
 	{
 		.phy_id		= MARVELL_PHY_ID_88E2110,

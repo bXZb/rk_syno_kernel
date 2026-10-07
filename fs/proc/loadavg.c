@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 #include <linux/fs.h>
 #include <linux/init.h>
@@ -28,7 +25,7 @@ static int loadavg_proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 static int syno_loadavg_proc_show(struct seq_file *m, void *v)
 {
 	unsigned long avnrun_io[3];
@@ -45,14 +42,14 @@ static int syno_loadavg_proc_show(struct seq_file *m, void *v)
 		LOAD_INT(avnrun_cpu[2]), LOAD_FRAC(avnrun_cpu[2]));
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 static int __init proc_loadavg_init(void)
 {
 	proc_create_single("loadavg", 0, NULL, loadavg_proc_show);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 	proc_create_single("syno_loadavg", 0, NULL, syno_loadavg_proc_show);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 	return 0;
 }
 fs_initcall(proc_loadavg_init);

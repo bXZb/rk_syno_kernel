@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 
 #ifndef BTRFS_EXTENT_MAP_H
@@ -28,10 +25,10 @@ enum {
 	EXTENT_FLAG_FILLING,
 	/* filesystem extent mapping type */
 	EXTENT_FLAG_FS_MAPPING,
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_BTRFS_DEDUPE
 	/* dedupe processing, don't flush pages */
 	EXTENT_FLAG_DEDUPED,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DEDUPE */
 };
 
 struct extent_map {
@@ -54,27 +51,27 @@ struct extent_map {
 	refcount_t refs;
 	unsigned int compress_type;
 	struct list_head list;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 	struct list_head free_list;
 	bool bl_increase;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 struct btrfs_inode;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 
 struct extent_map_tree {
 	struct rb_root_cached map;
 	struct list_head modified_extents;
 	rwlock_t lock;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 	struct list_head not_modified_extents;
 	struct list_head syno_modified_extents;
 	atomic_t nr_extent_maps;
 	atomic_t nr_can_free_extent_maps;
 	struct btrfs_inode *inode;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 };
 
 static inline int extent_map_in_tree(const struct extent_map *em)
@@ -119,7 +116,7 @@ int btrfs_add_extent_mapping(struct btrfs_fs_info *fs_info,
 			     struct extent_map_tree *em_tree,
 			     struct extent_map **em_in, u64 start, u64 len);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 int btrfs_global_syno_extent_map_init(void);
 u64 btrfs_global_syno_extent_map_max(void);
 void btrfs_global_syno_extent_map_max_set(u64 max);
@@ -127,6 +124,6 @@ u64 btrfs_global_syno_extent_map_nr(void);
 void btrfs_global_syno_extent_map_inc(void);
 void btrfs_global_syno_extent_map_dec(void);
 void btrfs_extent_map_throttle(struct inode *inode);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 
 #endif

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2009 Oracle.  All rights reserved.
@@ -26,9 +23,9 @@ enum btrfs_trim_state {
 struct btrfs_free_space {
 	struct rb_node offset_index;
 	struct rb_node bytes_index;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	struct rb_node bytes_index_with_extent;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 	u64 offset;
 	u64 bytes;
 	u64 max_extent_size;
@@ -53,9 +50,9 @@ struct btrfs_free_space_ctl {
 	spinlock_t tree_lock;
 	struct rb_root free_space_offset;
 	struct rb_root_cached free_space_bytes;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	struct rb_root_cached free_space_bytes_with_extent;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 	u64 free_space;
 	int extents_thresh;
 	int free_extents;
@@ -147,9 +144,9 @@ void btrfs_dump_free_space(struct btrfs_block_group *block_group,
 int btrfs_find_space_cluster(struct btrfs_block_group *block_group,
 			     struct btrfs_free_cluster *cluster,
 			     u64 offset, u64 bytes, u64 empty_size
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLUSTER_ALLOCATION
 			     , u64 reserve_bytes, bool *no_cluster_downgrade
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLUSTER_ALLOCATION */
 			     );
 void btrfs_init_free_cluster(struct btrfs_free_cluster *cluster);
 u64 btrfs_alloc_from_cluster(struct btrfs_block_group *block_group,
@@ -160,9 +157,9 @@ void btrfs_return_cluster_to_free_space(
 			       struct btrfs_free_cluster *cluster);
 int btrfs_trim_block_group(struct btrfs_block_group *block_group,
 			   u64 *trimmed, u64 start, u64 end, u64 minlen
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_UNUSED_HINT
 			   , enum trim_act act
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_UNUSED_HINT */
 			   );
 int btrfs_trim_block_group_extents(struct btrfs_block_group *block_group,
 				   u64 *trimmed, u64 start, u64 end, u64 minlen,
@@ -180,11 +177,11 @@ int test_add_free_space_entry(struct btrfs_block_group *cache,
 int test_check_exists(struct btrfs_block_group *cache, u64 offset, u64 bytes);
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 void btrfs_syno_allocator_relink_block_group(struct btrfs_block_group *cache);
 void btrfs_syno_allocator_remove_block_group(struct btrfs_block_group *cache);
 void btrfs_syno_allocator_preload_block_group(struct btrfs_block_group *cache, u64 bytes);
 void btrfs_syno_allocator_release_cache_block_group(struct btrfs_block_group *cache);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 
 #endif

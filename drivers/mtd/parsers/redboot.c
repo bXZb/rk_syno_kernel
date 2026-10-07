@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Parse RedBoot-style Flash Image System (FIS) tables and
@@ -17,9 +14,9 @@
 #include <linux/of.h>
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/partitions.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MTD_INFO
 #include <linux/sched.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MTD_INFO */
 #include <linux/module.h>
 
 struct fis_image_desc {
@@ -325,7 +322,7 @@ module_mtd_part_parser(redboot_parser);
 /* mtd parsers will request the module by parser name */
 MODULE_ALIAS("RedBoot");
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MTD_INFO
 int SYNOMTDModifyFisInfo(struct mtd_info *mtd, struct SYNO_MTD_FIS_INFO SynoMtdFisInfo)
 {
 	struct fis_image_desc *buf;
@@ -404,7 +401,7 @@ out:
 	kfree(buf);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MTD_INFO */
 
 
 MODULE_LICENSE("GPL");

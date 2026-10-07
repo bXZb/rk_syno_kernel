@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2011 Fujitsu.  All rights reserved.
@@ -99,11 +96,11 @@ int btrfs_delete_delayed_dir_index(struct btrfs_trans_handle *trans,
 
 int btrfs_inode_delayed_dir_index_count(struct btrfs_inode *inode);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_COMMIT_STATS
 int btrfs_run_delayed_items_and_get_processed(struct btrfs_trans_handle *trans,
 			    unsigned long *processed_inodes,
 			    unsigned long *processed_items);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_COMMIT_STATS */
 int btrfs_run_delayed_items(struct btrfs_trans_handle *trans);
 int btrfs_run_delayed_items_nr(struct btrfs_trans_handle *trans, int nr);
 
@@ -147,9 +144,9 @@ void __cold btrfs_delayed_inode_exit(void);
 /* for debugging */
 void btrfs_assert_delayed_root_empty(struct btrfs_fs_info *fs_info);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DELAYED_INODE_THROTTLE
 int btrfs_wq_run_delayed_node(struct btrfs_delayed_root *delayed_root,
 			      struct btrfs_fs_info *fs_info, int nr);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DELAYED_INODE_THROTTLE */
 
 #endif

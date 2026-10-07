@@ -89,6 +89,21 @@ config SYNO_ACPI_APEI_AER_DBGMSG
 	default y
 	depends on ACPI_APEI_PCIEAER
 
+config SYNO_EDAC_DIMM_LABEL
+	bool "SMBIOS/DTS label for DIMM identification"
+	default y
+	depends on DMI && EDAC && SYNO_OF
+
+config SYNO_PRINTK_DEADLOCK_HANG
+	bool "Avoid printk deadlock hang"
+	default y
+	depends on HARDLOCKUP_DETECTOR_PERF
+
+config SYNO_MCELOG_RAWDATA_SHOW
+	bool "Show the raw MCE output in dmesg"
+	default y
+	depends on X86_MCELOG_LEGACY
+
 endmenu #MISC Features
 
 menu "Cgroup"

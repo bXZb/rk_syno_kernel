@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2008 Oracle.  All rights reserved.
@@ -173,9 +170,9 @@ static int check_compressed_csum(struct btrfs_inode *inode, struct bio *bio,
 		if (memcmp(&csum, cb_sum, csum_size)) {
 			btrfs_print_data_csum_error(inode, disk_start,
 					csum, cb_sum, cb->mirror_num
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 					, DATA_CORRECTION_RATE_LIMIT
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 					);
 			if (btrfs_io_bio(bio)->device)
 				btrfs_dev_stat_inc_and_print(
@@ -240,6 +237,15 @@ static void end_compressed_bio_read(struct bio *bio)
 	 * the decompression.
 	 */
 	ret = btrfs_decompress_bio(cb);
+#ifdef CONFIG_SYNO_BTRFS_DECOUPLE_NODATACOW_AND_NODATASUM
+	if (ret) {
+		struct btrfs_fs_info *fs_info = BTRFS_I(inode)->root->fs_info;
+
+		btrfs_err_rl(fs_info,
+			"failed to decompress data of ino %lu off %llu len %lu (err = %d)",
+			inode->i_ino, cb->start, cb->len, ret);
+	}
+#endif /* CONFIG_SYNO_BTRFS_DECOUPLE_NODATACOW_AND_NODATASUM */
 
 csum_failed:
 	if (ret)
@@ -435,14 +441,14 @@ blk_status_t btrfs_submit_compressed_write(struct btrfs_inode *inode, u64 start,
 			submit = btrfs_bio_fits_in_stripe(page, PAGE_SIZE, bio,
 							  0);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LIMIT_WRITE_BIO_SIZE
 		/*
 		 * For latency, limit write bio maximum with 64k, avoid too much page
 		 * is marked as writeback.
 		 */
 		if (bio_op(bio) == REQ_OP_WRITE && bio->bi_iter.bi_size >= SZ_64K)
 			submit = 1;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LIMIT_WRITE_BIO_SIZE */
 
 		page->mapping = NULL;
 		if (submit || bio_add_page(bio, page, PAGE_SIZE, 0) <
@@ -655,17 +661,17 @@ blk_status_t btrfs_submit_compressed_read(struct inode *inode, struct bio *bio,
 	em_tree = &BTRFS_I(inode)->extent_tree;
 
 	/* we need the actual starting offset of this extent in the file */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 	em = btrfs_get_extent(BTRFS_I(inode), NULL, 0,
 			      page_offset(bio_first_page_all(bio)),
 			      PAGE_SIZE);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 	read_lock(&em_tree->lock);
 	em = lookup_extent_mapping(em_tree,
 				   page_offset(bio_first_page_all(bio)),
 				   PAGE_SIZE);
 	read_unlock(&em_tree->lock);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 	if (!em)
 		return BLK_STS_IOERR;
 

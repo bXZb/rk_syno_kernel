@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  *	pci.h
@@ -44,9 +41,9 @@
 #include <uapi/linux/pci.h>
 
 #include <linux/pci_ids.h>
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 #include <linux/synolib.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
 
 #define PCI_STATUS_ERROR_BITS (PCI_STATUS_DETECTED_PARITY  | \
 			       PCI_STATUS_SIG_SYSTEM_ERROR | \
@@ -506,10 +503,13 @@ struct pci_dev {
 	char		*driver_override; /* Driver name to force a match */
 
 	unsigned long	priv_flags;	/* Private flags for the PCI driver */
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 	struct list_head syno_device_list;
 	unsigned int	syno_eunit_layer;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+	atomic_t        syno_skip_irq;
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 };
 
 static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
@@ -879,6 +879,11 @@ struct pci_driver {
 	const struct attribute_group **groups;
 	struct device_driver	driver;
 	struct pci_dynids	dynids;
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+	bool (*syno_deep_retry_support)(struct pci_dev *dev);
+	int  (*syno_deep_retry_step_1)(struct pci_dev *dev);
+	int  (*syno_deep_retry_step_2)(struct pci_dev *dev, bool release_only);
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 };
 
 #define	to_pci_driver(drv) container_of(drv, struct pci_driver, driver)

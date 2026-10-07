@@ -1,15 +1,12 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 #include <linux/synolib.h>
 #include <linux/syno_gpio.h>
 #include <linux/synobios.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SPINUP_GROUP
 #include <linux/synosata.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SPINUP_GROUP */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_GPIO
 static int syno_hdd_poweron_gpio(int index, int value)
 {
 	if (!HAVE_HDD_ENABLE(index)) { // index is 1-based
@@ -52,9 +49,9 @@ static int syno_hdd_detect_gpio(int index)
 END:
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_GPIO */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_SMBUS
 extern long g_smbus_hdd_powerctl;
 extern int gSynoSmbusHddAdapter;
 extern int gSynoSmbusHddAddress;
@@ -116,22 +113,22 @@ static int syno_hdd_poweron_smbus_all_once(void)
 
 	return 0;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
 
 DISK_PWRCTRL_TYPE SYNO_GET_DISK_PWR_TYPE(int index)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_GPIO
 	/* Check GPIO */
 	if (HAVE_HDD_ENABLE(index)) {
 		return PWRCTRL_TYPE_GPIO;
 	}
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_GPIO */
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_SMBUS
 	/* Check SMBUS */
 	if (0 < g_smbus_hdd_powerctl) {
 		return PWRCTRL_TYPE_SMBUS;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
 
 	return PWRCTRL_TYPE_UNKNOWN;
 }
@@ -149,16 +146,16 @@ int SYNO_CTRL_HDD_POWERON(int index, int value)
 	int ret = 0;
 
 	switch (SYNO_GET_DISK_PWR_TYPE(index)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_GPIO
 		case PWRCTRL_TYPE_GPIO:
 			ret = syno_hdd_poweron_gpio(index, value);
 			break;
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_GPIO */
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_SMBUS
 		case PWRCTRL_TYPE_SMBUS:
 			ret = syno_hdd_poweron_smbus(index, value);
 			break;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
 		default:
 			ret = 0;
 	}
@@ -175,16 +172,16 @@ int SYNO_CHECK_HDD_ENABLE(int index)
 	int ret = 0;
 
 	switch (SYNO_GET_DISK_PWR_TYPE(index)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_GPIO
 		case PWRCTRL_TYPE_GPIO:
 			ret = syno_hdd_enable_gpio(index);
 			break;
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_GPIO */
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_SMBUS
 		case PWRCTRL_TYPE_SMBUS:
 			ret = syno_hdd_enable_smbus(index);
 			break;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
 		default:
 			ret = 0;
 	}
@@ -201,16 +198,16 @@ int SYNO_CHECK_HDD_DETECT(int index)
 	int ret = 0;
 
 	switch (SYNO_GET_DISK_PWR_TYPE(index)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_GPIO
 		case PWRCTRL_TYPE_GPIO:
 			ret = syno_hdd_detect_gpio(index);
 			break;
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_GPIO */
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_SMBUS
 		case PWRCTRL_TYPE_SMBUS:
 			ret = syno_hdd_detect_smbus(index);
 			break;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
 		default:
 			ret = 0;
 	}
@@ -228,12 +225,12 @@ int SYNO_SUPPORT_HDD_DYNAMIC_ENABLE_POWER(int index)
 
 	switch (SYNO_GET_DISK_PWR_TYPE(index))
 	{
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_GPIO
 		case PWRCTRL_TYPE_GPIO:
 			ret = 1;
 			break;
-#endif /* #ifdef MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* #ifdef CONFIG_SYNO_SATA_PWR_CTRL_GPIO */
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_SMBUS
 		case PWRCTRL_TYPE_SMBUS:
 			if (!SynoSmbusHddPowerCtl.bl_init){
 				syno_smbus_hdd_powerctl_init();
@@ -242,7 +239,7 @@ int SYNO_SUPPORT_HDD_DYNAMIC_ENABLE_POWER(int index)
 				ret = 1;
 			}
 			break;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
 		default:
 			ret = 0;
 	}
@@ -260,32 +257,32 @@ EXPORT_SYMBOL(SYNO_SUPPORT_HDD_DYNAMIC_ENABLE_POWER);
 void SYNO_HDD_POWER_ON(int index)
 {
 	switch (SYNO_GET_DISK_PWR_TYPE(index)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_GPIO
 		case PWRCTRL_TYPE_GPIO:
 			/* Power on the disk if it has presented. */
 			if (1 == SYNO_CHECK_HDD_DETECT(index)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SPINUP_GROUP
 				DBG_SpinupGroup("Power on disk: %d\n", index);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SPINUP_GROUP */
 				SYNO_CTRL_HDD_POWERON(index, 1);
 			}
 			break;
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_GPIO */
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_SMBUS
 		case PWRCTRL_TYPE_SMBUS:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HW_VERSION
 			/* Special case: DS1621+ */
 			if (syno_is_hw_version(HW_DS1621p)) {
 				syno_hdd_poweron_smbus_all_once();
 				break;
 			}
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_HW_VERSION */
+#ifdef CONFIG_SYNO_SATA_SPINUP_GROUP
 			DBG_SpinupGroup("Power on disk: %d\n", index);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SPINUP_GROUP */
 			SYNO_CTRL_HDD_POWERON(index, 1);
 			break;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
 		default:
 			break;
 	}

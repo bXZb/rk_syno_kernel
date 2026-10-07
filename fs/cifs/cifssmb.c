@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  *   fs/cifs/cifssmb.c
  *
@@ -135,9 +132,9 @@ cifs_reconnect_tcon(struct cifs_tcon *tcon, int smb_command)
 	struct cifs_ses *ses;
 	struct TCP_Server_Info *server;
 	struct nls_table *nls_codepage;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_SMB_OPS
 	u16 origin_dialect; /* dialect index that server chose */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_SMB_OPS */
 	int retries;
 
 	/*
@@ -201,34 +198,34 @@ cifs_reconnect_tcon(struct cifs_tcon *tcon, int smb_command)
 		retries = server->nr_targets;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_SMB_OPS
 	if (SMB20_PROT_ID <= server->dialect) {
 		cifs_dbg(FYI, "(%s) origin_dialect=0x%x, server->dialect=0x%x\n", __func__, origin_dialect, server->dialect);
 		return -EAGAIN;
 	}
 	origin_dialect = server->dialect;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_SMB_OPS */
 	if (!ses->need_reconnect && !tcon->need_reconnect)
 		return 0;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_TCON_RECONNECT_CODEPAGE_UTF8
 	nls_codepage = load_nls("utf8");
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_CIFS_TCON_RECONNECT_CODEPAGE_UTF8 */
 	nls_codepage = load_nls_default();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_TCON_RECONNECT_CODEPAGE_UTF8 */
 
 	/*
 	 * need to prevent multiple threads trying to simultaneously
 	 * reconnect the same SMB session
 	 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_RECONNECT
 	if (!mutex_trylock(&ses->session_mutex)) {
 		rc = -EINPROGRESS;
 		goto out;
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_CIFS_RECONNECT */
 	mutex_lock(&ses->session_mutex);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_RECONNECT */
 
 	/*
 	 * Recheck after acquire mutex. If another thread is negotiating
@@ -273,13 +270,13 @@ cifs_reconnect_tcon(struct cifs_tcon *tcon, int smb_command)
 	 *
 	 * FIXME: what about file locks? don't we need to reclaim them ASAP?
 	 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_SMB_OPS
 	if (server->dialect != origin_dialect ||
 	    SMB20_PROT_ID <= server->dialect) {
 		cifs_dbg(FYI, "(%s) SMB1 reconnect dialect not match! origin=0x%x, current=0x%x\n", __func__, origin_dialect, server->dialect);
 		rc = -EAGAIN;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_SMB_OPS */
 
 out:
 	/*
@@ -797,12 +794,12 @@ CIFSSMBEcho(struct TCP_Server_Info *server)
 
 	cifs_dbg(FYI, "In echo request\n");
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_RECONNECT
 	if (CifsGood != server->tcpStatus) {
 		cifs_dbg(FYI, "tcpStatus not Good (%d); Don't send echo\n", server->tcpStatus);
 		return rc;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_RECONNECT */
 	rc = small_smb_init(SMB_COM_ECHO, 0, NULL, (void **)&smb);
 	if (rc)
 		return rc;
@@ -1420,11 +1417,11 @@ openRetry:
 	 * XP does not handle ATTR_POSIX_SEMANTICS but it helps speed up case
 	 * sensitive checks for other servers such as Samba.
 	 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_MOUNT_CASELESS
 	if (tcon->ses->capabilities & CAP_UNIX && SynoPosixSemanticsEnabled)
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_CIFS_MOUNT_CASELESS */
 	if (tcon->ses->capabilities & CAP_UNIX)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_MOUNT_CASELESS */
 		req->FileAttributes |= cpu_to_le32(ATTR_POSIX_SEMANTICS);
 
 	if (create_options & CREATE_OPTION_READONLY)
@@ -4896,14 +4893,14 @@ CIFSGetDFSRefer(const unsigned int xid, struct cifs_ses *ses,
 	*target_nodes = NULL;
 
 	cifs_dbg(FYI, "In GetDFSRefer the path %s\n", search_name);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_COVERITY
 	// CID 44892: check ses->server before dereference from get_next_mid
 	if (ses == NULL || NULL == ses->server || ses->tcon_ipc == NULL)
 		return -ENODEV;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_CIFS_COVERITY */
 	if (ses == NULL || ses->tcon_ipc == NULL)
 		return -ENODEV;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_COVERITY */
 
 getDFSRetry:
 	rc = smb_init(SMB_COM_TRANSACTION2, 15, ses->tcon_ipc, (void **) &pSMB,

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Scheduler internal types and methods:
@@ -98,17 +95,17 @@ extern __read_mostly int scheduler_running;
 
 extern unsigned long calc_load_update;
 extern atomic_long_t calc_load_tasks;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 extern atomic_long_t calc_io_load_tasks;
 extern atomic_long_t calc_cpu_load_tasks;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 extern void calc_global_load_tick(struct rq *this_rq);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 extern void calc_load_fold_active(struct rq *this_rq, long adjust, long delta[]);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LOAD_AVERAGE */
 extern long calc_load_fold_active(struct rq *this_rq, long adjust);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 extern void call_trace_sched_update_nr_running(struct rq *rq, int count);
 /*
@@ -1030,10 +1027,10 @@ struct rq {
 	/* calc_load related fields */
 	unsigned long		calc_load_update;
 	long			calc_load_active;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 	long 			calc_io_load_active;
 	long 			calc_cpu_load_active;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 #ifdef CONFIG_SCHED_HRTICK
 #ifdef CONFIG_SMP

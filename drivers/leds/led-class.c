@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * LED Class Core
@@ -252,7 +249,7 @@ struct led_classdev *of_led_get(struct device_node *np, int index)
 }
 EXPORT_SYMBOL_GPL(of_led_get);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_TRIGGER_DISK
 /**
  * of_leddev_get() - request a LED device via the LED framework
  * @np: device node to get the LED device from
@@ -282,7 +279,7 @@ struct led_classdev *of_leddev_get(struct device_node *led_node)
 	return led_cdev;
 }
 EXPORT_SYMBOL_GPL(of_leddev_get);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_TRIGGER_DISK */
 
 /**
  * led_put() - release a LED device

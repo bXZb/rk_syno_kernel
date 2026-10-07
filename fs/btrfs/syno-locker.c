@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2000-2022 Synology Inc.
@@ -122,7 +119,7 @@ static inline struct timespec64 syno_locker_root_clock_get(struct btrfs_root *ro
 {
 	struct timespec64 clock = {0};
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER_SUBVOLUME_CLOCK
 	if (btrfs_root_readonly(root)) {
 		/*
 		 * if subvolume clock is enabled, the clock is frozen in ro snapshot.
@@ -134,15 +131,15 @@ static inline struct timespec64 syno_locker_root_clock_get(struct btrfs_root *ro
 
 		return clock;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER_SUBVOLUME_CLOCK */
 
 	clock = btrfs_syno_locker_fs_clock_get(root->fs_info);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER_SUBVOLUME_CLOCK
 	spin_lock(&root->locker_lock);
 	clock.tv_sec += root->locker_clock_adjustment;
 	spin_unlock(&root->locker_lock);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER_SUBVOLUME_CLOCK */
 
 	return clock;
 }
@@ -992,6 +989,59 @@ out:
 	return binode->locker_update_time;
 }
 
+/*
+ * this is similar to syno_locker_update_time, but only updates inode_update_time if mtime or ctime
+ * is set in iattr. To avoid incorrect lock duration issue, use vol_clock as a lower bound of the
+ * new inode_update_time.
+ *
+ * new update_time = max(vol_clock, mtime, ctime, root->update_time_floor)
+ */
+time64_t syno_locker_update_time_by_iattr(struct btrfs_inode *binode, struct iattr *attr)
+{
+	struct inode *inode = &binode->vfs_inode;
+	unsigned int ia_valid = attr->ia_valid;
+	time64_t sys_update_time, locker_update_time;
+	struct timespec64 vol_clock, delta, new_mtime, new_ctime;
+	time64_t ret = 0;
+
+	spin_lock(&binode->locker_lock);
+
+	if (!(ia_valid & ATTR_MTIME || ia_valid & ATTR_CTIME))
+		goto out;
+
+	if (btrfs_ino(binode) == BTRFS_FIRST_FREE_OBJECTID)
+		goto out_unlock;
+
+	if (binode->root->locker_mode == LM_NONE)
+		goto out;
+
+	/* update_time isn't expected to be changed after a file is locked */
+	if (binode->locker_state != LS_OPEN)
+		goto out;
+
+	new_mtime = (ia_valid & ATTR_MTIME) ? attr->ia_mtime : inode->i_mtime;
+	new_ctime = (ia_valid & ATTR_CTIME) ? attr->ia_ctime : inode->i_ctime;
+
+	vol_clock = syno_locker_clock_get(binode);
+	delta = syno_locker_sys_clock_delta(binode);
+	sys_update_time = (timespec64_compare(&new_mtime, &new_ctime) > 0) ?
+		new_mtime.tv_sec : new_ctime.tv_sec;
+
+	locker_update_time = max(sys_update_time - delta.tv_sec, (time64_t)vol_clock.tv_sec);
+	locker_update_time = max(locker_update_time, binode->root->locker_update_time_floor);
+
+	if (binode->locker_update_time != locker_update_time) {
+		binode->__locker_update_time = locker_update_time;
+		binode->locker_dirty = true;
+	}
+
+out:
+	ret = binode->locker_update_time;
+out_unlock:
+	spin_unlock(&binode->locker_lock);
+	return ret;
+}
+
 static inline time64_t syno_locker_timestamp_get(struct btrfs_inode *binode, int flag)
 {
 	struct btrfs_root *root = binode->root;
@@ -1388,7 +1438,7 @@ int btrfs_syno_locker_state_get(struct inode *inode, enum locker_state *state)
 		goto out;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER_SNAPSHOT
 	/* not supported for pure directories and r/w subvolumes */
 	if (S_ISDIR(inode->i_mode) && !btrfs_is_ro_snapshot(binode)) {
 		*state = LS_OPEN;
@@ -1399,7 +1449,7 @@ int btrfs_syno_locker_state_get(struct inode *inode, enum locker_state *state)
 		*state = LS_OPEN;
 		goto out;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER_SNAPSHOT */
 
 	if (!syno_locker_is_lockable_object(binode) ||
 	    syno_locker_is_whitelisted(binode)) {
@@ -1416,11 +1466,11 @@ int btrfs_syno_locker_state_get(struct inode *inode, enum locker_state *state)
 
 	switch (binode->locker_state) {
 	case LS_OPEN:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER_SNAPSHOT
 		/* no auto-lock for r/o snapshots */
 		if (btrfs_is_ro_snapshot(binode))
 			break;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER_SNAPSHOT */
 
 		/* auto-lock */
 		target = syno_locker_update_time(binode) + root->locker_waittime;

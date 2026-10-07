@@ -69,6 +69,8 @@ void end_swap_bio_write(struct bio *bio)
 	bio_put(bio);
 }
 
+#ifdef CONFIG_SYNO_AVOID_ZRAM_ZEROED_PAGES
+#else /* CONFIG_SYNO_AVOID_ZRAM_ZEROED_PAGES */
 static void swap_slot_free_notify(struct page *page)
 {
 	struct swap_info_struct *sis;
@@ -116,6 +118,7 @@ static void swap_slot_free_notify(struct page *page)
 				offset);
 	}
 }
+#endif /* CONFIG_SYNO_AVOID_ZRAM_ZEROED_PAGES */
 
 static void end_swap_bio_read(struct bio *bio)
 {
@@ -132,7 +135,10 @@ static void end_swap_bio_read(struct bio *bio)
 	}
 
 	SetPageUptodate(page);
+#ifdef CONFIG_SYNO_AVOID_ZRAM_ZEROED_PAGES
+#else /* CONFIG_SYNO_AVOID_ZRAM_ZEROED_PAGES */
 	swap_slot_free_notify(page);
+#endif /* CONFIG_SYNO_AVOID_ZRAM_ZEROED_PAGES */
 out:
 	unlock_page(page);
 	WRITE_ONCE(bio->bi_private, NULL);
@@ -409,10 +415,13 @@ int swap_readpage(struct page *page, bool synchronous)
 	if (sis->flags & SWP_SYNCHRONOUS_IO) {
 		ret = bdev_read_page(sis->bdev, swap_page_sector(page), page);
 		if (!ret) {
+#ifdef CONFIG_SYNO_AVOID_ZRAM_ZEROED_PAGES
+#else /* CONFIG_SYNO_AVOID_ZRAM_ZEROED_PAGES */
 			if (trylock_page(page)) {
 				swap_slot_free_notify(page);
 				unlock_page(page);
 			}
+#endif /* CONFIG_SYNO_AVOID_ZRAM_ZEROED_PAGES */
 
 			count_vm_event(PSWPIN);
 			goto out;

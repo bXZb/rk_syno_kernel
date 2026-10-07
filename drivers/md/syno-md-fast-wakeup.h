@@ -1,12 +1,9 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 // Copyright (c) 2000-2021 Synology Inc. All rights reserved.
 #ifndef _SYNO_MD_FAST_WAKEUP_H
 #define _SYNO_MD_FAST_WAKEUP_H
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_FAST_WAKEUP
 #include <linux/jiffies.h>
 #include <linux/spinlock.h>
 #include <linux/workqueue.h>
@@ -51,6 +48,6 @@ static inline bool syno_md_fast_wakeup_info_update(
 	return need_wakeup;
 }
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FAST_WAKEUP */
 
 #endif /* _SYNO_MD_FAST_WAKEUP_H */

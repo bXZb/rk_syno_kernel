@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2011 STRATO AG
@@ -218,7 +215,7 @@ int ulist_add_merge(struct ulist *ulist, u64 val, u64 aux,
 	return 1;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 int ulist_add_for_prealloc(struct ulist *ulist, u64 val, u64 aux, gfp_t gfp_mask, struct ulist_node **prealloc_ulist_node)
 {
 	return ulist_add_merge_for_prealloc(ulist, val, aux, NULL, gfp_mask, prealloc_ulist_node);
@@ -254,7 +251,7 @@ int ulist_add_merge_for_prealloc(struct ulist *ulist, u64 val, u64 aux, u64 *old
 
 	return 1;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 
 /*
  * ulist_del - delete one node from ulist
@@ -316,8 +313,8 @@ struct ulist_node *ulist_next(struct ulist *ulist, struct ulist_iterator *uiter)
 	return node;
 }
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE) \
-	|| defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_BTRFS_RECLAIM_SPACE) || defined(CONFIG_SYNO_BTRFS_COMPR_CTL) \
+	|| defined(CONFIG_SYNO_BTRFS_SYNO_QUOTA)
 int ulist_add_lru_adjust(struct ulist *ulist, u64 val, u64 aux, gfp_t gfp_mask)
 {
 	int ret;
@@ -360,9 +357,9 @@ void ulist_remove_first(struct ulist *ulist)
 	ulist->nnodes--;
 	kfree(node);
 }
-#endif /* MY_ABC_HERE || MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RECLAIM_SPACE || CONFIG_SYNO_BTRFS_COMPR_CTL || CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_BTRFS_RECLAIM_SPACE) || defined(CONFIG_SYNO_BTRFS_SYNO_QUOTA)
 struct ulist_node * ulist_search(struct ulist *ulist, u64 val)
 {
 	struct rb_node *n = ulist->root.rb_node;
@@ -379,9 +376,9 @@ struct ulist_node * ulist_search(struct ulist *ulist, u64 val)
 	}
 	return NULL;
 }
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RECLAIM_SPACE || CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 struct ulist_node * ulist_search_with_prev(struct ulist *ulist, u64 val)
 {
 	struct rb_node *n = ulist->root.rb_node;
@@ -409,4 +406,4 @@ struct ulist_node * ulist_search_with_prev(struct ulist *ulist, u64 val)
 
 	return prev_entry;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */

@@ -142,6 +142,11 @@ int gpiod_get_array_value_cansleep(unsigned int array_size,
 				   struct gpio_array *array_info,
 				   unsigned long *value_bitmap);
 void gpiod_set_value_cansleep(struct gpio_desc *desc, int value);
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+void gpiod_set_mux_cansleep(struct gpio_desc *desc, int value);
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 int gpiod_set_array_value_cansleep(unsigned int array_size,
 				   struct gpio_desc **desc_array,
 				   struct gpio_array *array_info,
@@ -171,6 +176,9 @@ int gpiod_set_consumer_name(struct gpio_desc *desc, const char *name);
 /* Convert between the old gpio_ and new gpiod_ interfaces */
 struct gpio_desc *gpio_to_desc(unsigned gpio);
 int desc_to_gpio(const struct gpio_desc *desc);
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+int syno_desc_to_gpio(const struct gpio_desc *desc);
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
 
 /* Child properties interface */
 struct fwnode_handle;
@@ -434,6 +442,15 @@ static inline void gpiod_set_value_cansleep(struct gpio_desc *desc, int value)
 	/* GPIO can never have been requested */
 	WARN_ON(desc);
 }
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+static inline void gpiod_set_mux_cansleep(struct gpio_desc *desc, int value)
+{
+	/* GPIO can never have been requested */
+	WARN_ON(desc);
+}
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 static inline int gpiod_set_array_value_cansleep(unsigned int array_size,
 					    struct gpio_desc **desc_array,
 					    struct gpio_array *array_info,
@@ -540,6 +557,15 @@ static inline int desc_to_gpio(const struct gpio_desc *desc)
 	WARN_ON(desc);
 	return -EINVAL;
 }
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+static inline int syno_desc_to_gpio(const struct gpio_desc *desc)
+{
+	/* GPIO can never have been requested */
+	WARN_ON(desc);
+	return -EINVAL;
+}
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
 
 /* Child properties interface */
 struct fwnode_handle;

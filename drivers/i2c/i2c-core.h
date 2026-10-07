@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  * i2c-core.h - interfaces internal to the I2C framework
@@ -85,9 +82,9 @@ static inline void i2c_acpi_remove_space_handler(struct i2c_adapter *adapter) { 
 
 #ifdef CONFIG_OF
 void of_i2c_register_devices(struct i2c_adapter *adap);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_OF_PROBE
 void syno_of_i2c_register_devices(struct i2c_adapter *adap);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_OF_PROBE */
 #else
 static inline void of_i2c_register_devices(struct i2c_adapter *adap) { }
 #endif

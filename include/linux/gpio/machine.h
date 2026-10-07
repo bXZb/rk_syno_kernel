@@ -110,4 +110,8 @@ void gpiod_remove_lookup_table(struct gpiod_lookup_table *table) {}
 static inline void gpiod_add_hogs(struct gpiod_hog *hogs) {}
 #endif /* CONFIG_GPIOLIB */
 
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+void syno_dts_parse_gpiod_lookup_table(void);
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 #endif /* __LINUX_GPIO_MACHINE_H */

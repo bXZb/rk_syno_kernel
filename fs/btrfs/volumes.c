@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
@@ -34,9 +31,9 @@
 #include "space-info.h"
 #include "block-group.h"
 #include "discard.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RBD_META
 #include <linux/genhd.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RBD_META */
 
 const struct btrfs_raid_attr btrfs_raid_array[BTRFS_NR_RAID_TYPES] = {
 	[BTRFS_RAID_RAID10] = {
@@ -231,9 +228,9 @@ static int __btrfs_map_block(struct btrfs_fs_info *fs_info,
 			     u64 logical, u64 *length,
 			     struct btrfs_bio **bbio_ret,
 			     int mirror_num, int need_raid_map
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 			     , bool false
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 			     );
 
 /*
@@ -1203,9 +1200,9 @@ static int open_fs_devices(struct btrfs_fs_devices *fs_devices,
 	struct btrfs_device *device;
 	struct btrfs_device *latest_dev = NULL;
 	struct btrfs_device *tmp_device;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RBD_META
 	bool rbd_enabled = true;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RBD_META */
 
 	flags |= FMODE_EXCL;
 
@@ -1222,10 +1219,10 @@ static int open_fs_devices(struct btrfs_fs_devices *fs_devices,
 			list_del(&device->dev_list);
 			btrfs_free_device(device);
 		}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RBD_META
 		if (!ret && !IsSynoRbdDeviceEnabled(device->bdev))
 			rbd_enabled = false;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RBD_META */
 	}
 	if (fs_devices->open_devices == 0)
 		return -EINVAL;
@@ -1234,9 +1231,9 @@ static int open_fs_devices(struct btrfs_fs_devices *fs_devices,
 	fs_devices->latest_bdev = latest_dev->bdev;
 	fs_devices->total_rw_bytes = 0;
 	fs_devices->chunk_alloc_policy = BTRFS_CHUNK_ALLOC_REGULAR;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RBD_META
 	fs_devices->rbd_enabled = rbd_enabled;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RBD_META */
 
 	return 0;
 }
@@ -3337,7 +3334,7 @@ static void reset_balance_state(struct btrfs_fs_info *fs_info)
 
 	BUG_ON(!fs_info->balance_ctl);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QUICK_BALANCE
 	if (!fs_info->balance_ctl->fast_key_offset) {
 		spin_lock(&fs_info->balance_lock);
 		fs_info->balance_ctl = NULL;
@@ -3363,7 +3360,7 @@ static void reset_balance_state(struct btrfs_fs_info *fs_info)
 	ret = del_balance_item(fs_info);
 	if (ret)
 		btrfs_handle_fs_error(fs_info, ret, NULL);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUICK_BALANCE */
 }
 
 /*
@@ -3635,7 +3632,7 @@ static int should_balance_chunk(struct extent_buffer *leaf,
 	return 1;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QUICK_BALANCE
 /*
   * Balance only one block group. The ideal block group is the block group
   * with minimum space usage. However, searching for the best block group
@@ -3697,12 +3694,12 @@ loop:
 
 	return result;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUICK_BALANCE */
 
 static int __btrfs_balance(struct btrfs_fs_info *fs_info)
 {
 	struct btrfs_balance_control *bctl = fs_info->balance_ctl;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_BALANCE_DRY_RUN
 	struct btrfs_block_group *cache;
 #endif /* SYNO_BTRFS_BALANCE_DRY_RUN */
 	struct btrfs_root *chunk_root = fs_info->chunk_root;
@@ -3749,7 +3746,7 @@ again:
 	key.offset = (u64)-1;
 	key.type = BTRFS_CHUNK_ITEM_KEY;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QUICK_BALANCE
 	if (bctl->fast_key_offset == 1) {
 		// Auto select
 		if (!(key.offset = get_bg_offset_with_free_space_bytes(fs_info))) {
@@ -3768,7 +3765,7 @@ again:
 		}
 		key.offset = bctl->fast_key_offset + 1;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUICK_BALANCE */
 
 	while (1) {
 		if ((!counting && atomic_read(&fs_info->balance_pause_req)) ||
@@ -3808,14 +3805,14 @@ again:
 			break;
 		}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QUICK_BALANCE
 		// In case the block group vanished.
 		if (bctl->fast_key_offset &&
 			found_key.offset != key.offset - 1) {
 			mutex_unlock(&fs_info->delete_unused_bgs_mutex);
 			break;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUICK_BALANCE */
 
 		chunk = btrfs_item_ptr(leaf, slot, struct btrfs_chunk);
 		chunk_type = btrfs_chunk_type(leaf, chunk);
@@ -3847,7 +3844,7 @@ again:
 			else if (chunk_type & BTRFS_BLOCK_GROUP_METADATA)
 				count_meta++;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_BALANCE_DRY_RUN
 			cache = btrfs_lookup_block_group(fs_info, found_key.offset);
 			bctl->total_chunk_used += cache->used;
 			btrfs_put_block_group(cache);
@@ -3903,16 +3900,16 @@ again:
 			spin_unlock(&fs_info->balance_lock);
 		}
 loop:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QUICK_BALANCE
 		if (bctl->fast_key_offset)
 			break;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUICK_BALANCE */
 		if (found_key.offset == 0)
 			break;
 		key.offset = found_key.offset - 1;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_BALANCE_DRY_RUN
 	if (counting && !(bctl->flags & BTRFS_BALANCE_DRY_RUN)) {
 #else
 	if (counting) {
@@ -4139,7 +4136,7 @@ out_overflow:
 	kfree(buf);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT
 int has_unfinished_drop(struct btrfs_fs_info *fs_info)
 {
 	struct btrfs_root *root;
@@ -4159,7 +4156,7 @@ int has_unfinished_drop(struct btrfs_fs_info *fs_info)
 	spin_unlock(&fs_info->trans_lock);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT */
 
 /*
  * Should be called with balance mutexe held
@@ -4285,7 +4282,7 @@ int btrfs_balance(struct btrfs_fs_info *fs_info,
 		goto out;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QUICK_BALANCE
 	if (!bctl->fast_key_offset) {
 		ret = insert_balance_item(fs_info, bctl);
 		if (ret && ret != -EEXIST)
@@ -4295,7 +4292,7 @@ int btrfs_balance(struct btrfs_fs_info *fs_info,
 	ret = insert_balance_item(fs_info, bctl);
 	if (ret && ret != -EEXIST)
 		goto out;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUICK_BALANCE */
 
 	if (!(bctl->flags & BTRFS_BALANCE_RESUME)) {
 		BUG_ON(ret == -EEXIST);
@@ -4315,7 +4312,7 @@ int btrfs_balance(struct btrfs_fs_info *fs_info,
 	describe_balance_start_or_resume(fs_info);
 	mutex_unlock(&fs_info->balance_mutex);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT
 	/*
 	* relocate_mutex is a heavy lock used to ensure that the balance
 	* operation is not interfered with by the cleaner at any point in time.
@@ -4376,13 +4373,13 @@ int btrfs_balance(struct btrfs_fs_info *fs_info,
 		}
 	}
 	mutex_unlock(&fs_info->cleaner_mutex);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT */
 	ret = __btrfs_balance(fs_info);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT
 	mutex_unlock(&fs_info->relocate_mutex);
 out1:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT */
 	mutex_lock(&fs_info->balance_mutex);
 	if (ret == -ECANCELED && atomic_read(&fs_info->balance_pause_req))
 		btrfs_info(fs_info, "balance: paused");
@@ -4406,7 +4403,7 @@ out1:
 	else
 		btrfs_info(fs_info, "balance: ended with status: %d", ret);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLUSTER_ALLOCATION
 	/*
 	 * This is a workaround for xfstest:
 	 * btrfs/156 - Ensure btrfs_trim_fs can trim the whole fs.
@@ -4427,7 +4424,7 @@ out1:
 		btrfs_return_cluster_to_free_space(NULL, cluster);
 		spin_unlock(&cluster->refill_lock);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLUSTER_ALLOCATION */
 
 	clear_bit(BTRFS_FS_BALANCE_RUNNING, &fs_info->flags);
 
@@ -4479,7 +4476,7 @@ int btrfs_resume_balance_async(struct btrfs_fs_info *fs_info)
 	}
 	mutex_unlock(&fs_info->balance_mutex);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_BALANCE_DRY_RUN
 	btrfs_cancel_balance(fs_info);
 	btrfs_notice(fs_info, "force cancel balance");
 	return 0;
@@ -5327,7 +5324,7 @@ static int decide_stripe_size(struct btrfs_fs_devices *fs_devices,
 	}
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_CHUNK_LOGICAL_OVERFLOW
 static u64 find_free_chunk_overflow(struct btrfs_fs_info *fs_info, u64 len)
 {
 	struct extent_map_tree *em_tree;
@@ -5355,7 +5352,7 @@ static u64 find_free_chunk_overflow(struct btrfs_fs_info *fs_info, u64 len)
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_CHUNK_LOGICAL_OVERFLOW */
 
 static int create_chunk(struct btrfs_trans_handle *trans,
 			struct alloc_chunk_ctl *ctl,
@@ -5390,12 +5387,12 @@ static int create_chunk(struct btrfs_trans_handle *trans,
 	map->type = type;
 	map->sub_stripes = ctl->sub_stripes;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_CHUNK_LOGICAL_OVERFLOW
 	if (start > U64_MAX - (64ULL* SZ_1G)) {
 		start = find_free_chunk_overflow(info, ctl->chunk_size);
 		ctl->start = start;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_CHUNK_LOGICAL_OVERFLOW */
 
 	trace_btrfs_chunk_alloc(info, map, start, ctl->chunk_size);
 
@@ -5458,7 +5455,7 @@ error_del_extent:
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_METADATA_RESERVE
 u64 btrfs_syno_calc_reserve_for_metadata(struct btrfs_fs_info *fs_info)
 {
 	u64 total_reserved_for_metadata = 0;
@@ -5484,25 +5481,25 @@ u64 btrfs_syno_calc_reserve_for_metadata(struct btrfs_fs_info *fs_info)
 out:
 	return total_reserved_for_metadata;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_METADATA_RESERVE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA
 int btrfs_alloc_chunk_with_info(struct btrfs_trans_handle *trans, u64 type,
 				u64 *ret_start, u64 *ret_num_bytes)
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA */
 int btrfs_alloc_chunk(struct btrfs_trans_handle *trans, u64 type)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA */
 {
 	struct btrfs_fs_info *info = trans->fs_info;
 	struct btrfs_fs_devices *fs_devices = info->fs_devices;
 	struct btrfs_device_info *devices_info = NULL;
 	struct alloc_chunk_ctl ctl;
 	int ret;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_METADATA_RESERVE
 	const bool mixed = btrfs_fs_incompat(info, MIXED_GROUPS);
 	struct btrfs_space_info *data_sinfo;
 	u64 disk_total_bytes, total_reserved_for_metadata, data_maximum_size, data_avail_size;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_METADATA_RESERVE */
 
 	lockdep_assert_held(&info->chunk_mutex);
 
@@ -5532,7 +5529,7 @@ int btrfs_alloc_chunk(struct btrfs_trans_handle *trans, u64 type)
 	if (!devices_info)
 		return -ENOMEM;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_METADATA_RESERVE
 	if (!mixed && info->metadata_ratio &&
 		(ctl.type & BTRFS_BLOCK_GROUP_DATA)) {
 		data_sinfo = info->data_sinfo;
@@ -5554,7 +5551,7 @@ int btrfs_alloc_chunk(struct btrfs_trans_handle *trans, u64 type)
 			ctl.max_chunk_size = min_t(u64, ctl.max_chunk_size, data_avail_size);
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_METADATA_RESERVE */
 
 	ret = gather_device_info(fs_devices, &ctl, devices_info);
 	if (ret < 0)
@@ -5565,14 +5562,14 @@ int btrfs_alloc_chunk(struct btrfs_trans_handle *trans, u64 type)
 		goto out;
 
 	ret = create_chunk(trans, &ctl, devices_info);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA
 	if (!ret) {
 		if (ret_start)
 			*ret_start = ctl.start;
 		if (ret_num_bytes)
 			*ret_num_bytes = ctl.chunk_size;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA */
 
 out:
 	kfree(devices_info);
@@ -6133,9 +6130,9 @@ static int get_extra_mirror_from_replace(struct btrfs_fs_info *fs_info,
 
 	ret = __btrfs_map_block(fs_info, BTRFS_MAP_GET_READ_MIRRORS,
 				logical, &length, &bbio, 0, 0
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 				, false
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 				);
 	if (ret) {
 		ASSERT(bbio == NULL);
@@ -6382,9 +6379,9 @@ static int __btrfs_map_block(struct btrfs_fs_info *fs_info,
 			     u64 logical, u64 *length,
 			     struct btrfs_bio **bbio_ret,
 			     int mirror_num, int need_raid_map
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 			     , bool is_tree_log
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 			     )
 {
 	struct extent_map *em;
@@ -6471,10 +6468,10 @@ static int __btrfs_map_block(struct btrfs_fs_info *fs_info,
 	} else if (map->type & BTRFS_BLOCK_GROUP_DUP) {
 		if (need_full_stripe(op)) {
 			num_stripes = map->num_stripes;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 			if (is_tree_log && op == BTRFS_MAP_WRITE)
 				num_stripes = 1;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 		} else if (mirror_num) {
 			stripe_index = mirror_num - 1;
 		} else {
@@ -6593,11 +6590,11 @@ static int __btrfs_map_block(struct btrfs_fs_info *fs_info,
 	}
 
 	if (need_full_stripe(op)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 		if (is_tree_log && op == BTRFS_MAP_WRITE)
 			max_errors = 0;
 		else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 			max_errors = btrfs_chunk_max_errors(map);
 	}
 
@@ -6644,9 +6641,9 @@ int btrfs_map_block(struct btrfs_fs_info *fs_info, enum btrfs_map_op op,
 
 	return __btrfs_map_block(fs_info, op, logical, length, bbio_ret,
 				 mirror_num, 0
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 				 , false
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 				 );
 }
 
@@ -6656,9 +6653,9 @@ int btrfs_map_sblock(struct btrfs_fs_info *fs_info, enum btrfs_map_op op,
 		     struct btrfs_bio **bbio_ret)
 {
 	return __btrfs_map_block(fs_info, op, logical, length, bbio_ret, 0, 1
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 				 , false
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 				 );
 }
 
@@ -6764,13 +6761,13 @@ static void bbio_error(struct btrfs_bio *bbio, struct bio *bio, u64 logical)
 	}
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 static blk_status_t __btrfs_map_bio(struct btrfs_fs_info *fs_info, struct bio *bio,
 				    int mirror_num, bool is_tree_log)
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 blk_status_t btrfs_map_bio(struct btrfs_fs_info *fs_info, struct bio *bio,
 			   int mirror_num)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 {
 	struct btrfs_device *dev;
 	struct bio *first_bio = bio;
@@ -6788,9 +6785,9 @@ blk_status_t btrfs_map_bio(struct btrfs_fs_info *fs_info, struct bio *bio,
 	btrfs_bio_counter_inc_blocked(fs_info);
 	ret = __btrfs_map_block(fs_info, btrfs_op(bio), logical,
 				&map_length, &bbio, mirror_num, 1
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 				, is_tree_log
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 				);
 	if (ret) {
 		btrfs_bio_counter_dec(fs_info);
@@ -6847,7 +6844,7 @@ blk_status_t btrfs_map_bio(struct btrfs_fs_info *fs_info, struct bio *bio,
 	btrfs_bio_counter_dec(fs_info);
 	return BLK_STS_OK;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 blk_status_t btrfs_map_bio(struct btrfs_fs_info *fs_info, struct bio *bio,
 			   int mirror_num)
 {
@@ -6859,7 +6856,7 @@ blk_status_t btrfs_map_bio_log_tree(struct btrfs_fs_info *fs_info,
 {
 	return __btrfs_map_bio(fs_info, bio, mirror_num, true);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 
 /*
  * Find a device specified by @devid or @uuid in the list of @fs_devices, or
@@ -8088,7 +8085,7 @@ int btrfs_verify_dev_extents(struct btrfs_fs_info *fs_info)
 		return -ENOMEM;
 
 	path->reada = READA_FORWARD;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_VERIFY_DEV_EXTENTS_WITH_READAHEAD_FORWARD_ALWAYS
 	path->reada = READA_FORWARD_ALWAYS;
 #endif /* SYNO_BTRFS_VERIFY_DEV_EXTENTS_WITH_READAHEAD_FORWARD_ALWAYS */
 	ret = btrfs_search_slot(NULL, root, &key, path, 0, 0);

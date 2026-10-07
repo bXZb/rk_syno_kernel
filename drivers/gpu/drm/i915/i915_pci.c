@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Copyright © 2016 Intel Corporation
  *
@@ -680,7 +677,7 @@ static const struct intel_device_info skl_gt4_info = {
 	.gt = 4,
 };
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I915_ENABLE_VCS_ENGINE
 #define GEN9_LP_FEATURES \
 	GEN(9), \
 	.is_lp = 1, \
@@ -756,7 +753,7 @@ static const struct intel_device_info skl_gt4_info = {
 	IVB_COLORS, \
 	GEN9_DEFAULT_PAGE_SIZES, \
 	GEN_DEFAULT_REGIONS
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I915_ENABLE_VCS_ENGINE */
 
 static const struct intel_device_info bxt_info = {
 	GEN9_LP_FEATURES,

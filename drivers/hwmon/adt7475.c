@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * adt7475 - Thermal sensor driver for the ADT7475 chip and derivatives
@@ -24,9 +21,9 @@
 #include <linux/jiffies.h>
 #include <linux/of.h>
 #include <linux/util_macros.h>
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 #include <linux/synobios.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
 /* Indexes for the sysfs hooks */
 
@@ -60,9 +57,17 @@
 #define REG_PWM_BASE		0x30
 #define REG_PWM_MAX_BASE	0x38
 
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+#define REG_ATMEGA_TACH_BASE 0xA0
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
+
 #define REG_DEVID		0x3D
 #define REG_VENDID		0x3E
 #define REG_DEVID2		0x3F
+
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+#define REG_ATMEGA_ID	0xAF
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
 
 #define REG_CONFIG1		0x40
 
@@ -96,7 +101,7 @@
 
 #define REG_TEMP_OFFSET_BASE	0x70
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 #define REG_CONFIG1				0x40	/* ADT7490 only */
 #define REG_PECI0				0x33	/* ADT7490 only */
 #define REG_PECI1_BASE			0x1A	/* ADT7490 only */
@@ -106,7 +111,7 @@
 #define REG_PECI_OFFSET_BASE	0x94	/* ADT7490 only */
 #define REG_PECI_LOW_LIMIT		0x34	/* ADT7490 only */
 #define REG_PECI_HIGH_LIMIT		0x35	/* ADT7490 only */
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
 #define REG_CONFIG2		0x73
 
@@ -145,10 +150,14 @@
 #define ADT7475_TACH_COUNT	4
 #define ADT7475_PWM_COUNT	3
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+#define ATMEGA_TACH_COUNT	6
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
+
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 #define ADT7490_PECI_COUNT	4	/*ADT7490 only*/
 #define SYNO_IS_ADT7490(client) !strcmp(client->name, "adt7490")
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
 /* Macro to read the registers */
 
@@ -157,6 +166,11 @@
 /* Macros to easily index the registers */
 
 #define TACH_REG(idx) (REG_TACH_BASE + ((idx) * 2))
+
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+#define TACH_ATMEGA_REG(idx) (REG_ATMEGA_TACH_BASE + ((idx) * 2))
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
+
 #define TACH_MIN_REG(idx) (REG_TACH_MIN_BASE + ((idx) * 2))
 
 #define PWM_REG(idx) (REG_PWM_BASE + (idx))
@@ -168,10 +182,10 @@
 #define VOLTAGE_MIN_REG(idx) (REG_VOLTAGE_MIN_BASE + ((idx) * 2))
 #define VOLTAGE_MAX_REG(idx) (REG_VOLTAGE_MAX_BASE + ((idx) * 2))
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 #define PECI_REG(idx) (idx == 0 ? REG_PECI0:REG_PECI1_BASE + (idx-1))	/* ADT7490 only */
 #define PECI_OFFSET_REG(idx) (REG_PECI_OFFSET_BASE + (idx))
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
 #define TEMP_REG(idx) (REG_TEMP_BASE + (idx))
 #define TEMP_MIN_REG(idx) (REG_TEMP_MIN_BASE + ((idx) * 2))
@@ -233,7 +247,11 @@ struct adt7475_data {
 	u32 alarms;
 	u16 voltage[3][6];
 	u16 temp[7][3];
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+	u16 tach[2][10];
+#else
 	u16 tach[2][4];
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
 	u8 pwm[4][3];
 	u8 range[3];
 	u8 pwmctl[3];
@@ -242,13 +260,22 @@ struct adt7475_data {
 
 	u8 vid;
 	u8 vrm;
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+	const struct attribute_group *groups[10];
+#else
 	const struct attribute_group *groups[9];
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
 
-#ifdef MY_DEF_HERE
+
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 	u8 pwmsynoctl[4];
 	u16 peci[7][4];	/* ADT7490 only */
 	u8 peci_range[4];
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
+
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+	int atmega_id;
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
 };
 
 static struct i2c_driver adt7475_driver;
@@ -519,7 +546,7 @@ static ssize_t temp_store(struct device *dev, struct device_attribute *attr,
 		val = clamp_val(val, temp - 15000, temp);
 		val = (temp - val) / 1000;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 		if (sattr->index != 1) {
 			data->temp[HYSTERSIS][sattr->index] &= 0x0F;
 			data->temp[HYSTERSIS][sattr->index] |= (val & 0xF) << 4;
@@ -527,7 +554,7 @@ static ssize_t temp_store(struct device *dev, struct device_attribute *attr,
 			data->temp[HYSTERSIS][sattr->index] &= 0xF0;
 			data->temp[HYSTERSIS][sattr->index] |= (val & 0xF);
 		}
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_ADT7490_FEATURES */
 		if (sattr->index != 1) {
 			data->temp[HYSTERSIS][sattr->index] &= 0xF0;
 			data->temp[HYSTERSIS][sattr->index] |= (val & 0xF) << 4;
@@ -535,7 +562,7 @@ static ssize_t temp_store(struct device *dev, struct device_attribute *attr,
 			data->temp[HYSTERSIS][sattr->index] &= 0x0F;
 			data->temp[HYSTERSIS][sattr->index] |= (val & 0xF);
 		}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
 		out = data->temp[HYSTERSIS][sattr->index];
 		break;
@@ -1091,7 +1118,7 @@ static ssize_t pwm_use_point2_pwm_at_crit_store(struct device *dev,
 }
 
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 
 /* set peci */
 static ssize_t set_peci(struct device *dev, struct device_attribute *attr,
@@ -1627,7 +1654,7 @@ static ssize_t set_pwm_syno_control(struct device *dev, struct device_attribute 
 
 	return count;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
 static ssize_t vrm_show(struct device *dev, struct device_attribute *devattr,
 			char *buf)
@@ -1730,6 +1757,28 @@ static SENSOR_DEVICE_ATTR_2_RO(fan3_alarm, tach, ALARM, 2);
 static SENSOR_DEVICE_ATTR_2_RO(fan4_input, tach, INPUT, 3);
 static SENSOR_DEVICE_ATTR_2_RW(fan4_min, tach, MIN, 3);
 static SENSOR_DEVICE_ATTR_2_RO(fan4_alarm, tach, ALARM, 3);
+
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+static SENSOR_DEVICE_ATTR_2_RO(fan5_input, tach, INPUT, 4);
+static SENSOR_DEVICE_ATTR_2_RW(fan5_min, tach, MIN, 4);
+static SENSOR_DEVICE_ATTR_2_RO(fan5_alarm, tach, ALARM, 4);
+static SENSOR_DEVICE_ATTR_2_RO(fan6_input, tach, INPUT, 5);
+static SENSOR_DEVICE_ATTR_2_RW(fan6_min, tach, MIN, 5);
+static SENSOR_DEVICE_ATTR_2_RO(fan6_alarm, tach, ALARM, 5);
+static SENSOR_DEVICE_ATTR_2_RO(fan7_input, tach, INPUT, 6);
+static SENSOR_DEVICE_ATTR_2_RW(fan7_min, tach, MIN, 6);
+static SENSOR_DEVICE_ATTR_2_RO(fan7_alarm, tach, ALARM, 6);
+static SENSOR_DEVICE_ATTR_2_RO(fan8_input, tach, INPUT, 7);
+static SENSOR_DEVICE_ATTR_2_RW(fan8_min, tach, MIN, 7);
+static SENSOR_DEVICE_ATTR_2_RO(fan8_alarm, tach, ALARM, 7);
+static SENSOR_DEVICE_ATTR_2_RO(fan9_input, tach, INPUT, 8);
+static SENSOR_DEVICE_ATTR_2_RW(fan9_min, tach, MIN, 8);
+static SENSOR_DEVICE_ATTR_2_RO(fan9_alarm, tach, ALARM, 8);
+static SENSOR_DEVICE_ATTR_2_RO(fan10_input, tach, INPUT, 9);
+static SENSOR_DEVICE_ATTR_2_RW(fan10_min, tach, MIN, 9);
+static SENSOR_DEVICE_ATTR_2_RO(fan10_alarm, tach, ALARM, 9);
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
+
 static SENSOR_DEVICE_ATTR_2_RW(pwm1, pwm, INPUT, 0);
 static SENSOR_DEVICE_ATTR_2_RW(pwm1_freq, pwmfreq, INPUT, 0);
 static SENSOR_DEVICE_ATTR_2_RW(pwm1_enable, pwmctrl, INPUT, 0);
@@ -1751,7 +1800,7 @@ static SENSOR_DEVICE_ATTR_2_RW(pwm3_auto_channels_temp, pwmchan, INPUT, 2);
 static SENSOR_DEVICE_ATTR_2_RW(pwm3_auto_point1_pwm, pwm, MIN, 2);
 static SENSOR_DEVICE_ATTR_2_RW(pwm3_auto_point2_pwm, pwm, MAX, 2);
 static SENSOR_DEVICE_ATTR_2_RW(pwm3_stall_disable, stall_disable, 0, 2);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 static SENSOR_DEVICE_ATTR_2(peci0_input, S_IRUGO, show_peci, NULL, INPUT, 0);
 static SENSOR_DEVICE_ATTR_2(peci0_auto_point1_temp, S_IRUGO | S_IWUSR,
 			    show_peci, set_peci, AUTOMIN, 0);
@@ -1831,7 +1880,7 @@ static SENSOR_DEVICE_ATTR_2(full_duty_cycle, S_IRUGO | S_IWUSR, show_adt_full_du
 static SENSOR_DEVICE_ATTR_2(peci_error, S_IRUGO, show_peci_error, NULL, INPUT, 0);
 static SENSOR_DEVICE_ATTR_2(enhanced_acoustic_register, S_IWUSR | S_IRUGO, show_enh_acou_reg,
 				set_enh_acou_reg, INPUT, 0);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
 /* Non-standard name, might need revisiting */
 static DEVICE_ATTR_RW(pwm_use_point2_pwm_at_crit);
@@ -1903,7 +1952,7 @@ static struct attribute *adt7475_attrs[] = {
 	&sensor_dev_attr_pwm3_auto_point1_pwm.dev_attr.attr,
 	&sensor_dev_attr_pwm3_auto_point2_pwm.dev_attr.attr,
 	&sensor_dev_attr_pwm3_stall_disable.dev_attr.attr,
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 	&sensor_dev_attr_peci0_input.dev_attr.attr,
 	&sensor_dev_attr_peci0_auto_point1_temp.dev_attr.attr,
 	&sensor_dev_attr_peci0_auto_point2_temp.dev_attr.attr,
@@ -1950,7 +1999,7 @@ static struct attribute *adt7475_attrs[] = {
 	&sensor_dev_attr_full_duty_cycle.dev_attr.attr,
 	&sensor_dev_attr_peci_error.dev_attr.attr,
 	&sensor_dev_attr_enhanced_acoustic_register.dev_attr.attr,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 	&dev_attr_pwm_use_point2_pwm_at_crit.attr,
 	NULL,
 };
@@ -1961,6 +2010,30 @@ static struct attribute *fan4_attrs[] = {
 	&sensor_dev_attr_fan4_alarm.dev_attr.attr,
 	NULL
 };
+
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+static struct attribute *atmega_attrs[] = {
+	&sensor_dev_attr_fan5_input.dev_attr.attr,
+	&sensor_dev_attr_fan5_min.dev_attr.attr,
+	&sensor_dev_attr_fan5_alarm.dev_attr.attr,
+	&sensor_dev_attr_fan6_input.dev_attr.attr,
+	&sensor_dev_attr_fan6_min.dev_attr.attr,
+	&sensor_dev_attr_fan6_alarm.dev_attr.attr,
+	&sensor_dev_attr_fan7_input.dev_attr.attr,
+	&sensor_dev_attr_fan7_min.dev_attr.attr,
+	&sensor_dev_attr_fan7_alarm.dev_attr.attr,
+	&sensor_dev_attr_fan8_input.dev_attr.attr,
+	&sensor_dev_attr_fan8_min.dev_attr.attr,
+	&sensor_dev_attr_fan8_alarm.dev_attr.attr,
+	&sensor_dev_attr_fan9_input.dev_attr.attr,
+	&sensor_dev_attr_fan9_min.dev_attr.attr,
+	&sensor_dev_attr_fan9_alarm.dev_attr.attr,
+	&sensor_dev_attr_fan10_input.dev_attr.attr,
+	&sensor_dev_attr_fan10_min.dev_attr.attr,
+	&sensor_dev_attr_fan10_alarm.dev_attr.attr,
+	NULL
+};
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
 
 static struct attribute *pwm2_attrs[] = {
 	&sensor_dev_attr_pwm2.dev_attr.attr,
@@ -2019,6 +2092,10 @@ static const struct attribute_group in3_attr_group = { .attrs = in3_attrs };
 static const struct attribute_group in4_attr_group = { .attrs = in4_attrs };
 static const struct attribute_group in5_attr_group = { .attrs = in5_attrs };
 static const struct attribute_group vid_attr_group = { .attrs = vid_attrs };
+
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+static const struct attribute_group atmega_attr_group = { .attrs = atmega_attrs };
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
 
 static int adt7475_detect(struct i2c_client *client,
 			  struct i2c_board_info *info)
@@ -2138,6 +2215,14 @@ static int adt7475_update_limits(struct i2c_client *client)
 		data->tach[MIN][i] = ret;
 	}
 
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+	if (0xAA == data->atmega_id) {
+		for (i = 0; i < ATMEGA_TACH_COUNT; i++) {
+			data->tach[MIN][i + ADT7475_TACH_COUNT] = 0;
+		}
+	}
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
+
 	for (i = 0; i < ADT7475_PWM_COUNT; i++) {
 		if (i == 1 && !data->has_pwm2)
 			continue;
@@ -2251,7 +2336,7 @@ static int adt7475_set_pwm_polarity(struct i2c_client *client)
 	return 0;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 extern int (*funcSYNOReadAdtFanSpeedRpm)(struct _SYNO_HWMON_SENSOR_TYPE *);
 extern int (*funcSYNOReadAdtVoltageSensor)(struct _SYNO_HWMON_SENSOR_TYPE *);
 extern int (*funcSYNOReadAdtThermalSensor)(struct _SYNO_HWMON_SENSOR_TYPE *);
@@ -2289,15 +2374,15 @@ static int syno_parse_adt_peci_input(struct _SynoCpuTemp *pCpuTemp)
 		goto RET;
 	}
 
-	data = i2c_get_clientdata(client);
+	data = adt7475_update_device(&(client->dev));
 
 	if (IS_ERR(data)) {
 		goto RET;
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_PECI1_ENABLE
 	cpu_count = 2;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_PECI1_ENABLE */
 
 	for (i = 0; i < cpu_count; ++i) {
 		pCpuTemp->cpu_temp[i] = reg2temp(data, data->peci[INPUT][i]);
@@ -2320,7 +2405,7 @@ static int syno_parse_adt_voltage_sensor(struct _SYNO_HWMON_SENSOR_TYPE *SysVolt
 		return -ENODEV;
 	}
 
-	data = i2c_get_clientdata(client);
+	data = adt7475_update_device(&(client->dev));
 
 	if (IS_ERR(data)) {
 		return PTR_ERR(data);
@@ -2344,7 +2429,7 @@ static int syno_parse_adt_thermal_sensor(struct _SYNO_HWMON_SENSOR_TYPE *SysTher
 		return -ENODEV;
 	}
 
-	data = i2c_get_clientdata(client);
+	data = adt7475_update_device(&(client->dev));
 
 	if (IS_ERR(data)) {
 		return PTR_ERR(data);
@@ -2368,7 +2453,7 @@ static int syno_parse_adt_fan_speed_rpm(struct _SYNO_HWMON_SENSOR_TYPE *FanSpeed
 		return -ENODEV;
 	}
 
-	data = i2c_get_clientdata(client);
+	data = adt7475_update_device(&(client->dev));
 
 	if (IS_ERR(data)) {
 		return PTR_ERR(data);
@@ -2392,7 +2477,7 @@ static int syno_parse_adt_fan_speed_rpm_by_order(struct _SYNO_HWMON_SENSOR_TYPE 
 		return -ENODEV;
 	}
 
-	data = i2c_get_clientdata(client);
+	data = adt7475_update_device(&(client->dev));
 
 	if (IS_ERR(data)) {
 		return PTR_ERR(data);
@@ -2405,11 +2490,11 @@ static int syno_parse_adt_fan_speed_rpm_by_order(struct _SYNO_HWMON_SENSOR_TYPE 
 	return 0;
 }
 
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_X86_CORETEMP
 extern u8 syno_cpu_tjmax(int, int*);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_X86_CORETEMP */
 static int adt7475_probe(struct i2c_client *client)
 {
 	enum chips chip;
@@ -2419,18 +2504,18 @@ static int adt7475_probe(struct i2c_client *client)
 		[adt7476] = "ADT7476",
 		[adt7490] = "ADT7490",
 	};
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 	u8 config1, configPECI;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
 	struct adt7475_data *data;
 	struct device *hwmon_dev;
 	int i, ret = 0, revision, group_num = 0;
 	u8 config3;
 	const struct i2c_device_id *id = i2c_match_id(adt7475_id, client);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_X86_CORETEMP
 	int tjmax;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_X86_CORETEMP */
 
 	data = devm_kzalloc(&client->dev, sizeof(*data), GFP_KERNEL);
 	if (data == NULL)
@@ -2462,7 +2547,7 @@ static int adt7475_probe(struct i2c_client *client)
 		revision = adt7475_read(REG_DEVID2) & 0x07;
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 	if (SYNO_IS_ADT7490(client)) {
 		config1 = adt7475_read(REG_CONFIG1);
 		// which means adt7490 is not been told to start
@@ -2474,13 +2559,13 @@ static int adt7475_probe(struct i2c_client *client)
 			}
 		}
 		configPECI = adt7475_read(REG_PECI_CONFIG);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_PECI1_ENABLE
 		// 40h = 01000000b
 		// Bits [7:6], 01: 2 CPUs (PECI0, PECI1)
 		configPECI = 0x40;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_ADT7490_PECI1_ENABLE */
 		configPECI = 0x00;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_PECI1_ENABLE */
 		i2c_smbus_write_byte_data(client, REG_PECI_CONFIG, configPECI);
 
 		funcSYNOReadAdtPeci = syno_parse_adt_peci_input;
@@ -2488,16 +2573,16 @@ static int adt7475_probe(struct i2c_client *client)
 		funcSYNOReadAdtVoltageSensor = syno_parse_adt_voltage_sensor;
 		funcSYNOReadAdtThermalSensor = syno_parse_adt_thermal_sensor;
 		funcSYNOReadAdtFanSpeedRpmByOrder = syno_parse_adt_fan_speed_rpm_by_order;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_X86_CORETEMP
 		for (i = 0; i < ADT7490_PECI_COUNT; ++i) {
 			if (syno_cpu_tjmax(i, &tjmax) < 0) {
 				continue;
 			}
 			i2c_smbus_write_byte_data(client, PECI_OFFSET_REG(i), (u8)tjmax);
 		}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_X86_CORETEMP */
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
 	config3 = adt7475_read(REG_CONFIG3);
 	/* Pin PWM2 may alternatively be used for ALERT output */
@@ -2576,6 +2661,13 @@ static int adt7475_probe(struct i2c_client *client)
 		break;
 	}
 
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+	data->atmega_id = adt7475_read(REG_ATMEGA_ID);
+	if (0xAA == data->atmega_id) {
+		printk("adt7475: atmega detect\n");
+	}
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
+
 	data->groups[group_num++] = &adt7475_attr_group;
 
 	/* Features that can be disabled individually */
@@ -2597,10 +2689,16 @@ static int adt7475_probe(struct i2c_client *client)
 	if (data->has_voltage & (1 << 5)) {
 		data->groups[group_num++] = &in5_attr_group;
 	}
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+	if (0xAA == data->atmega_id) {
+		data->groups[group_num++] = &atmega_attr_group;
+	}
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
 	if (data->has_vid) {
 		data->vrm = vid_which_vrm();
 		data->groups[group_num] = &vid_attr_group;
 	}
+
 
 	/* register device with all the acquired attributes */
 	hwmon_dev = devm_hwmon_device_register_with_groups(&client->dev,
@@ -2655,15 +2753,15 @@ static void adt7475_read_hystersis(struct i2c_client *client)
 	data->temp[HYSTERSIS][0] = (u16) adt7475_read(REG_REMOTE1_HYSTERSIS);
 	data->temp[HYSTERSIS][1] = data->temp[HYSTERSIS][0];
 	data->temp[HYSTERSIS][2] = (u16) adt7475_read(REG_REMOTE2_HYSTERSIS);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 	data->peci[HYSTERSIS][0] = (u16) adt7475_read(REG_REMOTE2_HYSTERSIS);
 	data->peci[HYSTERSIS][1] = (u16) adt7475_read(REG_REMOTE2_HYSTERSIS);
 	data->peci[HYSTERSIS][2] = (u16) adt7475_read(REG_REMOTE2_HYSTERSIS);
 	data->peci[HYSTERSIS][3] = (u16) adt7475_read(REG_REMOTE2_HYSTERSIS);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 static unsigned int adt7490_pwmctl_read(const unsigned int pwmReg)
 {
 	unsigned int valt = pwmReg & 0x8;
@@ -2724,7 +2822,7 @@ static unsigned int adt7490_pwmctl_read(const unsigned int pwmReg)
 	}
 	return ret;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
 static void adt7475_read_pwm(struct i2c_client *client, int index)
 {
@@ -2738,9 +2836,9 @@ static void adt7475_read_pwm(struct i2c_client *client, int index)
 	 * based on the current settings
 	 */
 	v = (data->pwm[CONTROL][index] >> 5) & 7;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 	data->pwmsynoctl[index] = adt7490_pwmctl_read(data->pwm[CONTROL][index]);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
 	if (v == 3)
 		data->pwmctl[index] = 0;
@@ -2854,7 +2952,7 @@ static int adt7475_update_measure(struct device *dev)
 			((ext >> 4) & 3);
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 		if (SYNO_IS_ADT7490(client)) {
 			for (i = 0; i < ADT7490_PECI_COUNT; i++) {
 				/* Adjust values so they match the input precision */
@@ -2867,7 +2965,7 @@ static int adt7475_update_measure(struct device *dev)
 				data->peci_range[i] = adt7475_read(REG_PECI_RANGE);
 			}
 		}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
 	for (i = 0; i < ADT7475_TACH_COUNT; i++) {
 		if (i == 3 && !data->has_fan4)
@@ -2877,6 +2975,17 @@ static int adt7475_update_measure(struct device *dev)
 			return ret;
 		data->tach[INPUT][i] = ret;
 	}
+
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+	if (0xAA == data->atmega_id) {
+		for (i = 0; i < ATMEGA_TACH_COUNT; i++) {
+			ret = adt7475_read_word(client, TACH_ATMEGA_REG(i));
+			if (ret < 0)
+				return ret;
+			data->tach[INPUT][i + ADT7475_TACH_COUNT] = ret;
+		}
+	}
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
 
 	/* Updated by hw when in auto mode */
 	for (i = 0; i < ADT7475_PWM_COUNT; i++) {

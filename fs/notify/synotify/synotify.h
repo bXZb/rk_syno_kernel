@@ -1,7 +1,4 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 #include <linux/fsnotify_backend.h>
 #include <linux/path.h>
 #include <linux/slab.h>
@@ -43,4 +40,4 @@ static inline struct synotify_event_info *SYNOTIFY_E(struct fsnotify_event *fse)
 
 struct synotify_event_info *synotify_alloc_event(struct fsnotify_group *group,
 						u32 mask, const void *data, u32 cookie);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  NSA Security-Enhanced Linux (SELinux) security module
@@ -3307,7 +3304,7 @@ static int selinux_path_notify(const struct path *path, u64 mask,
 	 * Performs an additional check for sb watches.
 	 */
 	switch (obj_type) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	case FSNOTIFY_OBJ_TYPE_SYNO_VFSMOUNT:
 		/* fall through */
 #endif

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * xHCI host controller driver
@@ -1090,7 +1087,7 @@ static u32 xhci_get_port_status(struct usb_hcd *hcd,
 	return status;
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #ifdef CONFIG_USB_DWC3_RTK
 extern void RTK_dwc3_usb3_phy_toggle(struct device *dwc3_dev, bool isConnect, int port);
@@ -1137,7 +1134,7 @@ static void RTK_phy_toggle(struct usb_hcd *hcd, u16 wValue, u16 wIndex,
 }
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
 		u16 wIndex, char *buf, u16 wLength)
 {
@@ -1539,16 +1536,16 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
 		case USB_PORT_FEAT_C_RESET:
 		case USB_PORT_FEAT_C_BH_PORT_RESET:
 		case USB_PORT_FEAT_C_CONNECTION:
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 			RTK_phy_toggle(hcd, wValue, wIndex, temp);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 			xhci_clear_port_change_bit(xhci, wValue, wIndex,
 					ports[wIndex]->addr, temp);
 			break;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 #endif // CONFIG_USB_PATCH_ON_RTK
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 		case USB_PORT_FEAT_C_OVER_CURRENT:
 		case USB_PORT_FEAT_C_ENABLE:
 		case USB_PORT_FEAT_C_PORT_LINK_STATE:

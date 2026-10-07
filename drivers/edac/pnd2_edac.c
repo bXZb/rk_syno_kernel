@@ -1258,7 +1258,13 @@ static void apl_get_dimm_config(struct mem_ctl_info *mci)
 		dimm->dtype = (d->dwid == 0) ? DEV_X8 : DEV_X16;
 		dimm->mtype = MEM_DDR3;
 		dimm->edac_mode = EDAC_SECDED;
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+		if (dimm->smbios_handle == 0) { // If already assign label, don't assign again
+			snprintf(dimm->label, sizeof(dimm->label), "Slice#%d_Chan#%d", i / 2, i % 2);
+		}
+#else /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 		snprintf(dimm->label, sizeof(dimm->label), "Slice#%d_Chan#%d", i / 2, i % 2);
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 	}
 }
 
@@ -1324,7 +1330,13 @@ static void dnv_get_dimm_config(struct mem_ctl_info *mci)
 			dimm->dtype = dnv_dtypes[j ? d->dimmdwid0 : d->dimmdwid1];
 			dimm->mtype = memtype;
 			dimm->edac_mode = EDAC_SECDED;
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+			if (dimm->smbios_handle == 0) { // If already assign label, don't assign again
+				snprintf(dimm->label, sizeof(dimm->label), "Chan#%d_DIMM#%d", i, j);
+			}
+#else /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 			snprintf(dimm->label, sizeof(dimm->label), "Chan#%d_DIMM#%d", i, j);
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 		}
 	}
 }

@@ -1,9 +1,6 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SYSTEM_CALL
 #include <linux/syscalls.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SYSTEM_CALL */
 #include <linux/file.h>
 #include <linux/fs.h> /* struct inode */
 #include <linux/fsnotify_backend.h>
@@ -25,11 +22,11 @@
 #include <asm/ioctls.h>
 
 #include "synotify.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 #include <linux/syno_acl.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 #define SYNOTIFY_DEFAULT_MAX_EVENTS	16384 /* per group */
 #define SYNOTIFY_DEFAULT_MAX_WATCHERS	8192 /* per group */
 #define SYNOTIFY_DEFAULT_MAX_INSTANCES	128 /* per user */
@@ -93,7 +90,7 @@ static struct synotify_event_info *get_one_event(struct fsnotify_group *group,
 
 	event = SYNOTIFY_E(fsnotify_peek_first_event(group));
 
-	if (event->path_ready == false && event->overflow_event == false) {
+	if (event->path_ready == false) {
 		event = NULL;
 		goto out;
 	}
@@ -176,7 +173,7 @@ static bool synotify_queue_is_empty(struct fsnotify_group *group)
 		return true;
 
 	event = SYNOTIFY_E(fsnotify_peek_first_event(group));
-	return (event->path_ready || event->overflow_event) ? false : true;
+	return (event->path_ready) ? false : true;
 }
 
 /* synotifiy userspace file descriptor functions */
@@ -293,7 +290,7 @@ static long synotify_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		list_for_each_entry(fsn_event, &group->notification_list, list) {
 			event = SYNOTIFY_E(fsn_event);
 
-			if (!event->path_ready && !event->overflow_event) {
+			if (!event->path_ready) {
 				break;
 			}
 			send_len += get_event_fixed_size(group);
@@ -329,11 +326,11 @@ static int synotify_find_path(const char __user *filename,
 		return ret;
 
 	/* you can only watch an inode if you have read permissions on it */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(path->dentry))
 		ret = synoacl_op_permission(path->dentry, MAY_READ);
 	else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 		ret = inode_permission(path->dentry->d_inode, MAY_READ);
 	if (ret)
 		goto out;
@@ -470,6 +467,7 @@ static struct fsnotify_event *synotify_alloc_overflow_event(void)
 	fsnotify_init_event(&oevent->fse, 0);
 	oevent->mask = SYNO_Q_OVERFLOW;
 	oevent->overflow_event = true;
+	oevent->path_ready = true;
 
 	return &oevent->fse;
 }
@@ -601,61 +599,61 @@ fput_and_out:
 	fdput(f);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SYSTEM_CALL
 /* synotify syscalls */
 SYSCALL_DEFINE1(syno_notify_init, unsigned int, flags)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	return __syno_notify_init(flags);
 #else
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 }
 
 SYSCALL_DEFINE1(SYNONotifyInit, unsigned int, flags)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	return __syno_notify_init(flags);
 #else
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 }
 
 SYSCALL_DEFINE3(syno_notify_remove_watch, int, synotify_fd, const char __user *, pathname, __u64, mask)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	return synotify_set_mark(synotify_fd, pathname, mask, SYNOTIFY_MARK_REMOVE);
 #else
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 }
 
 SYSCALL_DEFINE3(SYNONotifyRemoveWatch, int, synotify_fd, const char __user *, pathname, __u64, mask)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	return synotify_set_mark(synotify_fd, pathname, mask, SYNOTIFY_MARK_REMOVE);
 #else
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 }
 
 SYSCALL_DEFINE3(syno_notify_add_watch, int, synotify_fd, const char __user *, pathname, __u64, mask)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	return synotify_set_mark(synotify_fd, pathname, mask, SYNOTIFY_MARK_ADD);
 #else
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 }
 
 SYSCALL_DEFINE3(SYNONotifyAddWatch, int, synotify_fd, const char __user *, pathname, __u64, mask)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	return synotify_set_mark(synotify_fd, pathname, mask, SYNOTIFY_MARK_ADD);
 #else
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SYSTEM_CALL */

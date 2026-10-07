@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * NFS exporting and validation.
@@ -958,7 +955,7 @@ out:
 	return err;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFS_VAAI_SUPPORT
 int syno_compose_fh(struct svc_rqst *rqstp, const char *name, struct svc_fh *fhp)
 {
 	struct path path;
@@ -999,7 +996,7 @@ out:
 	path_put(&path);
 	return err;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFS_VAAI_SUPPORT */
 
 static struct svc_export *exp_find(struct cache_detail *cd,
 				   struct auth_domain *clp, int fsid_type,

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * linux/net/sunrpc/svc_xprt.c
@@ -188,9 +185,9 @@ void svc_xprt_init(struct net *net, struct svc_xprt_class *xcl,
 	set_bit(XPT_BUSY, &xprt->xpt_flags);
 	xprt->xpt_net = get_net(net);
 	strcpy(xprt->xpt_remotebuf, "uninitialized");
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 	xprt->xpt_pool_index = -1;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 }
 EXPORT_SYMBOL_GPL(svc_xprt_init);
 
@@ -416,10 +413,10 @@ void svc_xprt_do_enqueue(struct svc_xprt *xprt)
 	struct svc_pool *pool;
 	struct svc_rqst	*rqstp = NULL;
 	int cpu;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 	struct svc_serv *svc_serv = xprt->xpt_server;
 	struct svc_pool_hint *pool_hint = NULL;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 
 	if (!svc_xprt_ready(xprt))
 		return;
@@ -432,13 +429,13 @@ void svc_xprt_do_enqueue(struct svc_xprt *xprt)
 	if (test_and_set_bit(XPT_BUSY, &xprt->xpt_flags))
 		return;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	xprt->xpt_eqtime = ktime_get();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	cpu = get_cpu();
 	pool = svc_pool_for_cpu(xprt->xpt_server, cpu);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 	if (xprt->xpt_pool_index >= 0)
 		pool_hint = &svc_serv->pool_hint[xprt->xpt_pool_index];
 
@@ -459,7 +456,7 @@ void svc_xprt_do_enqueue(struct svc_xprt *xprt)
 			}
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 
 	atomic_long_inc(&pool->sp_stats.packets);
 
@@ -471,10 +468,10 @@ void svc_xprt_do_enqueue(struct svc_xprt *xprt)
 	/* find a thread for this xprt */
 	rcu_read_lock();
 	list_for_each_entry_rcu(rqstp, &pool->sp_all_threads, rq_all) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_SKIP_FINDING_IDLE_NFSD_IF_CONGESTED
 		if (test_bit(SP_CONGESTED, &pool->sp_flags))
 			goto out_unlock;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_SKIP_FINDING_IDLE_NFSD_IF_CONGESTED */
 		if (test_and_set_bit(RQ_BUSY, &rqstp->rq_flags))
 			continue;
 		atomic_long_inc(&pool->sp_stats.threads_woken);
@@ -483,9 +480,9 @@ void svc_xprt_do_enqueue(struct svc_xprt *xprt)
 		goto out_unlock;
 	}
 	set_bit(SP_CONGESTED, &pool->sp_flags);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	pool->sp_stats.congested++;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	rqstp = NULL;
 out_unlock:
 	rcu_read_unlock();
@@ -770,9 +767,9 @@ static struct svc_xprt *svc_get_next_xprt(struct svc_rqst *rqstp, long timeout)
 	smp_mb__before_atomic();
 	clear_bit(SP_CONGESTED, &pool->sp_flags);
 	clear_bit(RQ_BUSY, &rqstp->rq_flags);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 	atomic_long_dec(&pool->sp_stats.loading);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 	smp_mb__after_atomic();
 
 	if (likely(rqst_should_sleep(rqstp)))
@@ -782,9 +779,9 @@ static struct svc_xprt *svc_get_next_xprt(struct svc_rqst *rqstp, long timeout)
 
 	try_to_freeze();
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 	atomic_long_inc(&pool->sp_stats.loading);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 	set_bit(RQ_BUSY, &rqstp->rq_flags);
 	smp_mb__after_atomic();
 	rqstp->rq_xprt = svc_xprt_dequeue(pool);
@@ -802,7 +799,11 @@ out_found:
 	 * cache information to be provided.
 	 */
 	if (!test_bit(SP_CONGESTED, &pool->sp_flags))
+#ifdef CONFIG_SYNO_KERBEROS_FIX_UPCALL_TIMEOUT
+		rqstp->rq_chandle.thread_wait = 10*HZ;
+#else
 		rqstp->rq_chandle.thread_wait = 5*HZ;
+#endif /* CONFIG_SYNO_KERBEROS_FIX_UPCALL_TIMEOUT */
 	else
 		rqstp->rq_chandle.thread_wait = 1*HZ;
 	trace_svc_xprt_dequeue(rqstp);
@@ -902,9 +903,9 @@ int svc_recv(struct svc_rqst *rqstp, long timeout)
 		goto out;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	rqstp->rq_xprt_rdtime = xprt->xpt_eqtime;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	len = svc_handle_xprt(rqstp, xprt);
 
 	/* No data, incomplete (TCP) read, or accept() */
@@ -948,10 +949,10 @@ int svc_send(struct svc_rqst *rqstp)
 	struct svc_xprt	*xprt;
 	int		len = -EFAULT;
 	struct xdr_buf	*xb;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	const struct svc_version *vers;
 	s64 latency_us;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 	xprt = rqstp->rq_xprt;
 	if (!xprt)
@@ -966,7 +967,7 @@ int svc_send(struct svc_rqst *rqstp)
 	trace_svc_stats_latency(rqstp);
 
 	len = xprt->xpt_ops->xpo_sendto(rqstp);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	if (!rqstp->rq_server->sv_program ||
 	    rqstp->rq_vers >= rqstp->rq_server->sv_program->pg_nvers)
 		goto skip_report;
@@ -977,14 +978,14 @@ int svc_send(struct svc_rqst *rqstp)
 
 	latency_us = ktime_to_us(ktime_sub(ktime_get(), rqstp->rq_xprt_rdtime));
 	svc_update_lat(&vers->vs_latency[rqstp->rq_proc], latency_us);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 	if (vers->vs_store_latency_to_histogram)
 		vers->vs_store_latency_to_histogram(latency_us, rqstp->vfs_latency_us, rqstp->rq_proc);
 	if (vers->vs_store_resp_error)
 		vers->vs_store_resp_error(rqstp);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 skip_report:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 	trace_svc_send(rqstp, len);
 	svc_xprt_release(rqstp);
@@ -1476,35 +1477,35 @@ static int svc_pool_stats_show(struct seq_file *m, void *p)
 
 	if (p == SEQ_START_TOKEN) {
 		seq_puts(m, "# pool packets-arrived sockets-enqueued threads-woken threads-timedout"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 			" congested-count"
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 			" loading"
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 		"\n");
 		return 0;
 	}
 
 	seq_printf(m, "%u %lu %lu %lu %lu"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 		" %lu"
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 		" %lu"
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 		"\n",
 		pool->sp_id,
 		(unsigned long)atomic_long_read(&pool->sp_stats.packets),
 		pool->sp_stats.sockets_queued,
 		(unsigned long)atomic_long_read(&pool->sp_stats.threads_woken),
 		(unsigned long)atomic_long_read(&pool->sp_stats.threads_timedout)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 		, pool->sp_stats.congested
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 		, (unsigned long)atomic_long_read(&pool->sp_stats.loading)
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 		);
 
 	return 0;

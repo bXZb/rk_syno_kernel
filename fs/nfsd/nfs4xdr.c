@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  *  Server-side XDR for NFSv4
  *
@@ -1804,12 +1801,12 @@ nfsd4_decode_copy(struct nfsd4_compoundargs *argp, struct nfsd4_copy *copy)
 	struct nl4_server *ns_dummy;
 	int i, count;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP
 	copy->cp_src = (struct nl4_server *) svcxdr_tmpalloc(argp, sizeof(struct nl4_server));
 	if (!copy->cp_src)
 		return nfserr_jukebox;
 	memset(copy->cp_src, 0, sizeof(struct nl4_server));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 
 	status = nfsd4_decode_stateid(argp, &copy->cp_src_stateid);
 	if (status)
@@ -1834,11 +1831,11 @@ nfsd4_decode_copy(struct nfsd4_compoundargs *argp, struct nfsd4_copy *copy)
 	}
 
 	/* decode all the supplied server addresses but use first */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP
 	status = nfsd4_decode_nl4_server(argp, copy->cp_src);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 	status = nfsd4_decode_nl4_server(argp, &copy->cp_src);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 	if (status)
 		return status;
 
@@ -1871,7 +1868,7 @@ nfsd4_decode_copy_notify(struct nfsd4_compoundargs *argp,
 {
 	__be32 status;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP
 	cn->cpn_src = (struct nl4_server *) svcxdr_tmpalloc(argp, sizeof(struct nl4_server));
 	if (!cn->cpn_src)
 		return nfserr_jukebox;
@@ -1880,17 +1877,17 @@ nfsd4_decode_copy_notify(struct nfsd4_compoundargs *argp,
 	if (!cn->cpn_dst)
 		return nfserr_jukebox;
 	memset(cn->cpn_dst, 0, sizeof(struct nl4_server));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 
 	status = nfsd4_decode_stateid(argp, &cn->cpn_src_stateid);
 	if (status)
 		return status;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP
 	return nfsd4_decode_nl4_server(argp, cn->cpn_dst);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 	return nfsd4_decode_nl4_server(argp, &cn->cpn_dst);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 }
 
 static __be32
@@ -2683,10 +2680,10 @@ static int get_parent_attributes(struct svc_export *exp, struct kstat *stat)
 			break;
 	}
 	err = vfs_getattr(&path, stat, STATX_BASIC_STATS, AT_STATX_SYNC_AS_STAT);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_WINACL
 	if (!err)
 		nfsd_update_root_attr(path.dentry, stat);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_WINACL */
 	path_put(&path);
 	return err;
 }
@@ -2776,9 +2773,9 @@ nfsd4_encode_fattr(struct xdr_stream *xdr, struct svc_fh *fhp,
 	if (err)
 		goto out_nfserr;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_WINACL
 	nfsd_update_root_attr(dentry, &stat);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_WINACL */
 
 	if ((bmval0 & (FATTR4_WORD0_FILES_AVAIL | FATTR4_WORD0_FILES_FREE |
 			FATTR4_WORD0_FILES_TOTAL | FATTR4_WORD0_MAXNAME)) ||
@@ -2787,9 +2784,9 @@ nfsd4_encode_fattr(struct xdr_stream *xdr, struct svc_fh *fhp,
 		err = vfs_statfs(&path, &statfs);
 		if (err)
 			goto out_nfserr;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_SHARE_QUOTA
 		nfsd_quota_query(&path, &statfs);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_SHARE_QUOTA */
 	}
 	if ((bmval0 & (FATTR4_WORD0_FILEHANDLE | FATTR4_WORD0_FSID)) && !fhp) {
 		tempfh = kmalloc(sizeof(struct svc_fh), GFP_KERNEL);
@@ -4823,11 +4820,11 @@ nfsd4_encode_copy_notify(struct nfsd4_compoundres *resp, __be32 nfserr,
 
 	*p++ = cpu_to_be32(1);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP
 	return nfsd42_encode_nl4_server(resp, cn->cpn_src);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 	return nfsd42_encode_nl4_server(resp, &cn->cpn_src);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 }
 
 static __be32

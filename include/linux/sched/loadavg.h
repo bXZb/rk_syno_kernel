@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_SCHED_LOADAVG_H
 #define _LINUX_SCHED_LOADAVG_H
@@ -17,9 +14,9 @@
  */
 extern unsigned long avenrun[];		/* Load averages */
 extern void get_avenrun(unsigned long *loads, unsigned long offset, int shift);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 extern void get_avenrun_split(unsigned long *io_loads, unsigned long *cpu_loads, unsigned long offset, int shift);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 #define FSHIFT		11		/* nr of bits of precision */
 #define FIXED_1		(1<<FSHIFT)	/* 1.0 as fixed-point */

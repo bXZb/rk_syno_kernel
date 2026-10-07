@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * xHCI host controller driver
@@ -705,7 +702,7 @@ static void xhci_giveback_urb_in_irq(struct xhci_hcd *xhci,
 	usb_hcd_giveback_urb(hcd, urb, status);
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 static void xhci_unmap_td_cache_buf(struct xhci_hcd *xhci,
 		struct xhci_ring *ring, struct xhci_td *td)
@@ -769,7 +766,7 @@ static void xhci_unmap_td_cache_buf(struct xhci_hcd *xhci,
 #endif
 
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 static void xhci_unmap_td_bounce_buffer(struct xhci_hcd *xhci,
 		struct xhci_ring *ring, struct xhci_td *td)
 {
@@ -778,12 +775,12 @@ static void xhci_unmap_td_bounce_buffer(struct xhci_hcd *xhci,
 	struct urb *urb = td->urb;
 	size_t len;
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	xhci_unmap_td_cache_buf(xhci, ring, td);
 #endif /* CONFIG_USB_PATCH_ON_RTK */
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	if (!ring || !seg || !urb)
 		return;
 
@@ -1650,7 +1647,7 @@ static void handle_vendor_event(struct xhci_hcd *xhci,
 		handle_cmd_completion(xhci, &event->event_cmd);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_EMPTY_UNAVAILABLE_XHCI_TD
 static void xhci_giveback_error_urb(struct xhci_hcd *xhci,
 				int slot_id)
 {
@@ -1674,7 +1671,7 @@ static void xhci_giveback_error_urb(struct xhci_hcd *xhci,
 		}
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_EMPTY_UNAVAILABLE_XHCI_TD */
 
 static void handle_device_notification(struct xhci_hcd *xhci,
 		union xhci_trb *event)
@@ -1790,7 +1787,7 @@ static void handle_port_status(struct xhci_hcd *xhci,
 			xhci->devs[slot_id]->flags |= VDEV_PORT_ERROR;
 	}
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	if (hcd->speed >= HCD_USB3 && (portsc & PORT_PLS_MASK) == XDEV_INACTIVE &&
 		   (portsc & PORT_PLC)) {
@@ -1807,7 +1804,7 @@ static void handle_port_status(struct xhci_hcd *xhci,
 	}
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	if ((portsc & PORT_PLC) && (portsc & PORT_PLS_MASK) == XDEV_RESUME) {
 		xhci_dbg(xhci, "port resume event for port %d\n", port_id);
 
@@ -1849,7 +1846,7 @@ static void handle_port_status(struct xhci_hcd *xhci,
 		}
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_EMPTY_UNAVAILABLE_XHCI_TD
 	if (!(portsc & PORT_CONNECT) &&
 			(portsc & PORT_WRC)) {
 		slot_id = xhci_find_slot_id_by_port(hcd, xhci,
@@ -1860,7 +1857,7 @@ static void handle_port_status(struct xhci_hcd *xhci,
 			xhci_giveback_error_urb(xhci, slot_id);
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_EMPTY_UNAVAILABLE_XHCI_TD */
 
 	if ((portsc & PORT_PLC) &&
 	    DEV_SUPERSPEED_ANY(portsc) &&
@@ -3222,11 +3219,11 @@ static int prepare_transfer(struct xhci_hcd *xhci,
 
 	INIT_LIST_HEAD(&td->td_list);
 	INIT_LIST_HEAD(&td->cancelled_td_list);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	INIT_LIST_HEAD(&td->cache_buf_list);
 #endif /* CONFIG_USB_PATCH_ON_RTK */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 
 	if (td_index == 0) {
 		ret = usb_hcd_link_urb_to_ep(bus_to_hcd(urb->dev->bus), urb);
@@ -3410,7 +3407,7 @@ static u32 xhci_td_remainder(struct xhci_hcd *xhci, int transferred,
 	return (total_packet_count - ((transferred + trb_buff_len) / maxp));
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 static u64 xhci_align_cache_buf(struct xhci_hcd *xhci,
 	    struct urb *urb, u32 enqd_len, u32 hw_limit_buf_len,
@@ -3468,7 +3465,7 @@ static u64 xhci_align_cache_buf(struct xhci_hcd *xhci,
 	return cache_buf->dma;
 }
 #endif /* CONFIG_USB_PATCH_ON_RTK */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 
 static int xhci_align_td(struct xhci_hcd *xhci, struct urb *urb, u32 enqd_len,
 			 u32 *trb_buff_len, struct xhci_segment *seg)
@@ -3557,7 +3554,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 	int sent_len, ret;
 	u32 field, length_field, remainder;
 	u64 addr, send_addr;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	int max_hw_limit_num_trbs, hw_limit_num_trbs = 0;
 	int max_hw_limit_buf_len, hw_limit_buf_len = 0;
@@ -3568,7 +3565,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 	else
 		max_hw_limit_num_trbs = 7;
 #endif /* CONFIG_USB_PATCH_ON_RTK */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 
 	ring = xhci_urb_to_transfer_ring(xhci, urb);
 	if (!ring)
@@ -3635,7 +3632,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 		 */
 		if (enqd_len + trb_buff_len < full_len) {
 			field |= TRB_CHAIN;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 
 #ifdef CONFIG_USB_PATCH_ON_RTK
 			hw_limit_num_trbs++;
@@ -3658,7 +3655,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 			}
 #endif /* CONFIG_USB_PATCH_ON_RTK */
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 			if (trb_is_link(ring->enqueue + 1)) {
 				if (xhci_align_td(xhci, urb, enqd_len,
 						  &trb_buff_len,
@@ -3666,14 +3663,14 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 					send_addr = ring->enq_seg->bounce_dma;
 					/* assuming TD won't span 2 segs */
 					td->bounce_seg = ring->enq_seg;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 					hw_limit_buf_len = (enqd_len +
 						    trb_buff_len) %
 						    max_hw_limit_buf_len;
 					hw_limit_num_trbs = 0;
 #endif
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 				}
 			}
 		}

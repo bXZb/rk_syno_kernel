@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  *  linux/include/linux/hfsplus_raw.h
@@ -383,7 +380,7 @@ struct hfsplus_attr_extents {
 
 #define HFSPLUS_MAX_INLINE_DATA_SIZE 3802
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_EA
 /*
  * Apple Open Source hfs project mentions that HFSPlusAttrInlineData is
  * obsolete use HFSPlusAttrData instead[1]. However, Apple Technical 
@@ -417,7 +414,7 @@ struct hfsplus_attr_extents {
  * [1] https://opensource.apple.com/source/hfs/
  * [2] https://developer.apple.com/library/archive/technotes/tn/tn1150.html
  */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_EA */
 /* HFS+ attribute inline data */
 struct hfsplus_attr_inline_data {
 	__be32 record_type;

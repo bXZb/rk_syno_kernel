@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0+
 
 #include <linux/efi.h>
@@ -13,11 +10,11 @@ MODULE_IMPORT_NS(EFIVAR);
 
 #define DUMP_NAME_LEN 66
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PSTORE
 static unsigned int record_size = 2048;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_PSTORE */
 static unsigned int record_size = 1024;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PSTORE */
 module_param(record_size, uint, 0444);
 MODULE_PARM_DESC(record_size, "size of each pstore UEFI var (in bytes, min/default=1024)");
 
@@ -200,7 +197,7 @@ static int efi_pstore_write(struct pstore_record *record)
 					    true);
 	efivar_unlock();
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PSTORE
 	/* If no space for pstore, set dummy variable to force BIOS doing garbage collection */
 	if (EFI_OUT_OF_RESOURCES == status) {
 		printk(KERN_ERR "efi-pstore: SetVariable return EFI_OUT_OF_RESOURCES,"
@@ -221,7 +218,7 @@ static int efi_pstore_write(struct pstore_record *record)
 					    true);
 		efivar_unlock();
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PSTORE */
 
 	return status == EFI_SUCCESS ? 0 : -EIO;
 };
@@ -292,11 +289,11 @@ static __exit void efivars_pstore_exit(void)
 	efi_pstore_info.bufsize = 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PSTORE
 subsys_initcall(efivars_pstore_init);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_PSTORE */
 module_init(efivars_pstore_init);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PSTORE */
 module_exit(efivars_pstore_exit);
 
 MODULE_DESCRIPTION("EFI variable backend for pstore");

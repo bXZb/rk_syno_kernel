@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _SCSI_DISK_H
 #define _SCSI_DISK_H
@@ -15,11 +12,11 @@
 /*
  * Time out in seconds for disks and Magneto-opticals (which are slower).
  */
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_SCSI_OVERRIDE_SD_TIMEOUT)
 #define SD_TIMEOUT		(60 * HZ)
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SCSI_OVERRIDE_SD_TIMEOUT */
 #define SD_TIMEOUT		(30 * HZ)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_OVERRIDE_SD_TIMEOUT */
 #define SD_MOD_TIMEOUT		(75 * HZ)
 /*
  * Flush timeout is a multiplier over the standard device timeout which is
@@ -33,11 +30,11 @@
  */
 #define SD_MAX_RETRIES		5
 #define SD_PASSTHROUGH_RETRIES	1
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_KVMX64_MAX_MEDIUM_ACCESS_TIMEOUTS
 #define SD_MAX_MEDIUM_TIMEOUTS	1024
 #else
 #define SD_MAX_MEDIUM_TIMEOUTS	2
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_KVMX64_MAX_MEDIUM_ACCESS_TIMEOUTS */
 
 /*
  * Size of the initial data buffer for mode and read capacity data
@@ -78,7 +75,7 @@ enum {
 	SD_ZERO_WS10_UNMAP,	/* Use WRITE SAME(10) with UNMAP */
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 typedef enum __syno_disk_type {
 	SYNO_DISK_UNKNOWN = 0,
 	SYNO_DISK_SATA,
@@ -87,12 +84,12 @@ typedef enum __syno_disk_type {
 	SYNO_DISK_ISCSI,
 	SYNO_DISK_SAS,
 	SYNO_DISK_VIRTIO_SCSI,
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
 	SYNO_DISK_OOB,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 	SYNO_DISK_END, // end of enum
 } SYNO_DISK_TYPE;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
 struct scsi_disk {
 	struct scsi_driver *driver;	/* always &sd_template */
@@ -125,10 +122,10 @@ struct scsi_disk {
 	u32		unmap_granularity;
 	u32		unmap_alignment;
 	u32		index;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 	SYNO_DISK_TYPE	synodisktype;
 	u32		synoindex;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 	unsigned int	physical_block_size;
 	unsigned int	max_medium_access_timeouts;
 	unsigned int	medium_access_timed_out;
@@ -156,12 +153,12 @@ struct scsi_disk {
 	unsigned	urswrz : 1;
 	unsigned	security : 1;
 	unsigned	ignore_medium_access_errors : 1;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_SPINDOWN_PARALLELLY
 	struct		work_struct syno_disk_paraldown;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SCSI_DISK_SPINDOWN_PARALLELLY */
+#ifdef CONFIG_SYNO_SATA_LIBATA_FUA
 	unsigned	support_fua : 1;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_LIBATA_FUA */
 };
 #define to_scsi_disk(obj) container_of(obj,struct scsi_disk,dev)
 

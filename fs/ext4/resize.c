@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/ext4/resize.c
@@ -1365,9 +1362,9 @@ static void ext4_update_super(struct super_block *sb,
 	struct ext4_sb_info *sbi = EXT4_SB(sb);
 	struct ext4_super_block *es = sbi->s_es;
 	int i;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_INODE_NUM_OVERFLOW_FIX
 	u32 add_inode_count = EXT4_INODES_PER_GROUP(sb) * flex_gd->count;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_INODE_NUM_OVERFLOW_FIX */
 
 	BUG_ON(flex_gd->count == 0 || group_data == NULL);
 	/*
@@ -1392,7 +1389,7 @@ static void ext4_update_super(struct super_block *sb,
 
 	ext4_blocks_count_set(es, ext4_blocks_count(es) + blocks_count);
 	ext4_free_blocks_count_set(es, ext4_free_blocks_count(es) + free_blocks);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_INODE_NUM_OVERFLOW_FIX
 	if ((U32_MAX - le32_to_cpu(es->s_inodes_count)) >= add_inode_count) {
 		le32_add_cpu(&es->s_inodes_count, add_inode_count);
 		le32_add_cpu(&es->s_free_inodes_count, add_inode_count);
@@ -1400,12 +1397,12 @@ static void ext4_update_super(struct super_block *sb,
 		es->s_free_inodes_count += cpu_to_le32(U32_MAX - le32_to_cpu(es->s_inodes_count));
 		es->s_inodes_count = cpu_to_le32(U32_MAX);
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_INODE_NUM_OVERFLOW_FIX */
 	le32_add_cpu(&es->s_inodes_count, EXT4_INODES_PER_GROUP(sb) *
 		     flex_gd->count);
 	le32_add_cpu(&es->s_free_inodes_count, EXT4_INODES_PER_GROUP(sb) *
 		     flex_gd->count);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_INODE_NUM_OVERFLOW_FIX */
 
 	ext4_debug("free blocks count %llu", ext4_free_blocks_count(es));
 	/*
@@ -1974,16 +1971,16 @@ retry:
 		return 0;
 
 	n_group = ext4_get_group_number(sb, n_blocks_count - 1);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_INODE_NUM_OVERFLOW_FIX
 	/*
 	 * We will handle overflow in `ext4_update_super()`.
 	 */
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_INODE_NUM_OVERFLOW_FIX */
 	if (n_group >= (0xFFFFFFFFUL / EXT4_INODES_PER_GROUP(sb))) {
 		ext4_warning(sb, "resize would cause inodes_count overflow");
 		return -EINVAL;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_INODE_NUM_OVERFLOW_FIX */
 	ext4_get_group_no_and_offset(sb, o_blocks_count - 1, &o_group, &offset);
 
 	n_desc_blocks = num_desc_blocks(sb, n_group + 1);

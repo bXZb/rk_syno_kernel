@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *  SATA specific part of ATA helper library
@@ -20,17 +17,17 @@
 #include "libata-transport.h"
 
 /* debounce timing parameters in msecs { interval, duration, timeout } */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_RECOVER_MECHANISM
 const unsigned long sata_deb_timing_normal[]		= {   5,  100, 6000 };
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 const unsigned long sata_deb_timing_normal[]		= {   5,  100, 2000 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 EXPORT_SYMBOL_GPL(sata_deb_timing_normal);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_RECOVER_MECHANISM
 const unsigned long sata_deb_timing_hotplug[]		= {  25,  500, 6000 };
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 const unsigned long sata_deb_timing_hotplug[]		= {  25,  500, 2000 };
-#endif  /* MY_ABC_HERE */
+#endif  /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 EXPORT_SYMBOL_GPL(sata_deb_timing_hotplug);
 const unsigned long sata_deb_timing_long[]		= { 100, 2000, 5000 };
 EXPORT_SYMBOL_GPL(sata_deb_timing_long);
@@ -544,16 +541,16 @@ int sata_link_hardreset(struct ata_link *link, const unsigned long *timing,
 	u32 scontrol;
 	int rc;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP
 	struct ata_device *dev = NULL;
 	int iRetries = 0, iHasDev = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP */
 
 	DPRINTK("ENTER\n");
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP
 retry:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP */
 
 	if (online)
 		*online = false;
@@ -595,7 +592,7 @@ retry:
 		goto out;
 	/* if link is offline nothing more to do */
 	if (ata_phys_link_offline(link))
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP
 	{
 		if (!(link->ap->pflags & ATA_PFLAG_SYNO_DS_WAKING)) {
 			goto out;
@@ -614,9 +611,9 @@ retry:
 		}
 		goto out;
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP */
 		goto out;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP */
 
 	/* Link is online.  From this point, -ENODEV too is an error. */
 	if (online)
@@ -631,7 +628,7 @@ retry:
 		if (check_ready) {
 			unsigned long pmp_deadline;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_RESET_ENHANCE
 			/* To enhance compatibility (DSM#110708), we changed
 			 * the fixed hardreset deadline to dynamic deadline.
 			 *
@@ -641,12 +638,12 @@ retry:
 			if (time_before(pmp_deadline, jiffies)) {
 				pmp_deadline = deadline;
 			}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_RESET_ENHANCE */
 			pmp_deadline = ata_deadline(jiffies,
 						    ATA_TMOUT_PMP_SRST_WAIT);
 			if (time_after(pmp_deadline, deadline))
 				pmp_deadline = deadline;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_RESET_ENHANCE */
 
 			ata_wait_ready(link, pmp_deadline, check_ready);
 		}
@@ -663,28 +660,28 @@ retry:
 		if (online)
 			*online = false;
 		ata_link_err(link, "COMRESET failed (errno=%d)\n", rc);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_RECOVER_MECHANISM
 		if (-EBUSY == rc || -EIO == rc) {
 			ata_link_printk(link, KERN_ERR, "COMRESET fail, set COMRESET fail flag\n");
 			link->uiSflags |= ATA_SYNO_FLAG_COMRESET_FAIL;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_PMP_ENHANCE
 	if (online && (*online == false)) {
 		link->flags |= ATA_LFLAG_SYNO_OFFLINE;
 	} else {
 		link->flags &= ~ATA_LFLAG_SYNO_OFFLINE;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_PMP_ENHANCE */
 
 	DPRINTK("EXIT, rc=%d\n", rc);
 	return rc;
 }
 EXPORT_SYMBOL_GPL(sata_link_hardreset);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_DISK_MONITOR_TOOL
 /* Calculate the complete commands latency and record into latency statisics.
  *
  * Disk drive could queue multiple waiting commands (NCQ)
@@ -738,10 +735,10 @@ static void syno_ata_latency_calculate(struct ata_link *link, u64 u64AtaIntrTime
 	u64 u64CmdLatencyTime		= 0;
 	u64 u64StepOffset			= 0;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SAMPLE_SEQ_IO
 	u8 u8LbaZone = link->ata_latency.u8CplCmdSeqLbaZone &
 		SYNO_SEQ_SAMPLE_LBA_ZONE_MASK;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SAMPLE_SEQ_IO */
 
 	if (0 == link->ata_latency.u16TotalCplCmdCnt) {
 		goto END;
@@ -755,14 +752,14 @@ static void syno_ata_latency_calculate(struct ata_link *link, u64 u64AtaIntrTime
 	u64CmdLatencyTime = div_u64((u64AtaIntrTime - u64CmdStartTime),
 										link->ata_latency.u16TotalCplCmdCnt);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SAMPLE_SEQ_IO
 	if (SYNO_ALL_SEQ_READ == link->ata_latency.u8CplCmdSeqState) {
 		link->seq_stat.u64TotalSampleTime[u8LbaZone] += u64CmdLatencyTime *
 			link->ata_latency.u16CplCmdCnt[1];
 		link->seq_stat.u64TotalSampleBytes[u8LbaZone] += link->ata_latency.u32CplCmdBytes[1];
 		link->seq_stat.u64TotalSampleSkipBytes[u8LbaZone] += link->ata_latency.u32CplCmdSkipBytes[1];
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SAMPLE_SEQ_IO */
 
 	/* calculate the latency buckets
 	 *
@@ -812,20 +809,20 @@ END:
 	/* reset the link ata latency state */
 	link->ata_latency.u64FirstCmdStartTime = 0;
 	link->ata_latency.u16TotalCplCmdCnt = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SAMPLE_SEQ_IO
 	link->ata_latency.u8CplCmdSeqState = 0;
 	link->ata_latency.u8CplCmdSeqLbaZone = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SAMPLE_SEQ_IO */
 	for (iType = 0 ; iType < SYNO_LATENCY_TYPE_COUNT; iType++) {
 		link->ata_latency.u16CplCmdCnt[iType] = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SAMPLE_SEQ_IO
 		link->ata_latency.u32CplCmdBytes[iType] = 0;
 		link->ata_latency.u32CplCmdSkipBytes[iType] = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SAMPLE_SEQ_IO */
 	}
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_DISK_MONITOR_TOOL */
 
 /**
  *	ata_qc_complete_multiple - Complete multiple qcs successfully
@@ -851,11 +848,11 @@ int ata_qc_complete_multiple(struct ata_port *ap, u64 qc_active)
 {
 	u64 done_mask, ap_qc_active = ap->qc_active;
 	int nr_done = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_DISK_MONITOR_TOOL
 	struct ata_link *link = NULL;
 
 	ap->u64AtaIntrTime = cpu_clock(0);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_DISK_MONITOR_TOOL */
 
 	/*
 	 * If the internal tag is set on ap->qc_active, then we care about
@@ -886,11 +883,11 @@ int ata_qc_complete_multiple(struct ata_port *ap, u64 qc_active)
 		}
 		done_mask &= ~(1ULL << tag);
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_DISK_MONITOR_TOOL
 	ata_for_each_link(link, ap, HOST_FIRST) {
 		syno_ata_latency_calculate(link, ap->u64AtaIntrTime);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_DISK_MONITOR_TOOL */
 
 	return nr_done;
 }
@@ -1524,7 +1521,7 @@ int sata_async_notification(struct ata_port *ap)
 	if (rc == 0)
 		sata_scr_write(&ap->link, SCR_NOTIFICATION, sntf);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	/* If PMP is reporting that PHY status of some downstream ports has changed,
 	 * sata_async_notification will call schedule EH.
 	 * So in IRQ_OFF we ignore the PMP interrupt
@@ -1536,7 +1533,7 @@ int sata_async_notification(struct ata_port *ap)
 			return 0;
 		}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP
 		if (sntf & (1<< SATA_PMP_CTRL_PORT)) {
 			/* Only support deep sleep port, we on ATA_PFLAG_SYNO_IRQ_OFF.
 			 * So if this case happened, we should BUG
@@ -1553,9 +1550,9 @@ int sata_async_notification(struct ata_port *ap)
 				return 0;
 			}
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP */
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
 	if (!sata_pmp_attached(ap) || rc) {
 		/* PMP is not attached or SNTF is not available */
@@ -1628,9 +1625,9 @@ static int ata_eh_read_log_10h(struct ata_device *dev,
 	unsigned int err_mask;
 	u8 csum;
 	int i;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_DISK_WD_TLER_RETRY
 	struct scsi_device *sdev = dev->sdev;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_DISK_WD_TLER_RETRY */
 
 	err_mask = ata_read_log_page(dev, ATA_LOG_SATA_NCQ, 0, buf, 1);
 	if (err_mask)
@@ -1662,13 +1659,13 @@ static int ata_eh_read_log_10h(struct ata_device *dev,
 	if (dev->class == ATA_DEV_ZAC && ata_id_has_ncq_autosense(dev->id))
 		tf->auxiliary = buf[14] << 16 | buf[15] << 8 | buf[16];
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_DISK_WD_TLER_RETRY
 	if (sdev && (0 == strncmp(sdev->vendor, "WDC", strlen("WDC")))) {
 		if (0x4 == buf[256] && 0x49 == buf[257]) {
 			tf->blTler = true;
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_DISK_WD_TLER_RETRY */
 	return 0;
 }
 
@@ -1698,13 +1695,13 @@ void ata_eh_analyze_ncq_error(struct ata_link *link)
 		return;
 
 	/* is it NCQ device error? */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_JMB585_DUBIOUS_IFS_FIX
 	// we need to check error by reading ncq log, but the driver may not set AC_ERR_DEV correctly due to JMB585 mishandling UNC.
 	// when uiJM585DubiosIFSProtoFlag is set, we skip the return and let analysis keep going.
 	if (!link->sactive || (!(ehc->i.err_mask & AC_ERR_DEV) && !(ATA_SYNO_FLAG_JM585_READ_LOG & ehc->i.uiJM585DubiosIFSProtoFlag)))
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_JMB585_DUBIOUS_IFS_FIX */
 	if (!link->sactive || !(ehc->i.err_mask & AC_ERR_DEV))
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_JMB585_DUBIOUS_IFS_FIX */
 		return;
 
 	/* has LLDD analyzed already? */
@@ -1751,12 +1748,12 @@ void ata_eh_analyze_ncq_error(struct ata_link *link)
 
 	ehc->i.err_mask &= ~AC_ERR_DEV;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_DISK_WD_TLER_RETRY
 	// TLER error
 	if (true == tf.blTler) {
 		ata_link_err(link, "Error caused by TLER, retry command\n");
 		qc->flags |= ATA_QCFLAG_RETRY;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_DISK_WD_TLER_RETRY */
 }
 EXPORT_SYMBOL_GPL(ata_eh_analyze_ncq_error);

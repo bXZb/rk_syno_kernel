@@ -51,7 +51,7 @@ kconfig_check_syno_macro()
 
     # all syno macros should start with prefix SYNO_
     if grep -roE --exclude-dir={.git,SynoBuildConf} "((ifdef)|(defined))[[:space:]]*\(?SYNO([[:alnum:]]|_)*" \
-		| grep -v __SYNO_EXPORT_CONFIG__; then
+		| grep -v SYNO_EXPORT_CONFIG; then
         ERROR "all syno macros should start with prefix SYNO_"
         return 1
     fi

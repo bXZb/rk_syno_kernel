@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2011-2014, Intel Corporation.
@@ -294,21 +291,21 @@ struct nvme_ctrl {
 	unsigned int shutdown_timeout;
 	unsigned int kato;
 	bool subsystem;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_IDLE_TIME
 	unsigned long idle; /* nvme device idle time in jiffies */
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NVME_IDLE_TIME */
+#ifdef CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT
 	unsigned syno_force_timeout;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT */
+#ifdef CONFIG_SYNO_NVME_BLOCK_INFO
 #define BLOCK_INFO_SIZE        512     /* Largest string for a nvme device block information */
 	char syno_block_info[BLOCK_INFO_SIZE];
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NVME_BLOCK_INFO */
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 	struct list_head syno_remap_reqs;
 	spinlock_t syno_remap_reqs_lock;
 	u8 syno_elpe;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 
 	unsigned long quirks;
 	struct nvme_id_power_state psd[32];
@@ -356,9 +353,9 @@ struct nvme_ctrl {
 	unsigned long discard_page_busy;
 
 	struct nvme_fault_inject fault_inject;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_IDLE_TIME
 	unsigned char do_standby_syncing;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_IDLE_TIME */
 };
 
 enum nvme_iopolicy {
@@ -657,13 +654,13 @@ int __nvme_submit_sync_cmd(struct request_queue *q, struct nvme_command *cmd,
 int nvme_set_features(struct nvme_ctrl *dev, unsigned int fid,
 		      unsigned int dword11, void *buffer, size_t buflen,
 		      u32 *result);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 int syno_nvme_get_error_log_page(struct nvme_ctrl *dev,
 				 struct syno_nvme_error_log_page **err_log, int *err_entries);
 int syno_nvme_lba_write_pattern(struct nvme_ns *ns, u64 lba);
 void syno_nvme_put_ns(struct nvme_ns *ns);
 struct nvme_ns *syno_nvme_find_get_ns(struct nvme_ctrl *ctrl, unsigned int nsid);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 int nvme_get_features(struct nvme_ctrl *dev, unsigned int fid,
 		      unsigned int dword11, void *buffer, size_t buflen,
 		      u32 *result);

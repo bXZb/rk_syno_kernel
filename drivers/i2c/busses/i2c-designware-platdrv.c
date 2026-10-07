@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Synopsys DesignWare I2C adapter driver.
@@ -35,11 +32,11 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/suspend.h>
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_DW_CLK_FREQ_CUSTOM
 #include <linux/synobios.h>
 #include <linux/synolib.h>
 #include <linux/syno_fdt.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_DW_CLK_FREQ_CUSTOM */
 
 #include "i2c-designware-core.h"
 
@@ -219,11 +216,11 @@ static int dw_i2c_plat_probe(struct platform_device *pdev)
 	struct dw_i2c_dev *dev;
 	struct i2c_timings *t;
 	int irq, ret;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_DW_CLK_FREQ_CUSTOM
 	struct device I2CDev;
 	struct device_node *pI2CNode = NULL;
 	int index = 0;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_DW_CLK_FREQ_CUSTOM */
 
 
 	irq = platform_get_irq(pdev, 0);
@@ -255,7 +252,7 @@ static int dw_i2c_plat_probe(struct platform_device *pdev)
 	else
 		i2c_parse_fw_timings(&pdev->dev, t, false);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_DW_CLK_FREQ_CUSTOM
 	/* FIXME: Don't use these model customize code
 	 *        They should be customized in dts or acpi
 	 */
@@ -266,7 +263,7 @@ static int dw_i2c_plat_probe(struct platform_device *pdev)
 	}
 
 	if (syno_is_hw_version(HW_RS822p) || syno_is_hw_version(HW_RS822rpp) 
-			|| syno_is_hw_version(HW_SA6400) || syno_is_hw_version(HW_SA6200) || syno_is_hw_version(HW_FS6410) || syno_is_hw_version(HW_SC6200)) {
+			|| syno_is_hw_version(HW_SA6400) || syno_is_hw_version(HW_SA6200) || syno_is_hw_version(HW_FS6410) || syno_is_hw_version(HW_SC6200) || syno_is_hw_version(HW_RS11626xsp) || syno_is_hw_version(HW_FS6420)) {
 		t->sda_hold_ns = 100;
 	} else { /* Try to read dts i2c_sda_hold_time_ns of the i2c bus */
 		if (-1 == pdev->id) { /* -1 means dynamically assign bus id */
@@ -276,9 +273,9 @@ static int dw_i2c_plat_probe(struct platform_device *pdev)
 			}
 		}
 	}
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_I2C_DW_CLK_FREQ_CUSTOM */
 	i2c_dw_adjust_bus_speed(dev);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_DW_CLK_FREQ_CUSTOM */
 
 	if (pdev->dev.of_node)
 		dw_i2c_of_configure(pdev);
@@ -319,10 +316,10 @@ static int dw_i2c_plat_probe(struct platform_device *pdev)
 	adap->owner = THIS_MODULE;
 	adap->class = dmi_check_system(dw_i2c_hwmon_class_dmi) ?
 					I2C_CLASS_HWMON : I2C_CLASS_DEPRECATED;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_DW_FORCE_PROBE
 	/* override class to use this driver directly */
 	adap->class = I2C_CLASS_HWMON | I2C_CLASS_SPD;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_DW_FORCE_PROBE */
 	ACPI_COMPANION_SET(&adap->dev, ACPI_COMPANION(&pdev->dev));
 	adap->dev.of_node = pdev->dev.of_node;
 	adap->nr = -1;

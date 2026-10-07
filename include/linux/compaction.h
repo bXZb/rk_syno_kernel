@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_COMPACTION_H
 #define _LINUX_COMPACTION_H
@@ -88,9 +85,9 @@ extern int sysctl_compact_memory;
 extern unsigned int sysctl_compaction_proactiveness;
 extern int sysctl_compaction_handler(struct ctl_table *table, int write,
 			void *buffer, size_t *length, loff_t *ppos);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DROP_CACHE_MEM_COMPACT
 extern void compact_nodes(void);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DROP_CACHE_MEM_COMPACT */
 extern int sysctl_extfrag_threshold;
 extern int sysctl_compact_unevictable_allowed;
 

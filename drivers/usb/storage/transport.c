@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Driver for USB Mass Storage compliant devices
@@ -52,13 +49,13 @@
 #include "../../scsi/sd.h"
 
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_STOR_EXTRA_DELAY
 #include <linux/module.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_STOR_EXTRA_DELAY */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_DEVICE_QUIRKS
 #include <linux/usb/syno_quirks.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_DEVICE_QUIRKS */
 
 /***********************************************************************
  * Data transfer routines
@@ -612,7 +609,7 @@ void usb_stor_invoke_transport(struct scsi_cmnd *srb, struct us_data *us)
 	int need_auto_sense;
 	int result;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_SYNCHRONIZE_CACHE_FILTER
 	if (unlikely((us->pusb_dev->syno_quirks &
 					SYNO_USB_QUIRK_SYNCHRONIZE_CACHE_FILTER) &&
 				SYNCHRONIZE_CACHE == srb->cmnd[0])) {
@@ -620,7 +617,7 @@ void usb_stor_invoke_transport(struct scsi_cmnd *srb, struct us_data *us)
 		msleep(3000);
 		return;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_SYNCHRONIZE_CACHE_FILTER */
 
 	/* send the command to the transport layer */
 	scsi_set_resid(srb, 0);
@@ -1128,7 +1125,7 @@ int usb_stor_Bulk_max_lun(struct us_data *us)
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_STOR_EXTRA_DELAY
 int extra_delay = 0;
 module_param(extra_delay, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 int extra_delay_time = 0;
@@ -1149,7 +1146,7 @@ static inline void usb_stor_delay(struct us_data *us)
 		return;
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_STOR_EXTRA_DELAY */
 
 int usb_stor_Bulk_transport(struct scsi_cmnd *srb, struct us_data *us)
 {
@@ -1191,9 +1188,9 @@ int usb_stor_Bulk_transport(struct scsi_cmnd *srb, struct us_data *us)
 		     bcb->Length);
 	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe,
 				bcb, cbwlen, NULL);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_STOR_EXTRA_DELAY
 	usb_stor_delay(us);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_STOR_EXTRA_DELAY */
 	usb_stor_dbg(us, "Bulk command transfer result=%d\n", result);
 	if (result != USB_STOR_XFER_GOOD)
 		return USB_STOR_TRANSPORT_ERROR;
@@ -1213,9 +1210,9 @@ int usb_stor_Bulk_transport(struct scsi_cmnd *srb, struct us_data *us)
 		unsigned int pipe = srb->sc_data_direction == DMA_FROM_DEVICE ? 
 				us->recv_bulk_pipe : us->send_bulk_pipe;
 		result = usb_stor_bulk_srb(us, pipe, srb);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_STOR_EXTRA_DELAY
 		usb_stor_delay(us);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_STOR_EXTRA_DELAY */
 		usb_stor_dbg(us, "Bulk data transfer result 0x%x\n", result);
 		if (result == USB_STOR_XFER_ERROR)
 			return USB_STOR_TRANSPORT_ERROR;
@@ -1265,9 +1262,9 @@ int usb_stor_Bulk_transport(struct scsi_cmnd *srb, struct us_data *us)
 	usb_stor_dbg(us, "Attempting to get CSW...\n");
 	result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe,
 				bcs, US_BULK_CS_WRAP_LEN, &cswlen);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_STOR_EXTRA_DELAY
 	usb_stor_delay(us);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_STOR_EXTRA_DELAY */
 	/*
 	 * Some broken devices add unnecessary zero-length packets to the
 	 * end of their data transfers.  Such packets show up as 0-length
@@ -1277,9 +1274,9 @@ int usb_stor_Bulk_transport(struct scsi_cmnd *srb, struct us_data *us)
 		usb_stor_dbg(us, "Received 0-length CSW; retrying...\n");
 		result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe,
 				bcs, US_BULK_CS_WRAP_LEN, &cswlen);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_STOR_EXTRA_DELAY
 		usb_stor_delay(us);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_STOR_EXTRA_DELAY */
 	}
 
 	/* did the attempt to read the CSW fail? */
@@ -1289,9 +1286,9 @@ int usb_stor_Bulk_transport(struct scsi_cmnd *srb, struct us_data *us)
 		usb_stor_dbg(us, "Attempting to get CSW (2nd try)...\n");
 		result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe,
 				bcs, US_BULK_CS_WRAP_LEN, NULL);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_STOR_EXTRA_DELAY
 		usb_stor_delay(us);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_STOR_EXTRA_DELAY */
 	}
 
 	/* if we still have a failure at this point, we're in trouble */

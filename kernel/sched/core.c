@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  kernel/sched/core.c
@@ -6432,11 +6429,11 @@ void sched_show_task(struct task_struct *p)
 	if (!try_get_task_stack(p))
 		return;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HUNG_TASK_ADJUSTMENT
 	pr_warn("task:%-15.15s state:%c", p->comm, task_state_to_char(p));
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_HUNG_TASK_ADJUSTMENT */
 	pr_info("task:%-15.15s state:%c", p->comm, task_state_to_char(p));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HUNG_TASK_ADJUSTMENT */
 
 	if (p->state == TASK_RUNNING)
 		pr_cont("  running task    ");
@@ -6453,11 +6450,11 @@ void sched_show_task(struct task_struct *p)
 		(unsigned long)task_thread_info(p)->flags);
 
 	print_worker_info(KERN_INFO, p);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HUNG_TASK_ADJUSTMENT
 	show_stack(p, NULL, KERN_WARNING);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_HUNG_TASK_ADJUSTMENT */
 	show_stack(p, NULL, KERN_INFO);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HUNG_TASK_ADJUSTMENT */
 	put_task_stack(p);
 }
 EXPORT_SYMBOL_GPL(sched_show_task);
@@ -6709,7 +6706,7 @@ void idle_task_exit(void)
  */
 static void calc_load_migrate(struct rq *rq)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 	long delta[3] = {0};
 	calc_load_fold_active(rq, 1, delta);
 	if (delta[0])
@@ -6718,11 +6715,11 @@ static void calc_load_migrate(struct rq *rq)
 		atomic_long_add(delta[1], &calc_io_load_tasks);
 	if (delta[2])
 		atomic_long_add(delta[2], &calc_cpu_load_tasks);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LOAD_AVERAGE */
 	long delta = calc_load_fold_active(rq, 1);
 	if (delta)
 		atomic_long_add(delta, &calc_load_tasks);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 }
 
 static struct task_struct *__pick_migrate_task(struct rq *rq)
@@ -7155,10 +7152,10 @@ void __init sched_init(void)
 		raw_spin_lock_init(&rq->lock);
 		rq->nr_running = 0;
 		rq->calc_load_active = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 		rq->calc_io_load_active = 0;
 		rq->calc_cpu_load_active = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 		rq->calc_load_update = jiffies + LOAD_FREQ;
 		init_cfs_rq(&rq->cfs);
 		init_rt_rq(&rq->rt);

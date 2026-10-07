@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /**
  * eCryptfs: Linux filesystem encryption layer
@@ -36,7 +33,13 @@ int ecryptfs_write_lower(struct inode *ecryptfs_inode, char *data,
 	lower_file = ecryptfs_inode_to_private(ecryptfs_inode)->lower_file;
 	if (!lower_file)
 		return -EIO;
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_KERNEL_WRITE_CHECK
+	file_start_write(lower_file);
+	rc = __kernel_write(lower_file, data, size, &offset);
+	file_end_write(lower_file);
+#else /* CONFIG_SYNO_ECRYPTFS_SKIP_KERNEL_WRITE_CHECK */
 	rc = kernel_write(lower_file, data, size, &offset);
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_KERNEL_WRITE_CHECK */
 	mark_inode_dirty_sync(ecryptfs_inode);
 	return rc;
 }
@@ -179,12 +182,12 @@ int ecryptfs_write(struct inode *ecryptfs_inode, char *data, loff_t offset,
 						data_offset);
 		put_page(ecryptfs_page);
 		if (rc) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING
 			if (-EDQUOT == rc || -ENOSPC == rc)
 				printk_once(KERN_ERR "%s: Error encrypting "
 					    "page; rc = [%d]\n", __func__, rc);
 			else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING */
 			printk(KERN_ERR "%s: Error encrypting "
 			       "page; rc = [%d]\n", __func__, rc);
 			goto out;
@@ -199,13 +202,13 @@ int ecryptfs_write(struct inode *ecryptfs_inode, char *data, loff_t offset,
 			rc2 = ecryptfs_write_inode_size_to_metadata(
 								ecryptfs_inode);
 			if (rc2) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING
 				if (-EDQUOT == rc2 || -ENOSPC == rc2)
 					printk_once(KERN_ERR "Problem with "
 						    "ecryptfs_write_inode_size_to_metadata; "
 						    "rc = [%d]\n", rc2);
 				else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING */
 				printk(KERN_ERR	"Problem with "
 				       "ecryptfs_write_inode_size_to_metadata; "
 				       "rc = [%d]\n", rc2);

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
@@ -49,14 +46,14 @@ struct btrfs_ioctl_vol_args {
 #define BTRFS_DEVICE_SPEC_BY_ID		(1ULL << 3)
 
 #define BTRFS_SUBVOL_SPEC_BY_ID	(1ULL << 4)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SUBVOLUME_HIDE
 #define BTRFS_SUBVOL_HIDE		(1ULL << 32)
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SUBVOLUME_HIDE */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #define BTRFS_SUBVOL_NOLOAD_USRQUOTA	(1ULL << 33)
 #define BTRFS_SUBVOL_CMPR_RATIO         (1ULL << 34)
 #define BTRFS_SUBVOL_DISABLE_QUOTA	(1ULL << 35)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 #define BTRFS_VOL_ARG_V2_FLAGS_SUPPORTED		\
 			(BTRFS_SUBVOL_RDONLY |		\
@@ -79,10 +76,10 @@ struct btrfs_ioctl_vol_args {
 #define BTRFS_QGROUP_LIMIT_MAX_EXCL	(1ULL << 1)
 #define BTRFS_QGROUP_LIMIT_RSV_RFER	(1ULL << 2)
 #define BTRFS_QGROUP_LIMIT_RSV_EXCL	(1ULL << 3)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #define BTRFS_QGROUP_LIMIT_SOFT_RFER	(1ULL << 2)
 #define BTRFS_QGROUP_LIMIT_SOFT_EXCL	(1ULL << 3)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 #define BTRFS_QGROUP_LIMIT_RFER_CMPR	(1ULL << 4)
 #define BTRFS_QGROUP_LIMIT_EXCL_CMPR	(1ULL << 5)
 
@@ -90,7 +87,7 @@ struct btrfs_qgroup_limit {
 	__u64	flags;
 	__u64	max_rfer;
 	__u64	max_excl;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	union {
 		__u64	rsv_rfer;
 		__u64   soft_rfer;
@@ -102,7 +99,7 @@ struct btrfs_qgroup_limit {
 #else
 	__u64	rsv_rfer;
 	__u64	rsv_excl;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 };
 
 /*
@@ -160,12 +157,12 @@ struct btrfs_ioctl_vol_args_v2 {
 			__u64 size;
 			struct btrfs_qgroup_inherit __user *qgroup_inherit;
 		};
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 		struct {
 			__u64 padding[3];
 			__u64 copy_limit_from;
 		};
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 		__u64 unused[4];
 	};
 	union {
@@ -310,11 +307,11 @@ struct btrfs_ioctl_fs_info_args {
  * struct btrfs_ioctl_feature_flags
  */
 #define BTRFS_FEATURE_COMPAT_RO_FREE_SPACE_TREE		(1ULL << 0)
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_BTRFS_CASELESS_STAT) || defined(CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE)
 #define BTRFS_FEATURE_COMPAT_BLOCK_GROUP_CACHE_TREE_AUTO    (1ULL << 61)
 #define BTRFS_FEATURE_COMPAT_BLOCK_GROUP_CACHE_TREE (1ULL << 62)
 #define BTRFS_FEATURE_COMPAT_SYNO_CASELESS  (1ULL << 63)
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT || CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE */
 /*
  * Older kernels (< 4.9) on big-endian systems produced broken free space tree
  * bitmaps, and btrfs-progs also used to corrupt the free space tree (versions
@@ -326,9 +323,9 @@ struct btrfs_ioctl_fs_info_args {
  */
 #define BTRFS_FEATURE_COMPAT_RO_FREE_SPACE_TREE_VALID	(1ULL << 1)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 #define BTRFS_FEATURE_COMPAT_RO_LOCKER		(1ULL << 59)	    // the 17th prime number
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 
 #define BTRFS_FEATURE_INCOMPAT_MIXED_BACKREF	(1ULL << 0)
 #define BTRFS_FEATURE_INCOMPAT_DEFAULT_SUBVOL	(1ULL << 1)
@@ -349,9 +346,9 @@ struct btrfs_ioctl_fs_info_args {
 #define BTRFS_FEATURE_INCOMPAT_METADATA_UUID	(1ULL << 10)
 #define BTRFS_FEATURE_INCOMPAT_RAID1C34		(1ULL << 11)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RBD_META
 #define BTRFS_FEATURE_SYNO_CAPABILITY_RBD_META	(1ULL << 0)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RBD_META */
 
 struct btrfs_ioctl_feature_flags {
 	__u64 compat_flags;
@@ -359,7 +356,7 @@ struct btrfs_ioctl_feature_flags {
 	__u64 incompat_flags;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 #define BTRFS_LOCKER_CLOCK		(1ULL << 0)
 #define BTRFS_LOCKER_CLOCK_DELTA        (1ULL << 1)
 #define BTRFS_LOCKER_ENABLED		(1ULL << 2)
@@ -463,14 +460,14 @@ struct btrfs_ioctl_syno_locker_args {
 
 	__u64 reserved[5];
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS
 struct btrfs_ioctl_syno_flags {
 	__u64 syno_capability_flags;
 	__u64 reserved[3];
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS */
 
 /* balance control ioctl modes */
 #define BTRFS_BALANCE_CTL_PAUSE		1
@@ -549,12 +546,12 @@ struct btrfs_balance_progress {
 
 #define BTRFS_BALANCE_FORCE		(1ULL << 3)
 #define BTRFS_BALANCE_RESUME		(1ULL << 4)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_BALANCE_DRY_RUN
 #define BTRFS_BALANCE_DRY_RUN          (1ULL << 15)
 #endif /* SYNO_BTRFS_BALANCE_DRY_RUN */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT
 #define BTRFS_BALANCE_DONT_WAIT_DROP_ROOT		(1ULL << 16)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT */
 
 /*
  * flags definitions for per-type balance args
@@ -614,13 +611,13 @@ struct btrfs_ioctl_balance_args {
 
 	struct btrfs_balance_progress stat;	/* out */
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_BTRFS_BALANCE_DRY_RUN) || defined(CONFIG_SYNO_BTRFS_QUICK_BALANCE)
 	__u64 unused[70];			/* pad to 1k */
 	__u64 key_offset;				/* out */ /* for quick balance */
 	__u64 total_chunk_used;			/* out */ /* for dry run */
 #else
 	__u64 unused[72];			/* pad to 1k */
-#endif /* defined(MY_ABC_HERE) || defined(MY_ABC_HERE) */
+#endif /* defined(CONFIG_SYNO_BTRFS_BALANCE_DRY_RUN) || defined(CONFIG_SYNO_BTRFS_QUICK_BALANCE) */
 };
 
 #define BTRFS_INO_LOOKUP_PATH_MAX 4080
@@ -645,11 +642,11 @@ struct btrfs_ioctl_ino_lookup_user_args {
 	char path[BTRFS_INO_LOOKUP_USER_PATH_MAX];
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ENHANCE_TREE_SEARCH
 #define BTRFS_SEARCH_FLAG_ADJUST_MIN (1 << 0)
 #define BTRFS_SEARCH_FLAG_REPORT_BUF_FULL (1 << 1)
 #define BTRFS_SEARCH_FLAG_READAHEAD (1 << 2)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ENHANCE_TREE_SEARCH */
 
 /* Search criteria for the btrfs SEARCH ioctl family. */
 struct btrfs_ioctl_search_key {
@@ -704,12 +701,12 @@ struct btrfs_ioctl_search_key {
 	__u32 unused;
 
 	/* some extra for later */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ENHANCE_TREE_SEARCH
 	__u32 search_flag;
 	__u32 unused1;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_ENHANCE_TREE_SEARCH */
 	__u64 unused1;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ENHANCE_TREE_SEARCH */
 	__u64 unused2;
 	__u64 unused3;
 	__u64 unused4;
@@ -748,7 +745,7 @@ struct btrfs_ioctl_clone_range_args {
   __u64 dest_offset;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 /*
  * The following bit is used by clone_range_args_v2::flag
  * If REWRITE_SRC or REWRITE_DST is specified, clone will rewrite SRC or
@@ -759,9 +756,9 @@ struct btrfs_ioctl_clone_range_args {
 #define BTRFS_CLONE_RANGE_V2_AUTO_REWRITE_SRC (1 << 0)
 #define BTRFS_CLONE_RANGE_V2_AUTO_REWRITE_DST (1 << 1)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR
 #define BTRFS_CLONE_RANGE_V2_SKIP_CHECK_COMPR_DIR (1 << 2)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 
 struct btrfs_ioctl_syno_clone_range_args_v2 {
 	__s64 src_fd;
@@ -783,7 +780,7 @@ struct btrfs_ioctl_syno_clone_range_args_v2 {
 	__u32 reserved32;
 	__u64 reserved[2];
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 
 /*
  * flags definition for the defrag range ioctl
@@ -793,14 +790,27 @@ struct btrfs_ioctl_syno_clone_range_args_v2 {
  */
 #define BTRFS_DEFRAG_RANGE_COMPRESS 1
 #define BTRFS_DEFRAG_RANGE_START_IO 2
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RECLAIM_SPACE
 #define BTRFS_DEFRAG_RANGE_SYNO_DEFRAG  (1ULL << 2)
 #define BTRFS_DEFRAG_RANGE_PRINT_STDOUT (1ULL << 3)
 #define BTRFS_DEFRAG_RANGE_SKIP_FAST_SNAPSHOT_CHECK  (1ULL << 4)
 #define BTRFS_DEFRAG_RANGE_START_IO_RANGE  (1ULL << 5)
 #define BTRFS_DEFRAG_RANGE_FORCE_RECLAIM  (1ULL << 6)
 #define BTRFS_DEFRAG_RANGE_SKIP_CROSS_REF_CHECK  (1ULL << 7)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RECLAIM_SPACE */
+#ifdef CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS
+/*
+ * Gates Synology defrag+compress enhanced checks (heuristic probe,
+ * EXTENT_DEFRAG_COMPRESS tagging, NODATACOW-override COW, etc.).
+ * New behavior is active only when both BTRFS_DEFRAG_RANGE_COMPRESS
+ * and this flag are set.
+ *
+ * Behavior note:
+ * For full-used extents, an extra compression heuristic check is
+ * performed; rewrite/compress proceeds only if the heuristic passes.
+ */
+#define BTRFS_DEFRAG_SYNO_RANGE_COMPRESS  (1ULL << 8)
+#endif /* CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS */
 struct btrfs_ioctl_defrag_range_args {
 	/* start of the defrag operation */
 	__u64 start;
@@ -828,7 +838,7 @@ struct btrfs_ioctl_defrag_range_args {
 	 */
 	__u32 compress_type;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RECLAIM_SPACE
 	__u64 release_size;
 	/*
 	 * This value is multiple of 4K
@@ -845,10 +855,10 @@ struct btrfs_ioctl_defrag_range_args {
 	__u8 syno_ratio_denom;
 	__u8 syno_ratio_nom;
 	__u32 unused[1];
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_RECLAIM_SPACE */
 	/* spare for later */
 	__u32 unused[4];
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RECLAIM_SPACE */
 };
 
 
@@ -877,7 +887,7 @@ struct btrfs_ioctl_same_args {
 	struct btrfs_ioctl_same_extent_info info[0];
 };
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_BTRFS_DEDUPE
 enum btrfs_ioctl_syno_dedupe_cmd_action {
 	DEDUPE_CMD_NONE = 0,
 	DEDUPE_CMD_SET,
@@ -922,7 +932,7 @@ struct btrfs_ioctl_syno_extent_same_args {
 	__u64 release_size;		/* out */
 	__u8  status;			/* out */
 };
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DEDUPE */
 
 struct btrfs_ioctl_space_info {
 	__u64 flags;
@@ -1002,22 +1012,22 @@ struct btrfs_ioctl_get_dev_stats {
 	__u64 unused[128 - 2 - BTRFS_DEV_STAT_VALUES_MAX];
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 struct btrfs_ioctl_cksumfailed_files_args {
 	__u64 sub_vol;
 	__u64 ino;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 #define BTRFS_QUOTA_CTL_ENABLE	1
 #define BTRFS_QUOTA_CTL_DISABLE	2
 #define BTRFS_QUOTA_CTL_RESCAN__NOTUSED	3
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #define BTRFS_QUOTA_V1_CTL_ENABLE  10
 #define BTRFS_QUOTA_V2_CTL_ENABLE  11
 #define BTRFS_QUOTA_CTL_UNLOAD     12
 #define BTRFS_QUOTA_CTL_REMOVE_V1  13
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 struct btrfs_ioctl_quota_ctl_args {
 	__u64 cmd;
 	__u64 status;
@@ -1029,13 +1039,17 @@ struct btrfs_ioctl_quota_rescan_args {
 	__u64   reserved[6];
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 // "in" parameter for btrfs_ioctl_syno_quota_rescan_args flags:
 #define BTRFS_SYNO_QUOTA_RESCAN                 (1ULL << 0)
 #define BTRFS_SYNO_QUOTA_RESCAN_PAUSE           (1ULL << 1)
 #define BTRFS_SYNO_QUOTA_RESCAN_RESUME          (1ULL << 2)
 #define BTRFS_SYNO_QUOTA_RESCAN_SET_VOL_V2      (1ULL << 3)
 #define BTRFS_SYNO_QUOTA_RESCAN_TRANSFER_LIMIT  (1ULL << 4)
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+#define BTRFS_SYNO_QUOTA_RESCAN_SET_DEDUPED_ZERO_READY (1ULL << 5)
+#define BTRFS_SYNO_QUOTA_RESCAN_DEDUPED_ZERO_ONLY      (1ULL << 6)
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
 
 struct btrfs_ioctl_syno_quota_rescan_args {
 	__u64	flags;
@@ -1047,6 +1061,10 @@ struct btrfs_ioctl_syno_quota_rescan_args {
 #define BTRFS_QUOTA_STATUS_RESCAN_VOL_PROGRESS      (1ULL <<  1)
 // Query subvolume rescan progress.
 #define BTRFS_QUOTA_STATUS_RESCAN_SUBVOL_PROGRESS   (1ULL <<  2)
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+// Query deduped zero count.
+#define BTRFS_QUOTA_STATUS_QUERY_DEDUPED_ZERO       (1ULL <<  3)
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
 
 // "out" parameter of struct btrfs_ioctl_syno_quota_status_args status:
 #define BTRFS_QUOTA_STATUS_VOL_DISABLED             (1ULL <<  0)
@@ -1063,6 +1081,11 @@ struct btrfs_ioctl_syno_quota_rescan_args {
 #define BTRFS_USRQUOTA_STATUS_INCONSISTENT          (1ULL << 11)
 #define BTRFS_QUOTA_STATUS_VOL_PROGRESS_VALID       (1ULL << 12)
 #define BTRFS_QUOTA_STATUS_SUBVOL_PROGRESS_VALID    (1ULL << 13)
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+#define BTRFS_QUOTA_STATUS_DEDUPED_ZERO_VALID       (1ULL << 14)
+#define BTRFS_QUOTA_STATUS_DEDUPED_ZERO_NOT_ENABLED (1ULL << 15)
+#define BTRFS_QUOTA_STATUS_DEDUPED_ZERO_CALCULATING (1ULL << 16)
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
 
 struct btrfs_ioctl_syno_quota_status_args {
 	__u64	cmd;
@@ -1070,9 +1093,15 @@ struct btrfs_ioctl_syno_quota_status_args {
 	__u64	progress;		// 0~10000. Caller can devide it by 100 to get percentage.
 	__u64	next_subvol_id;		// If "this" subvol is in recan list, report next subvol in the list.
 	__u64	scanning_subvol_id;	// Currently scanning subvol. May not be the same as "this" subvol.
-	__u64	reserved[3];
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+	/* Valid when BTRFS_QUOTA_STATUS_DEDUPED_ZERO_* status is reported. */
+	__u64 deduped_zero;
+	__u64 reserved[2];
+#else /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
+	__u64 reserved[3];
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 struct btrfs_ioctl_qgroup_assign_args {
 	__u64 assign;
@@ -1085,7 +1114,7 @@ struct btrfs_ioctl_qgroup_create_args {
 	__u64 qgroupid;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QGROUP_QUERY
 struct btrfs_ioctl_qgroup_query_args {
 	/* state */
 	__u64 rfer;       // disk size (could be smaller than rfer_cmpr due to compression)
@@ -1096,7 +1125,7 @@ struct btrfs_ioctl_qgroup_query_args {
 	/* limit */
 	__u64 max_rfer;
 	__u64 max_excl;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	union {
 		__u64 soft_rfer;
 		__u64 rsv_rfer;
@@ -1108,23 +1137,23 @@ struct btrfs_ioctl_qgroup_query_args {
 #else
 	__u64 rsv_rfer;
 	__u64 rsv_excl;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	/* reservation tracking */
 	__u64 reserved;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QGROUP_QUERY */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #define BTRFS_USRQUOTA_CTL_ENABLE 1
 #define BTRFS_USRQUOTA_CTL_DISABLE 2
 #define BTRFS_USRQUOTA_CTL_DUMPTREE 3
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #define BTRFS_USRQUOTA_V1_CTL_ENABLE  10
 #define BTRFS_USRQUOTA_V2_CTL_ENABLE  11
 #define BTRFS_USRQUOTA_CTL_UNLOAD     12
 #define BTRFS_USRQUOTA_CTL_REMOVE_V1  13
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 struct btrfs_ioctl_usrquota_ctl_args {
 	__u64 cmd;
 	__u64 status;
@@ -1154,7 +1183,7 @@ struct btrfs_ioctl_usrquota_query_args {
 	/* reservation tracking */
 	__u64 reserved;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 struct btrfs_ioctl_timespec {
 	__u64 sec;
@@ -1168,15 +1197,15 @@ struct btrfs_ioctl_received_subvol_args {
 	struct btrfs_ioctl_timespec stime; /* in */
 	struct btrfs_ioctl_timespec rtime; /* out */
 	__u64	flags;			/* in */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SEND_SUBVOL_CREATE_TIME
 	struct btrfs_ioctl_timespec otime; /* in */
 	__u64	reserved[14];		/* in */
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_SEND_SUBVOL_CREATE_TIME */
 	__u64	reserved[16];		/* in */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SEND_SUBVOL_CREATE_TIME */
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 
 #define BTRFS_SNAP_SIZE_SHOW_EXCL_SIZE 0x1
 #define BTRFS_SNAP_SIZE_SHOW_PROCESSED_SIZE 0x2
@@ -1227,9 +1256,9 @@ struct btrfs_ioctl_snapshot_size_query_args {
 	__u64 calc_size;
 	__u64 processed_size;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA
 #define BTRFS_LOG_TREE_BG_RSV_ADD    (1ULL << 0)
 #define BTRFS_LOG_TREE_BG_RSV_REMOVE (1ULL << 1)
 
@@ -1240,9 +1269,9 @@ struct btrfs_ioctl_log_tree_reserve_bg_args {
 	__u64 flags;
 	__u64 reserved[4];
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_SPACE_ANALYZE
 #define BTRFS_FREE_SPACE_ANALYZE_NR_INTERVAL	15
 #define BTRFS_FREE_SPACE_ANALYZE_FLAG_FULL	(1ULL << 0)
 
@@ -1261,9 +1290,9 @@ struct btrfs_ioctl_free_space_analyze_args {
 	/* reserved */
 	__u64 reserved[8];
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_SPACE_ANALYZE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE
 struct btrfs_ioctl_find_next_chunk_info_args {
 	__u64 start;
 	__u64 flags;
@@ -1272,9 +1301,9 @@ struct btrfs_ioctl_find_next_chunk_info_args {
 	__u64 stripe_offset[2];
 	__u64 reserved[4];
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_COMPR_CTL
 /* flags for the compression ioctl */
 #define BTRFS_COMPR_CTL_SET 		0x1
 #define BTRFS_COMPR_CTL_COMPR_FL 	0x2
@@ -1285,9 +1314,9 @@ struct btrfs_ioctl_compr_ctl_args {
 	__u64	compressed_size;	/* out */
 	__u64	reserved[1];
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_COMPR_CTL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_TREE
 #define BTRFS_SYNO_FEAT_TREE_CTL_ENABLE 1
 #define BTRFS_SYNO_FEAT_TREE_CTL_DISABLE 2
 #define BTRFS_SYNO_FEAT_TREE_CTL_STATUS 3
@@ -1306,9 +1335,9 @@ enum btrfs_syno_feature_tree_status_enum {
 	SYNO_FEAT_TREE_ST_DISABLE = 0,
 	SYNO_FEAT_TREE_ST_ENABLE,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_TREE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 enum btrfs_syno_usage_state_enum {
 	SYNO_USAGE_STATE_NONE = 0,
 	SYNO_USAGE_STATE_INITIAL,
@@ -1366,7 +1395,7 @@ struct btrfs_ioctl_syno_usage_ctl_args {
 	/* for reserve */
 	__u64 reserved[4];
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 
 /*
  * Caller doesn't want file data in the send stream, even if the
@@ -1388,7 +1417,7 @@ struct btrfs_ioctl_syno_usage_ctl_args {
  */
 #define BTRFS_SEND_FLAG_OMIT_END_CMD		0x4
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SEND_FLAGS_SUPPORT
 /*
  * Calculate the amount (in bytes) of new file data between the send and
  * parent snapshots, or in case of a full send, the total amount of file data
@@ -1444,12 +1473,12 @@ struct btrfs_ioctl_syno_usage_ctl_args {
 	 BTRFS_SEND_FLAG_SYNO_FEATURES | \
 	 BTRFS_SEND_FLAG_VERBOSE)
 
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_SEND_FLAGS_SUPPORT */
 #define BTRFS_SEND_FLAG_MASK \
 	(BTRFS_SEND_FLAG_NO_FILE_DATA | \
 	 BTRFS_SEND_FLAG_OMIT_STREAM_HEADER | \
 	 BTRFS_SEND_FLAG_OMIT_END_CMD)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SEND_FLAGS_SUPPORT */
 
 struct btrfs_ioctl_send_args {
 	__s64 send_fd;			/* in */
@@ -1457,19 +1486,32 @@ struct btrfs_ioctl_send_args {
 	__u64 __user *clone_sources;	/* in */
 	__u64 parent_root;		/* in */
 	__u64 flags;			/* in */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SEND_CALCULATE_TOTAL_DATA_SIZE
 	__u64 total_data_size;   /* out */
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
-	__u64 skip_cmd_count;
-#endif /* MY_ABC_HERE */
-#if defined(MY_ABC_HERE) && defined(MY_ABC_HERE)
-	__u64 reserved[2];		/* in */
-#elif defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#endif /* CONFIG_SYNO_BTRFS_SEND_CALCULATE_TOTAL_DATA_SIZE */
+#ifdef CONFIG_SYNO_BTRFS_SEND_SUPPORT_PAUSE_RESUME
+	__u64 skip_cmd_count;	/* in */
+	__s64 current_cmd_pos_fd;	/* in */
+	/* The write end of a pipe should be passed rather than directly using the
+	 * fd of a opened file. This is because Btrfs uses current->journal_info to
+	 * maintain lock information during the send operation, and this variable is
+	 * interpreted differently across file systems. Therefore, to avoid
+	 * potential crashes during the journal write operation, use pipe to get the
+	 * data in the user space and write it to the opened file in a separate
+	 * thread.
+	 */
+	__u8 current_cmd_pos_log_report_rate;	/* in */
+#endif /* CONFIG_SYNO_BTRFS_SEND_SUPPORT_PAUSE_RESUME */
+#if defined(CONFIG_SYNO_BTRFS_SEND_CALCULATE_TOTAL_DATA_SIZE) && defined(CONFIG_SYNO_BTRFS_SEND_SUPPORT_PAUSE_RESUME)
+	__u8 reserved[7];		/* in */
+#elif defined(CONFIG_SYNO_BTRFS_SEND_SUPPORT_PAUSE_RESUME)
+	__u8 syno_reserved[7];
+	__u64 reserved[1];		/* in */
+#elif defined(CONFIG_SYNO_BTRFS_SEND_CALCULATE_TOTAL_DATA_SIZE)
 	__u64 reserved[3];		/* in */
-#else /* !defined(MY_ABC_HERE) && !defined(MY_ABC_HERE) */
+#else /* !defined(CONFIG_SYNO_BTRFS_SEND_CALCULATE_TOTAL_DATA_SIZE) && !defined(CONFIG_SYNO_BTRFS_SEND_SUPPORT_PAUSE_RESUME) */
 	__u64 reserved[4];		/* in */
-#endif /* defined(MY_ABC_HERE) && defined(MY_ABC_HERE) */
+#endif /* defined(CONFIG_SYNO_BTRFS_SEND_CALCULATE_TOTAL_DATA_SIZE) && defined(CONFIG_SYNO_BTRFS_SEND_SUPPORT_PAUSE_RESUME) */
 };
 
 /*
@@ -1562,10 +1604,10 @@ enum btrfs_err_code {
 	BTRFS_ERROR_DEV_RAID1C4_MIN_NOT_MET,
 };
 #ifdef __KERNEL__
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_VFS_INO_TO_PATH
 int btrfs_vfs_ino_to_path(struct inode *inode, u64 inum, char *outpath, int len);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_VFS_INO_TO_PATH */
+#ifdef CONFIG_SYNO_BTRFS_LIST_HARDLINKS
 struct btrfs_list_hardlinks_iter_index {
 	u64 type;			/* INODE_REF/INODE_EXTREF */
 	u64 dir;			/* for INODE_REF */
@@ -1592,8 +1634,33 @@ struct btrfs_list_hardlinks_args {
 	u8 buf[0];				/* out */
 };
 int btrfs_list_hardlinks(struct btrfs_list_hardlinks_args *args);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LIST_HARDLINKS */
 #endif /* __KERNEL__ */
+
+#ifdef CONFIG_SYNO_BTRFS_DECOUPLE_NODATACOW_AND_NODATASUM
+/* NODATASUM/NODATACOW control ioctl */
+#define BTRFS_SYNO_DATACOW_CTL_GET        0  /* Query current flags */
+#define BTRFS_SYNO_DATACOW_CTL_SET        1  /* Set NODATASUM/NODATACOW flags */
+
+/* Flags for BTRFS_SYNO_DATACOW_CTL_SET */
+#define BTRFS_SYNO_DATACOW_FL_DATASUM     (1ULL << 0)  /* Enable data checksum */
+#define BTRFS_SYNO_DATACOW_FL_DATACOW     (1ULL << 1)  /* Enable copy-on-write */
+#define BTRFS_SYNO_DATACOW_FL_COMPRESS    (1ULL << 2)  /* Enable compression */
+
+/* Compress type values for BTRFS_SYNO_DATACOW_CTL */
+#define BTRFS_SYNO_DATACOW_COMPRESS_NONE     0  /* No compression / not enabled */
+#define BTRFS_SYNO_DATACOW_COMPRESS_ZLIB     1
+#define BTRFS_SYNO_DATACOW_COMPRESS_LZO      2
+#define BTRFS_SYNO_DATACOW_COMPRESS_ZSTD     3
+#define BTRFS_SYNO_DATACOW_COMPRESS_DEFAULT  4  /* Use fs default */
+
+struct btrfs_ioctl_syno_datacow_args {
+	__u64 cmd;            /* in: BTRFS_SYNO_DATACOW_CTL_* */
+	__u64 flags;          /* in/out: BTRFS_SYNO_DATACOW_FL_* */
+	__u64 compress_type;  /* in/out: BTRFS_SYNO_DATACOW_COMPRESS_* */
+	__u64 reserved[5];
+};
+#endif /* CONFIG_SYNO_BTRFS_DECOUPLE_NODATACOW_AND_NODATASUM */
 
 #define BTRFS_IOC_SNAP_CREATE _IOW(BTRFS_IOCTL_MAGIC, 1, \
 				   struct btrfs_ioctl_vol_args)
@@ -1710,84 +1777,89 @@ int btrfs_list_hardlinks(struct btrfs_list_hardlinks_args *args);
 #define BTRFS_IOC_SNAP_DESTROY_V2 _IOW(BTRFS_IOCTL_MAGIC, 63, \
 				struct btrfs_ioctl_vol_args_v2)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DECOUPLE_NODATACOW_AND_NODATASUM
+#define BTRFS_IOC_SYNO_DATACOW_CTL _IOWR(BTRFS_IOCTL_MAGIC, 225, \
+				    struct btrfs_ioctl_syno_datacow_args)
+#endif /* CONFIG_SYNO_BTRFS_DECOUPLE_NODATACOW_AND_NODATASUM */
+
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 #define BTRFS_IOC_SYNO_LOCKER_GET _IOR(BTRFS_IOCTL_MAGIC, 232, struct btrfs_ioctl_syno_locker_args)
 #define BTRFS_IOC_SYNO_LOCKER_SET _IOW(BTRFS_IOCTL_MAGIC, 233, struct btrfs_ioctl_syno_locker_args)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS
 #define BTRFS_IOC_GET_SYNO_FLAGS _IOR(BTRFS_IOCTL_MAGIC, 234, \
 				struct btrfs_ioctl_syno_flags)
 #define BTRFS_IOC_SET_SYNO_FLAGS _IOW(BTRFS_IOCTL_MAGIC, 234, \
 				struct btrfs_ioctl_syno_flags[2])
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #define BTRFS_IOC_SYNO_QUOTA_STATUS _IOWR(BTRFS_IOCTL_MAGIC, 235, \
 				struct btrfs_ioctl_syno_quota_status_args)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_TREE
 #define BTRFS_IOC_SYNO_FEAT_TREE_CTL _IOWR(BTRFS_IOCTL_MAGIC, 236, \
 				   struct btrfs_ioctl_syno_feat_tree_ctl_args)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_TREE */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_BTRFS_DEDUPE
 #define BTRFS_IOC_SYNO_SET_DEDUPE_FLAG _IOWR(BTRFS_IOCTL_MAGIC, 237, \
 					     struct btrfs_ioctl_syno_dedupe_cmd_args)
 #define BTRFS_IOC_SYNO_EXTENT_SAME _IOWR(BTRFS_IOCTL_MAGIC, 238, \
 					 struct btrfs_ioctl_syno_extent_same_args)
-#endif /* MY_DEF_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_DEDUPE */
+#ifdef CONFIG_SYNO_BTRFS_FREE_SPACE_ANALYZE
 #define BTRFS_IOC_FREE_SPACE_ANALYZE	_IOWR(BTRFS_IOCTL_MAGIC, 240, \
 				   struct btrfs_ioctl_free_space_analyze_args)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_SPACE_ANALYZE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 #define BTRFS_IOC_SYNO_USAGE_CTL	_IOWR(BTRFS_IOCTL_MAGIC, 241, \
 				   struct btrfs_ioctl_syno_usage_ctl_args)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE
 #define BTRFS_IOC_FIND_NEXT_CHUNK_INFO  _IOWR(BTRFS_IOCTL_MAGIC, 242, \
 				struct btrfs_ioctl_find_next_chunk_info_args)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA
 #define BTRFS_IOC_SYNO_RESERVE_LOG_TREE_BLOCK_GROUP _IOWR(BTRFS_IOCTL_MAGIC, 244, \
 				    struct btrfs_ioctl_log_tree_reserve_bg_args)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IOC_SYNC_SYNO
 #define BTRFS_IOC_SYNC_SYNO _IO(BTRFS_IOCTL_MAGIC, 246)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IOC_SYNC_SYNO */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 #define BTRFS_IOC_SNAPSHOT_SIZE_QUERY _IOWR(BTRFS_IOCTL_MAGIC, 247, \
 				  struct btrfs_ioctl_snapshot_size_query_args)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_COMPR_CTL
 #define BTRFS_IOC_COMPR_CTL _IOR(BTRFS_IOCTL_MAGIC, 248, \
 				    struct btrfs_ioctl_compr_ctl_args)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_COMPR_CTL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QGROUP_QUERY
 #define BTRFS_IOC_QGROUP_QUERY _IOR(BTRFS_IOCTL_MAGIC, 253, \
                                     struct btrfs_ioctl_qgroup_query_args)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QGROUP_QUERY */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 #define BTRFS_IOC_CKSUMFAILED_FILES_GET _IOR(BTRFS_IOCTL_MAGIC, 254, \
 		                            struct btrfs_ioctl_cksumfailed_files_args)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 #define BTRFS_IOC_SYNO_CLONE_RANGE_V2 _IOWR(BTRFS_IOCTL_MAGIC, 245, \
 				    struct btrfs_ioctl_syno_clone_range_args_v2)
 #endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #define BTRFS_IOC_USRQUOTA_CTL _IOWR(BTRFS_IOCTL_MAGIC, 250, \
                                     struct btrfs_ioctl_usrquota_ctl_args)
 #define BTRFS_IOC_USRQUOTA_LIMIT _IOW(BTRFS_IOCTL_MAGIC, 250, \
@@ -1802,9 +1874,9 @@ int btrfs_list_hardlinks(struct btrfs_list_hardlinks_args *args);
 
 #define BTRFS_IOC_SYNO_QUOTA_RESCAN _IOW(BTRFS_IOCTL_MAGIC, 255, \
 			       struct btrfs_ioctl_syno_quota_rescan_args)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT
 enum {
 	QGROUP_NL_C_UNSPEC,
 	QGROUP_NL_C_OVER_LIMIT,
@@ -1822,6 +1894,6 @@ enum {
 	__QGROUP_NL_A_MAX,
 };
 #define QGROUP_NL_A_MAX (__QGROUP_NL_A_MAX - 1)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT */
 
 #endif /* _UAPI_LINUX_BTRFS_H */

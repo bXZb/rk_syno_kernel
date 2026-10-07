@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * This header file contains public constants and structures used by
@@ -277,17 +274,17 @@ static inline int scsi_is_wlun(u64 lun)
 /* Used to obtain the PCI location of a device */
 #define SCSI_IOCTL_GET_PCI		0x5387
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 #define SYNO_DISK_MODEL_NUM	24
 #define SYNO_DISK_MODEL_LEN	"24"
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 #define SYNO_DESCRIPTOR_RESERVED_INDEX 3 /* Descriptor format sense data,
 					  * information descriptor type, reserved byte index
 					  */
 #define SYNO_NCQ_FAKE_UNC 0x01 // 0x01-->no remap, default 0x00-->do remap
 #define SYNO_SCSI_SECT_SIZE 512
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 
 #endif /* _SCSI_SCSI_H */

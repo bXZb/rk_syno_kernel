@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /**
  * eCryptfs: Linux filesystem encryption layer
@@ -57,13 +54,13 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
 
 	rc = ecryptfs_encrypt_page(page);
 	if (rc) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING
 		if (-EDQUOT == rc || -ENOSPC == rc)
 			printk_once(KERN_WARNING "Error encrypting "
 				    "page (upper index [0x%.16lx])\n",
 				    page->index);
 		else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING */
 		ecryptfs_printk(KERN_WARNING, "Error encrypting "
 				"page (upper index [0x%.16lx])\n", page->index);
 		ClearPageUptodate(page);
@@ -351,23 +348,23 @@ static int ecryptfs_write_begin(struct file *file,
 	}
 	/* If creating a page or more of holes, zero them out via truncate.
 	 * Note, this will increase i_size. */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_AGGREGATE_RECVFILE
 	if (index != 0 && !(AOP_FLAG_RECVFILE_ECRYPTFS_NO_TRUNCATE & flags)) {
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_AGGREGATE_RECVFILE */
 	if (index != 0) {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_AGGREGATE_RECVFILE */
 		if (prev_page_end_size > i_size_read(page->mapping->host)) {
 			rc = ecryptfs_truncate(file->f_path.dentry,
 					       prev_page_end_size);
 			if (rc) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING
 				if (-EDQUOT == rc || -ENOSPC == rc)
 					printk_once(KERN_ERR "%s: Error on attempt to "
 						    "truncate to (higher) offset [%lld];"
 						    " rc = [%d]\n", __func__,
 						    prev_page_end_size, rc);
 				else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING */
 				printk(KERN_ERR "%s: Error on attempt to "
 				       "truncate to (higher) offset [%lld];"
 				       " rc = [%d]\n", __func__,
@@ -401,7 +398,7 @@ static int ecryptfs_write_inode_size_to_header(struct inode *ecryptfs_inode)
 {
 	char *file_size_virt;
 	int rc;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EQUAL_ISIZE_UPDATE
 	u8 file_size[ECRYPTFS_FILE_SIZE_BYTES];
 
 	rc = ecryptfs_read_lower(file_size, 0, ECRYPTFS_FILE_SIZE_BYTES, ecryptfs_inode);
@@ -410,7 +407,7 @@ static int ecryptfs_write_inode_size_to_header(struct inode *ecryptfs_inode)
 		rc = 0;
 		goto out;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EQUAL_ISIZE_UPDATE */
 	file_size_virt = kmalloc(sizeof(u64), GFP_KERNEL);
 	if (!file_size_virt) {
 		rc = -ENOMEM;
@@ -421,13 +418,13 @@ static int ecryptfs_write_inode_size_to_header(struct inode *ecryptfs_inode)
 				  sizeof(u64));
 	kfree(file_size_virt);
 	if (rc < 0) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING
 		if (-EDQUOT == rc || -ENOSPC == rc)
 			printk_once(KERN_ERR
 				    "%s: Error writing file size to header; "
 				    "rc = [%d]\n", __func__, rc);
 		else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING */
 		printk(KERN_ERR "%s: Error writing file size to header; "
 		       "rc = [%d]\n", __func__, rc);
 	} else
@@ -463,14 +460,14 @@ static int ecryptfs_write_inode_size_to_xattr(struct inode *ecryptfs_inode)
 			      xattr_virt, PAGE_SIZE);
 	if (size < 0)
 		size = 8;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EQUAL_ISIZE_UPDATE
 	else if (size >= ECRYPTFS_FILE_SIZE_BYTES &&
 			get_unaligned_be64(xattr_virt) == i_size_read(ecryptfs_inode)) {
 		inode_unlock(lower_inode);
 		kmem_cache_free(ecryptfs_xattr_cache, xattr_virt);
 		return 0;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EQUAL_ISIZE_UPDATE */
 	put_unaligned_be64(i_size_read(ecryptfs_inode), xattr_virt);
 	rc = __vfs_setxattr(lower_dentry, lower_inode, ECRYPTFS_XATTR_NAME,
 			    xattr_virt, size, 0);
@@ -486,15 +483,15 @@ out:
 int ecryptfs_write_inode_size_to_metadata(struct inode *ecryptfs_inode)
 {
 	struct ecryptfs_crypt_stat *crypt_stat;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_FAST_LOOKUP
 	int rc = -1;
 	struct ecryptfs_mount_crypt_stat *mount_crypt_stat =
 		&ecryptfs_superblock_to_private(ecryptfs_inode->i_sb)->mount_crypt_stat;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_FAST_LOOKUP */
 
 	crypt_stat = &ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
 	BUG_ON(!(crypt_stat->flags & ECRYPTFS_ENCRYPTED));
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_FAST_LOOKUP
 	if (mount_crypt_stat->flags & ECRYPTFS_GLOBAL_FAST_LOOKUP_ENABLED) {
 		rc = ecryptfs_write_inode_size_to_xattr(ecryptfs_inode);
 		if (rc == -EOPNOTSUPP) {
@@ -506,7 +503,7 @@ int ecryptfs_write_inode_size_to_metadata(struct inode *ecryptfs_inode)
 		}
 		return ecryptfs_write_inode_size_to_header(ecryptfs_inode);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_FAST_LOOKUP */
 	if (crypt_stat->flags & ECRYPTFS_METADATA_IN_XATTR)
 		return ecryptfs_write_inode_size_to_xattr(ecryptfs_inode);
 	else
@@ -564,12 +561,12 @@ static int ecryptfs_write_end(struct file *file,
 	}
 	rc = ecryptfs_encrypt_page(page);
 	if (rc) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING
 		if (-EDQUOT == rc || -ENOSPC == rc)
 			printk_once(KERN_WARNING "Error encrypting page (upper "
 				    "index [0x%.16lx])\n", index);
 		else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING */
 		ecryptfs_printk(KERN_WARNING, "Error encrypting page (upper "
 				"index [0x%.16lx])\n", index);
 		goto out;
@@ -580,21 +577,21 @@ static int ecryptfs_write_end(struct file *file,
 			"[0x%.16llx]\n",
 			(unsigned long long)i_size_read(ecryptfs_inode));
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EQUAL_ISIZE_UPDATE
 	else {
 		rc = copied;
 		goto out;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EQUAL_ISIZE_UPDATE */
 
 	rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
 	if (rc) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING
 		if (-EDQUOT == rc || -ENOSPC == rc)
 			printk_once(KERN_ERR "Error writing inode size to metadata; "
 				    "rc = [%d]\n", rc);
 		else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING */
 		printk(KERN_ERR "Error writing inode size to metadata; "
 		       "rc = [%d]\n", rc);
 	} else
@@ -605,7 +602,7 @@ out:
 	return rc;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_AGGREGATE_RECVFILE
 static int ecryptfs_aggregate_write_end(struct file *file,
 			struct address_space *mapping,
 			loff_t pos, unsigned len, unsigned copied,
@@ -618,9 +615,9 @@ static int ecryptfs_aggregate_write_end(struct file *file,
 	struct ecryptfs_crypt_stat *crypt_stat =
 		&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
 	int rc = 0, i;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_REDUCE_MEMCPY
 	struct file *lower_file = ecryptfs_inode_to_private(ecryptfs_inode)->lower_file;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_REDUCE_MEMCPY */
 
 	ecryptfs_printk(KERN_DEBUG, "Calling fill_zeros_to_end_of_page"
 			"(page w/ index = [0x%.16lx], to = [%d])\n", index, to);
@@ -652,32 +649,32 @@ static int ecryptfs_aggregate_write_end(struct file *file,
 	if (to % PAGE_SIZE)
 		fill_zeros_to_end_of_page(pages[page_num - 1], to);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_REDUCE_MEMCPY
 	if (lower_file->f_op->ecryptfs_zero_copy) {
 		rc = ecryptfs_encrypt_page_zero_copy(crypt_stat, lower_file, pages, page_num);
 		if (!rc)
 			goto encrypt_page_done;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_REDUCE_MEMCPY */
 
 	for (i = 0;i < page_num;i++) {
 		rc = ecryptfs_encrypt_page(pages[i]);
 		if (rc) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING
 			if (-EDQUOT != rc && -ENOSPC != rc)
 				printk_once(KERN_WARNING "Error encrypting page (upper "
 						"index [0x%.16lx])\n", index);
 			else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING */
 			ecryptfs_printk(KERN_WARNING, "Error encrypting page (upper "
 					"index [0x%.16lx])\n", index);
 			goto out;
 		}
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_REDUCE_MEMCPY
 encrypt_page_done:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_REDUCE_MEMCPY */
 
 	if (pos + copied > i_size_read(ecryptfs_inode)) {
 		i_size_write(ecryptfs_inode, pos + copied);
@@ -685,20 +682,20 @@ encrypt_page_done:
 			"[0x%.16llx]\n",
 			(unsigned long long)i_size_read(ecryptfs_inode));
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EQUAL_ISIZE_UPDATE
 	else {
 		rc = copied;
 		goto out;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EQUAL_ISIZE_UPDATE */
 
 	rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING
 	if (-EDQUOT == rc || -ENOSPC == rc)
 		printk_once(KERN_ERR "Error writing inode size to metadata; "
 		       "rc = [%d]\n", rc);
 	else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING */
 	if (rc)
 		printk(KERN_ERR "Error writing inode size to metadata; "
 		       "rc = [%d]\n", rc);
@@ -711,7 +708,7 @@ out:
 	}
 	return rc;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_AGGREGATE_RECVFILE */
 
 static sector_t ecryptfs_bmap(struct address_space *mapping, sector_t block)
 {
@@ -729,7 +726,7 @@ const struct address_space_operations ecryptfs_aops = {
 	.write_begin = ecryptfs_write_begin,
 	.write_end = ecryptfs_write_end,
 	.bmap = ecryptfs_bmap,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_AGGREGATE_RECVFILE
 	.aggregate_write_end = ecryptfs_aggregate_write_end,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_AGGREGATE_RECVFILE */
 };

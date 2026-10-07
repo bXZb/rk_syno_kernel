@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * f_sourcesink.c - USB peripheral source/sink configuration driver
@@ -51,11 +48,11 @@ struct f_sourcesink {
 	unsigned buflen;
 	unsigned bulk_qlen;
 	unsigned iso_qlen;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	unsigned bulk_maxburst;
 #endif /* CONFIG_USB_PATCH_ON_RTK */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 };
 
 static inline struct f_sourcesink *func_to_ss(struct usb_function *f)
@@ -438,7 +435,7 @@ no_iso:
 		(ss->isoc_mult + 1) * (ss->isoc_maxburst + 1);
 	ss_iso_sink_desc.bEndpointAddress = fs_iso_sink_desc.bEndpointAddress;
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	if (ss->bulk_maxburst > 15)
 		ss->bulk_maxburst = 15;
@@ -447,7 +444,7 @@ no_iso:
 	ss_sink_comp_desc.bMaxBurst = ss->bulk_maxburst;
 #endif /* CONFIG_USB_PATCH_ON_RTK */
  
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	ret = usb_assign_descriptors(f, fs_source_sink_descs,
 			hs_source_sink_descs, ss_source_sink_descs,
 			ss_source_sink_descs);
@@ -873,11 +870,11 @@ static struct usb_function *source_sink_alloc_func(
 	ss->buflen = ss_opts->bulk_buflen;
 	ss->bulk_qlen = ss_opts->bulk_qlen;
 	ss->iso_qlen = ss_opts->iso_qlen;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	ss->bulk_maxburst = ss_opts->bulk_maxburst;
 #endif /* CONFIG_USB_PATCH_ON_RTK */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 
 	ss->function.name = "source/sink";
 	ss->function.bind = sourcesink_bind;
@@ -1238,7 +1235,7 @@ end:
 
 CONFIGFS_ATTR(f_ss_opts_, iso_qlen);
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 static ssize_t f_ss_opts_bulk_maxburst_show(struct config_item *item, char *page)
 {
@@ -1284,7 +1281,7 @@ end:
 CONFIGFS_ATTR(f_ss_opts_, bulk_maxburst);
 #endif /* CONFIG_USB_PATCH_ON_RTK */
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 static struct configfs_attribute *ss_attrs[] = {
 	&f_ss_opts_attr_pattern,
 	&f_ss_opts_attr_isoc_interval,
@@ -1294,11 +1291,11 @@ static struct configfs_attribute *ss_attrs[] = {
 	&f_ss_opts_attr_bulk_buflen,
 	&f_ss_opts_attr_bulk_qlen,
 	&f_ss_opts_attr_iso_qlen,
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	&f_ss_opts_attr_bulk_maxburst,
 #endif /* CONFIG_USB_PATCH_ON_RTK */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	NULL,
 };
 

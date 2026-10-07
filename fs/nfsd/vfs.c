@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * File operations used by nfsd. Some of these have been ripped from
@@ -35,10 +32,10 @@
 #include <linux/writeback.h>
 #include <linux/security.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFS_VAAI_SUPPORT
 #include <linux/vmalloc.h>
 #include <linux/syscalls.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFS_VAAI_SUPPORT */
 
 #ifdef CONFIG_NFSD_V3
 #include "xdr3.h"
@@ -55,19 +52,19 @@
 #include "filecache.h"
 #include "trace.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_WINACL
 #include <linux/syno_acl.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_WINACL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 #include "syno_io_stat.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 #define NFSDDBG_FACILITY		NFSDDBG_FILEOP
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UNIX_PRI
 extern u32 bl_unix_pri_enable;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UNIX_PRI */
 
 /* 
  * Called from nfsd_lookup and encode_dirent. Check if we have crossed 
@@ -379,7 +376,7 @@ out_nfserrno:
 	return nfserrno(host_err);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_LOCKER
 /*
  * @return: < 0 - failed
  *          = 0 - no change
@@ -447,7 +444,7 @@ static int nfsd_syno_locker_set(struct inode *inode, struct iattr *iap)
 out:
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_LOCKER */
 
 /*
  * Set various file attributes.  After this call fhp needs an fh_put.
@@ -487,7 +484,7 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
 	get_write_count = !fhp->fh_dentry;
 
 	/* Get inode */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_LOCKER
 	/*
 	 * bypass NFSD_MAY_SATTR checking now, and verify it later. this is
 	 * for the situations because we need to change the state (immutable
@@ -496,7 +493,7 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
 	err = fh_verify(rqstp, fhp, ftype, accmode & ~NFSD_MAY_SATTR);
 #else
 	err = fh_verify(rqstp, fhp, ftype, accmode);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_LOCKER */
 	if (err)
 		return err;
 	if (get_write_count) {
@@ -508,7 +505,7 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
 	dentry = fhp->fh_dentry;
 	inode = d_inode(dentry);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_LOCKER
 	if ((iap->ia_valid & ATTR_MODE) && uid_eq(current_fsuid(), GLOBAL_ROOT_UID)) {
 		host_err = nfsd_syno_locker_set(inode, iap);
 		if (host_err > 0)
@@ -519,13 +516,13 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
 
 	/* delay to check NFSD_MAY_SATTR */
 	err = fh_verify(rqstp, fhp, ftype, accmode);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_LOCKER */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UNIX_PRI
 	/* Ignore chmod when !bl_unix_pri_enable & the share is ACL share */
 	if (!bl_unix_pri_enable && IS_SYNOACL(dentry))
 		iap->ia_valid &= ~ATTR_MODE;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UNIX_PRI */
 
 	/* Ignore any mode updates on symlinks */
 	if (S_ISLNK(inode->i_mode))
@@ -580,13 +577,13 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
 			goto out_unlock;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_LOCKER
 	if ((iap->ia_valid & (ATTR_ATIME | ATTR_ATIME_SET)) && !syno_op_locker_is_open(inode)) {
 		host_err = -EPERM;
 		pr_err("locker: failed to update the atime of non-open #%lu\n", inode->i_ino);
 		goto out_unlock;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_LOCKER */
 
 	iap->ia_valid |= ATTR_CTIME;
 	host_err = notify_change(dentry, iap, NULL);
@@ -735,11 +732,11 @@ struct accessmap {
 static struct accessmap	nfs3_regaccess[] = {
     {	NFS3_ACCESS_READ,	NFSD_MAY_READ			},
     {	NFS3_ACCESS_EXECUTE,	NFSD_MAY_EXEC			},
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_LOCKER
     {	NFS3_ACCESS_MODIFY,	NFSD_MAY_WRITE			},
 #else
     {	NFS3_ACCESS_MODIFY,	NFSD_MAY_WRITE|NFSD_MAY_TRUNC	},
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_LOCKER */
     {	NFS3_ACCESS_EXTEND,	NFSD_MAY_WRITE			},
 
 #ifdef CONFIG_NFSD_V4
@@ -877,13 +874,13 @@ __nfsd_open(struct svc_rqst *rqstp, struct svc_fh *fhp, umode_t type,
 	 * or any access when mandatory locking enabled
 	 */
 	err = nfserr_perm;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_LOCKER
 	if (IS_APPEND(inode) && (may_flags & NFSD_MAY_WRITE) && !syno_op_locker_is_appendable(inode))
 		goto out;
 #else
 	if (IS_APPEND(inode) && (may_flags & NFSD_MAY_WRITE))
 		goto out;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_LOCKER */
 
 	/*
 	 * We must ignore files (but only files) which might have mandatory
@@ -1023,26 +1020,26 @@ static u32 nfsd_eof_on_read(struct file *file, loff_t offset, ssize_t len,
 static __be32 nfsd_finish_read(struct svc_rqst *rqstp, struct svc_fh *fhp,
 			       struct file *file, loff_t offset,
 			       unsigned long *count, u32 *eof, ssize_t host_err
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 			       , ktime_t rq_io_stime
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 			       )
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	s64 latency = ktime_to_us(ktime_sub(ktime_get(), rq_io_stime));
 	char buf[RPC_MAX_ADDRBUFLEN];
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 	rqstp->vfs_latency_us = latency;
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 	if (host_err >= 0) {
 		nfsdstats.io_read += host_err;
 		*eof = nfsd_eof_on_read(file, offset, host_err, *count);
 		*count = host_err;
 		fsnotify_access(file);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 		syno_nfsd_account_io_complete(svc_addr(rqstp), rqstp->rq_vers,
 					      SYNO_NFSD_IO_READ, *count,
 					      latency);
@@ -1050,7 +1047,7 @@ static __be32 nfsd_finish_read(struct svc_rqst *rqstp, struct svc_fh *fhp,
 			trace_syno_nfsd_read_io_done(
 				rqstp, fhp, offset, *count, latency,
 				svc_print_addr(rqstp, buf, sizeof(buf)));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 		trace_nfsd_read_io_done(rqstp, fhp, offset, *count);
 		return 0;
 	} else {
@@ -1070,18 +1067,18 @@ __be32 nfsd_splice_read(struct svc_rqst *rqstp, struct svc_fh *fhp,
 		.u.data		= rqstp,
 	};
 	ssize_t host_err;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	ktime_t rq_io_stime = ktime_get();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 	trace_nfsd_read_splice(rqstp, fhp, offset, *count);
 	rqstp->rq_next_page = rqstp->rq_respages + 1;
 	host_err = splice_direct_to_actor(file, &sd, nfsd_direct_splice_actor);
 
 	return nfsd_finish_read(rqstp, fhp, file, offset, count, eof, host_err
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 				, rq_io_stime
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 				);
 }
 
@@ -1093,17 +1090,17 @@ __be32 nfsd_readv(struct svc_rqst *rqstp, struct svc_fh *fhp,
 	struct iov_iter iter;
 	loff_t ppos = offset;
 	ssize_t host_err;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	ktime_t rq_io_stime = ktime_get();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 	trace_nfsd_read_vector(rqstp, fhp, offset, *count);
 	iov_iter_kvec(&iter, READ, vec, vlen, *count);
 	host_err = vfs_iter_read(file, &iter, &ppos, 0);
 	return nfsd_finish_read(rqstp, fhp, file, offset, count, eof, host_err
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 				, rq_io_stime
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 				);
 }
 
@@ -1159,24 +1156,24 @@ nfsd_vfs_write(struct svc_rqst *rqstp, struct svc_fh *fhp, struct nfsd_file *nf,
 	loff_t			pos = offset;
 	unsigned int		pflags = current->flags;
 	rwf_t			flags = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	ktime_t			rq_io_stime = ktime_get();
 	char			buf[RPC_MAX_ADDRBUFLEN];
 	s64 			latency;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 	trace_nfsd_write_opened(rqstp, fhp, offset, *cnt);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_LOCKER
 	/* should be align with generic_write_checks() */
 	if (syno_op_locker_is_appendable(file->f_inode) &&
 	    offset < round_down(i_size_read(file->f_inode), LOCKER_CHUNK_SIZE))
 		return nfserr_perm;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_LOCKER */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_SYNO_FILE_STATS
 	update_syno_file_stats(fhp->fh_dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_SYNO_FILE_STATS */
 
 	if (test_bit(RQ_LOCAL, &rqstp->rq_flags))
 		/*
@@ -1231,14 +1228,14 @@ nfsd_vfs_write(struct svc_rqst *rqstp, struct svc_fh *fhp, struct nfsd_file *nf,
 	}
 
 out_nfserr:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	latency = ktime_to_us(ktime_sub(ktime_get(), rq_io_stime));
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 	rqstp->vfs_latency_us = latency;
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	if (host_err >= 0) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 		syno_nfsd_account_io_complete(svc_addr(rqstp), rqstp->rq_vers,
 					      SYNO_NFSD_IO_WRITE, *cnt,
 					      latency);
@@ -1246,7 +1243,7 @@ out_nfserr:
 			trace_syno_nfsd_write_io_done(
 				rqstp, fhp, offset, *cnt, latency,
 				svc_print_addr(rqstp, buf, sizeof(buf)));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 		trace_nfsd_write_io_done(rqstp, fhp, offset, *cnt);
 		nfserr = nfs_ok;
 	} else {
@@ -1316,7 +1313,7 @@ out:
 	return err;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFS_VAAI_SUPPORT
 /*
  * Enable NFS VAAI plugin to reserve space.
  * Only support pre-allocate blocks for now.
@@ -1449,7 +1446,7 @@ out:
 	return err;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFS_VAAI_LAZY_CLONE
 __be32
 nfsd_synoclone(const char *src_path, struct svc_rqst *rqstp, struct svc_fh *fhp)
 {
@@ -1495,8 +1492,8 @@ out:
 	fh_put(&src_fh);
 	return err;
 }
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFS_VAAI_LAZY_CLONE */
+#endif /* CONFIG_SYNO_NFS_VAAI_SUPPORT */
 
 #ifdef CONFIG_NFSD_V3
 static int
@@ -2193,11 +2190,11 @@ retry:
 			if (!host_err)
 				host_err = commit_metadata(ffhp);
 		}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_LOCKER
 		/* translate errno for locker protected directories */
 		if (host_err == -EOPNOTSUPP)
 		    host_err = -ENOTEMPTY;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_LOCKER */
 	}
  out_dput_new:
 	dput(ndentry);
@@ -2244,9 +2241,9 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
 {
 	struct dentry	*dentry, *rdentry;
 	struct inode	*dirp;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_AVOID_HUNG_TASK_WHEN_UNLINK_BIG_FILE
 	struct inode *inode = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_AVOID_HUNG_TASK_WHEN_UNLINK_BIG_FILE */
 	__be32		err;
 	int		host_err;
 
@@ -2276,11 +2273,11 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
 		goto out_drop_write;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_AVOID_HUNG_TASK_WHEN_UNLINK_BIG_FILE
 	inode = rdentry->d_inode;
 	if (inode)
 		ihold(inode);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_AVOID_HUNG_TASK_WHEN_UNLINK_BIG_FILE */
 
 	if (!type)
 		type = d_inode(rdentry)->i_mode & S_IFMT;
@@ -2296,11 +2293,11 @@ nfsd_unlink(struct svc_rqst *rqstp, struct svc_fh *fhp, int type,
 		host_err = commit_metadata(fhp);
 	dput(rdentry);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_AVOID_HUNG_TASK_WHEN_UNLINK_BIG_FILE
 	fh_unlock(fhp);
 	if (inode)
 		iput(inode);	/* truncate the inode here */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_AVOID_HUNG_TASK_WHEN_UNLINK_BIG_FILE */
 out_drop_write:
 	fh_drop_write(fhp);
 out_nfserr:
@@ -2341,7 +2338,7 @@ struct readdir_data {
 	int		full;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_HIDDEN_FILE
 const struct {
 	char * name;
 	int len;
@@ -2366,7 +2363,7 @@ static int is_hidden_file(const char *name, int namlen) {
 	}
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_HIDDEN_FILE */
 
 static int nfsd_buffered_filldir(struct dir_context *ctx, const char *name,
 				 int namlen, loff_t offset, u64 ino,
@@ -2395,9 +2392,9 @@ static int nfsd_buffered_filldir(struct dir_context *ctx, const char *name,
 
 static __be32 nfsd_buffered_readdir(struct file *file, nfsd_filldir_t func,
 				    struct readdir_cd *cdp, loff_t *offsetp
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_HIDDEN_FILE
 					, int hide_hidden_file
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_HIDDEN_FILE */
 					)
 {
 	struct buffered_dirent *de;
@@ -2437,10 +2434,10 @@ static __be32 nfsd_buffered_readdir(struct file *file, nfsd_filldir_t func,
 		while (size > 0) {
 			offset = de->offset;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_HIDDEN_FILE
 			if (unlikely(hide_hidden_file && is_hidden_file(de->name, de->namlen)))
 				goto skip_fill_entry;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_HIDDEN_FILE */
 
 			if (func(cdp, de->name, de->namlen, de->offset,
 				 de->ino, de->d_type))
@@ -2449,9 +2446,9 @@ static __be32 nfsd_buffered_readdir(struct file *file, nfsd_filldir_t func,
 			if (cdp->err != nfs_ok)
 				break;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_HIDDEN_FILE
 skip_fill_entry:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_HIDDEN_FILE */
 
 			reclen = ALIGN(sizeof(*de) + de->namlen,
 				       sizeof(u64));
@@ -2485,9 +2482,9 @@ nfsd_readdir(struct svc_rqst *rqstp, struct svc_fh *fhp, loff_t *offsetp,
 	struct file	*file;
 	loff_t		offset = *offsetp;
 	int             may_flags = NFSD_MAY_READ;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_HIDDEN_FILE
 	int         is_first_level_dir;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_HIDDEN_FILE */
 
 	/* NFSv2 only supports 32 bit cookies */
 	if (rqstp->rq_vers > 2)
@@ -2503,18 +2500,18 @@ nfsd_readdir(struct svc_rqst *rqstp, struct svc_fh *fhp, loff_t *offsetp,
 		goto out_close;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_HIDDEN_FILE
 	/*
 	 * <DSM> #44339
 	 * hidden_files are only hidden at the first level dir.
 	 */
 	is_first_level_dir = path_equal(&fhp->fh_export->ex_path, &file->f_path);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_HIDDEN_FILE */
 
 	err = nfsd_buffered_readdir(file, func, cdp, offsetp
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_HIDDEN_FILE
 			, is_first_level_dir
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_HIDDEN_FILE */
 			);
 
 	if (err == nfserr_eof || err == nfserr_toosmall)
@@ -2525,7 +2522,7 @@ out:
 	return err;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_SHARE_QUOTA
 /*
  * Support nfsd to get share quota information
  */
@@ -2557,7 +2554,7 @@ out:
 		fput(file);
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_SHARE_QUOTA */
 
 /*
  * Get file system stats
@@ -2576,10 +2573,10 @@ nfsd_statfs(struct svc_rqst *rqstp, struct svc_fh *fhp, struct kstatfs *stat, in
 		};
 		if (vfs_statfs(&path, stat))
 			err = nfserr_io;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_SHARE_QUOTA
 		if (!err)
 			nfsd_quota_query(&path , stat);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_SHARE_QUOTA */
 	}
 	return err;
 }
@@ -2818,7 +2815,7 @@ nfsd_setxattr(struct svc_rqst *rqstp, struct svc_fh *fhp, char *name,
 }
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 static int synoacl_nfs_perm_switch(struct inode *inode, int acc)
 {
 	int perm = 0;
@@ -2849,7 +2846,7 @@ static int synoacl_nfs_perm_switch(struct inode *inode, int acc)
 
 	return perm ;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 /*
  * Check for a user's access permissions to this inode.
@@ -2920,7 +2917,7 @@ nfsd_permission(struct svc_rqst *rqstp, struct svc_export *exp,
 	 * We must trust the client to do permission checking - using "ACCESS"
 	 * with NFSv3.
 	 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_WINACL
 	if (IS_SYNOACL(dentry)) {
 		if ((acc & NFSD_MAY_OWNER_OVERRIDE) && is_synoacl_owner(dentry))
 			return 0;
@@ -2951,29 +2948,29 @@ nfsd_permission(struct svc_rqst *rqstp, struct svc_export *exp,
 			return 0;
 		err = inode_permission(inode, acc & (MAY_READ|MAY_WRITE|MAY_EXEC));
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFSD_WINACL */
 	if ((acc & NFSD_MAY_OWNER_OVERRIDE) &&
 	    uid_eq(inode->i_uid, current_fsuid()))
 		return 0;
 
 	/* This assumes  NFSD_MAY_{READ,WRITE,EXEC} == MAY_{READ,WRITE,EXEC} */
 	err = inode_permission(inode, acc & (MAY_READ|MAY_WRITE|MAY_EXEC));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_WINACL */
 
 	/* Allow read access to binaries even when mode 111 */
 	if (err == -EACCES && S_ISREG(inode->i_mode) &&
 	     (acc == (NFSD_MAY_READ | NFSD_MAY_OWNER_OVERRIDE) ||
 	      acc == (NFSD_MAY_READ | NFSD_MAY_READ_IF_EXEC)))
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_WINACL
 	{
 		if (IS_SYNOACL(dentry))
 			err = synoacl_op_permission(dentry, MAY_EXEC);
 		else
 			err = inode_permission(inode, MAY_EXEC);
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFSD_WINACL */
 		err = inode_permission(inode, MAY_EXEC);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_WINACL */
 
 	return err? nfserrno(err) : 0;
 }

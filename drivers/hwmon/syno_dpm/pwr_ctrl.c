@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // Copyright (c) 2000-2024 Synology Inc. All rights reserved.
 
 #include <linux/kernel.h>
@@ -12,12 +9,12 @@
 
 extern int SYNO_CTRL_HDD_POWERON(int index, int value);
 extern int SYNO_CHECK_HDD_ENABLE(int index);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_GPIO
 extern int SYNO_CHECK_HDD_DETECT(int index);
 #else
 extern int SYNO_CHECK_HDD_PRESENT(int index);
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_GPIO */
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 extern int syno_usb_eunit_single_hdd_ctrl_by_uuid(
 		const char *uuid, unsigned int slot, int hdd_ctrl);
 extern int syno_usb_eunit_disk_present_check_by_uuid(
@@ -57,7 +54,7 @@ static void host_power_handler(struct work_struct *work)
 	return;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 static void eunit_usb_power_handler(struct work_struct *work)
 {
 	struct disk_pwr_work *dp_work =
@@ -77,7 +74,7 @@ END:
 	free_disk_pwr_work(dp_work);
 	return;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 #ifdef DPM_DEBUG
 static void power_debug_handler(struct work_struct *work)
@@ -133,7 +130,7 @@ static int dpm_disk_power_schedule(const struct machine_pm_info *target_mpi,
 			INIT_WORK(&dp_work->work, host_power_handler);
 			break;
 		case SYNO_DPM_CTL_METHOD_EUNIT_USB:
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 			if (0 != strdup_control_args(target_mpi, dp_work)) {
 				printk(ERR_LOG_FMT "failed to alloc ctl_args[0]\n");
 				goto ERR;
@@ -182,14 +179,14 @@ int dpm_disk_power_disable_schedule(const struct machine_pm_info *target_mpi,
 static int host_power_present_check(int slot)
 {
 	// Reference from syno_hddmon.c
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_GPIO
 	return SYNO_CHECK_HDD_DETECT(slot);
 #else
 	return SYNO_CHECK_HDD_PRESENT(slot);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_GPIO */
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 static int eunit_usb_power_present_check(const struct pm_ctrl_method *pm_ctr, int slot)
 {
 	if (pm_ctr->argc != 1 || pm_ctr->argv[0] == NULL) {
@@ -208,7 +205,7 @@ static int eunit_usb_power_enable_check(const struct pm_ctrl_method *pm_ctr, int
 
 	return syno_usb_eunit_disk_enable_check_by_uuid(pm_ctr->argv[0], slot);
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 int dpm_disk_power_present_check(const struct pm_ctrl_method *pm_ctr, int slot)
 {
@@ -221,12 +218,12 @@ int dpm_disk_power_present_check(const struct pm_ctrl_method *pm_ctr, int slot)
 		case SYNO_DPM_CTL_METHOD_HOST:
 			return host_power_present_check(slot);
 		case SYNO_DPM_CTL_METHOD_EUNIT_USB:
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 			return eunit_usb_power_present_check(pm_ctr, slot);
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 			printk(ERR_LOG_FMT "This platform dones't support usb eunit\n");
 			return -1;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 		case SYNO_DPM_CTL_METHOD_HOST_USERSPACE_HELPER:
 			printk(ERR_LOG_FMT "host userspace helper power present check not implement\n");
 			return -1;
@@ -257,12 +254,12 @@ int dpm_disk_power_enable_check(const struct pm_ctrl_method *pm_ctr, int slot)
 		case SYNO_DPM_CTL_METHOD_HOST:
 			return host_power_enable_check(slot);
 		case SYNO_DPM_CTL_METHOD_EUNIT_USB:
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 			return eunit_usb_power_enable_check(pm_ctr, slot);
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 			printk(ERR_LOG_FMT "This platform dones't support usb eunit\n");
 			return -1;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 		case SYNO_DPM_CTL_METHOD_HOST_USERSPACE_HELPER:
 			printk(ERR_LOG_FMT "host userspace helper power present check not implement\n");
 			return -1;

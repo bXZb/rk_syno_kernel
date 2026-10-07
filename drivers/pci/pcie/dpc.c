@@ -13,6 +13,9 @@
 #include <linux/interrupt.h>
 #include <linux/init.h>
 #include <linux/pci.h>
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+#include <linux/synolib.h>
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 
 #include "portdrv.h"
 #include "../pci.h"
@@ -296,7 +299,17 @@ void dpc_process_error(struct pci_dev *pdev)
 static irqreturn_t dpc_handler(int irq, void *context)
 {
 	struct pci_dev *pdev = context;
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+	struct pci_dev *root_port_pdev = syno_root_port_get(pdev);
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+	if (root_port_pdev) {
+		if (1 == atomic_read(&root_port_pdev->syno_skip_irq)) {
+			return IRQ_HANDLED;
+		}
+	}
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 	dpc_process_error(pdev);
 
 	/* We configure DPC so it only triggers on ERR_FATAL */

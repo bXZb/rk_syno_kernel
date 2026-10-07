@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *      NET3    Protocol independent device support routines.
@@ -149,9 +146,9 @@
 #include <net/devlink.h>
 #include <linux/pm_runtime.h>
 #include <linux/prandom.h>
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_MAC_ADDRESS)
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
 
 #include "net-sysfs.h"
 
@@ -173,7 +170,7 @@ static int call_netdevice_notifiers_extack(unsigned long val,
 					   struct net_device *dev,
 					   struct netlink_ext_ack *extack);
 static struct napi_struct *napi_by_id(unsigned int napi_id);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 static unsigned int str_to_hex(char ch)
 {
 	if ((ch >= '0') && (ch <= '9'))
@@ -247,7 +244,7 @@ END:
 	return iMatch;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_INTERNAL_NETIF_NUM
 static bool syno_internal_eth_check(int ethIndex)
 {
 	extern long g_internal_netif_num;
@@ -272,7 +269,7 @@ static bool syno_internal_eth_check(int ethIndex)
 END:
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_INTERNAL_NETIF_NUM */
 
 #define SYNO_VENDOR_MAC_SUCCESS     0
 #define SYNO_VENDOR_MAC_EMPTY       1
@@ -295,12 +292,12 @@ int syno_get_dev_vendor_mac(const char *szDev, char *szMac, int bufSize)
 	if (!strncmp(szDev, szIFPrefix, strlen(szIFPrefix))) {
 		pMacIndex = szDev + strlen(szIFPrefix);
 		iMacIndex = simple_strtol(pMacIndex, NULL, 10);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_INTERNAL_NETIF_NUM
 		if (!syno_internal_eth_check(iMacIndex)) {
 			err = SYNO_VENDOR_MAC_FAIL;
 			goto ERR;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_INTERNAL_NETIF_NUM */
 		if (1 == (iMatch = syno_skip_bond_vender_mac(iMacIndex))) {
 			err = SYNO_VENDOR_MAC_EMPTY;
 			goto ERR;
@@ -333,7 +330,7 @@ ERR:
 	return err;
 }
 EXPORT_SYMBOL(syno_get_dev_vendor_mac);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
 
 /*
  * The @dev_base_head list is protected by @dev_base_lock and the rtnl
@@ -10615,11 +10612,11 @@ struct rtnl_link_stats64 *dev_get_stats(struct net_device *dev,
 	} else {
 		netdev_stats_to_stats64(storage, &dev->stats);
 	}
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_SKIP_RXDROP_BY_CORE)
 	/* skip the rx_drop from kernel core, only count rx_drop by device driver */
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SKIP_RXDROP_BY_CORE */
 	storage->rx_dropped += (unsigned long)atomic_long_read(&dev->rx_dropped);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SKIP_RXDROP_BY_CORE */
 	storage->tx_dropped += (unsigned long)atomic_long_read(&dev->tx_dropped);
 	storage->rx_nohandler += (unsigned long)atomic_long_read(&dev->rx_nohandler);
 	return storage;
@@ -10803,6 +10800,9 @@ struct net_device *alloc_netdev_mqs(int sizeof_priv, const char *name,
 		dev->ethtool_ops = &default_ethtool_ops;
 
 	nf_hook_ingress_init(dev);
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+	init_rwsem(&dev->syno_sem);
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 
 	return dev;
 

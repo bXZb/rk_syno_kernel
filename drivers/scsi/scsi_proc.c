@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * linux/drivers/scsi/scsi_proc.c
@@ -199,11 +196,11 @@ static int proc_print_scsidevice(struct device *dev, void *data)
 	}
 
 	seq_puts(s, " Model: ");
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 	for (i = 0; i < SYNO_DISK_MODEL_NUM; i++) {
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 	for (i = 0; i < 16; i++) {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 		if (sdev->model[i] >= 0x20)
 			seq_putc(s, sdev->model[i]);
 		else

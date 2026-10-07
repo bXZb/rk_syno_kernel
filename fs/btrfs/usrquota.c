@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Copyright (C) 2021 Synology Inc.  All rights reserved.
  */
@@ -1397,10 +1394,10 @@ int btrfs_usrquota_limit(struct btrfs_trans_handle *trans,
 	kuid_t tmp_uid;
 	u64 kernel_uid;
 	int ret = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SKIP_RESERVE_WHEN_NO_QUOTA_LIMIT
 	struct btrfs_root *root = trans->root;
 	bool need_check = false;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SKIP_RESERVE_WHEN_NO_QUOTA_LIMIT */
 
 	tmp_uid = make_kuid(current_user_ns(), (uid_t)uid);
 	if (!uid_valid(tmp_uid))
@@ -1420,14 +1417,14 @@ int btrfs_usrquota_limit(struct btrfs_trans_handle *trans,
 		ret = PTR_ERR(usrquota);
 		goto out;
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SKIP_RESERVE_WHEN_NO_QUOTA_LIMIT
 	if ((rfer_soft || rfer_hard) && !btrfs_root_has_usrquota_limit(root))
 		btrfs_root_set_has_usrquota_limit(root, true);
 	// When update limit to zero, we should re-check quota limit.
 	else if (!rfer_soft && !rfer_hard &&
 	    (usrquota->uq_rfer_soft || usrquota->uq_rfer_hard))
 		need_check = true;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SKIP_RESERVE_WHEN_NO_QUOTA_LIMIT */
 	usrquota->uq_rfer_soft = rfer_soft;
 	usrquota->uq_rfer_hard = rfer_hard;
 	spin_unlock(&fs_info->usrquota_lock);
@@ -1439,10 +1436,10 @@ int btrfs_usrquota_limit(struct btrfs_trans_handle *trans,
 		goto out;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SKIP_RESERVE_WHEN_NO_QUOTA_LIMIT
 	if (need_check)
 		btrfs_check_usrquota_limit(root);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SKIP_RESERVE_WHEN_NO_QUOTA_LIMIT */
 out:
 	mutex_unlock(&fs_info->usrquota_ioctl_lock);
 	return ret;
@@ -2769,7 +2766,7 @@ unlock:
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SKIP_RESERVE_WHEN_NO_QUOTA_LIMIT
 static bool check_usrquota_from_disk(struct btrfs_fs_info *fs_info, u64 rootid)
 {
 	int ret;
@@ -2872,5 +2869,5 @@ void btrfs_check_usrquota_limit(struct btrfs_root *root)
 	}
 	btrfs_root_set_has_usrquota_limit(root, has_limit);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SKIP_RESERVE_WHEN_NO_QUOTA_LIMIT */
 

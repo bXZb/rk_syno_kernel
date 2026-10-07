@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * AMD 10Gb Ethernet driver
  *
@@ -1147,21 +1144,21 @@ static const char *xgbe_phy_speed_string(int speed)
 static void xgbe_phy_print_status(struct xgbe_prv_data *pdata)
 {
 	if (pdata->phy.link)
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 		netdev_notice(pdata->netdev,
 #else
 		netdev_info(pdata->netdev,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 			    "Link is Up - %s/%s - flow control %s\n",
 			    xgbe_phy_speed_string(pdata->phy.speed),
 			    pdata->phy.duplex == DUPLEX_FULL ? "Full" : "Half",
 			    xgbe_phy_fc_string(pdata));
 	else
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 		netdev_notice(pdata->netdev, "Link is Down\n");
 #else
 		netdev_info(pdata->netdev, "Link is Down\n");
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 }
 
 static void xgbe_phy_adjust_link(struct xgbe_prv_data *pdata)
@@ -1194,11 +1191,11 @@ static void xgbe_phy_adjust_link(struct xgbe_prv_data *pdata)
 			new_state = 1;
 			pdata->phy_link = pdata->phy.link;
 		}
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 	} else if (0 < pdata->phy_link) {
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	} else if (pdata->phy_link) {
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 		new_state = 1;
 		pdata->phy_link = 0;
 		pdata->phy_speed = SPEED_UNKNOWN;
@@ -1454,10 +1451,10 @@ static bool xgbe_phy_status_result(struct xgbe_prv_data *pdata)
 		default:
 			pdata->phy.speed = SPEED_UNKNOWN;
 		}
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 	} else if (!pdata->phy.link) {
 		pdata->phy.speed = SPEED_UNKNOWN;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	}
 
 	pdata->phy.duplex = DUPLEX_FULL;
@@ -1520,15 +1517,15 @@ static void xgbe_phy_status(struct xgbe_prv_data *pdata)
 		if (test_bit(XGBE_LINK_INIT, &pdata->dev_state)) {
 			xgbe_check_link_timeout(pdata);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 			/* Bug fix for AN failure in KR mode */
 			if (link_aneg && !xgbe_phy_aneg_done(pdata)) {
 				return;
 			}
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 			if (link_aneg)
 				return;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 		}
 
 		xgbe_phy_status_result(pdata);

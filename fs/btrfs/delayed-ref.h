@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2008 Oracle.  All rights reserved.
@@ -10,9 +7,9 @@
 #define BTRFS_DELAYED_REF_H
 
 #include <linux/refcount.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #include "btrfs_inode.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 /* these are the possible values of struct btrfs_delayed_ref_node->action */
 #define BTRFS_ADD_DELAYED_REF    1 /* add one backref to the tree */
@@ -29,9 +26,9 @@ struct btrfs_delayed_ref_node {
 	 */
 	struct list_head add_list;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 	struct list_head syno_list;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 
 	/* the starting bytenr of the extent */
 	u64 bytenr;
@@ -93,9 +90,9 @@ struct btrfs_delayed_ref_head {
 	/* accumulate add BTRFS_ADD_DELAYED_REF nodes to this ref_add_list. */
 	struct list_head ref_add_list;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 	struct list_head ref_syno_list;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 
 	struct rb_node href_node;
 
@@ -132,9 +129,9 @@ struct btrfs_delayed_ref_head {
 	unsigned int is_data:1;
 	unsigned int is_system:1;
 	unsigned int processing:1;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 	unsigned int syno_usage;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 };
 
 struct btrfs_delayed_tree_ref {
@@ -150,18 +147,18 @@ struct btrfs_delayed_data_ref {
 	u64 parent;
 	u64 objectid;
 	u64 offset;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 	unsigned int syno_usage;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	// Used by quota v1.
 	u64 reserved;
 	u64 ram_bytes;
 	u64 uid; // Only used in I_FREEING or I_WILL_FREE case.
 	struct inode *inode;
 	bool skip_qgroup;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 };
 
 struct btrfs_delayed_ref_root {
@@ -185,7 +182,7 @@ struct btrfs_delayed_ref_root {
 	/* total number of head nodes ready for processing */
 	unsigned long num_heads_ready;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 	/* how many delayed DATA ref with SYNO_USAGE we've queued
 	 * The calculation site should be consistent with num_entries but
 	 * only count DATA refs with SYNO_USAGE.
@@ -200,7 +197,7 @@ struct btrfs_delayed_ref_root {
 
 	/* total number of delayed refs block rsv account */
 	u64 total_syno_usage_accounting;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 
 	u64 pending_csums;
 
@@ -298,15 +295,15 @@ struct btrfs_ref {
 		struct btrfs_tree_ref tree_ref;
 	};
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 	int syno_usage;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	// Used by quota v1.
 	u64 ram_bytes;
 	struct inode *inode;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 };
 
 extern struct kmem_cache *btrfs_delayed_ref_head_cachep;
@@ -339,9 +336,9 @@ static inline void btrfs_init_tree_ref(struct btrfs_ref *generic_ref,
 
 static inline void btrfs_init_data_ref(struct btrfs_ref *generic_ref,
 				u64 ref_root, u64 ino, u64 offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 				, int syno_usage
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 				)
 {
 	/* If @real_root not set, use @root as fallback */
@@ -351,9 +348,9 @@ static inline void btrfs_init_data_ref(struct btrfs_ref *generic_ref,
 	generic_ref->data_ref.ino = ino;
 	generic_ref->data_ref.offset = offset;
 	generic_ref->type = BTRFS_REF_DATA;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 	generic_ref->syno_usage = syno_usage;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 }
 
 static inline struct btrfs_delayed_extent_op *
@@ -369,19 +366,19 @@ btrfs_free_delayed_extent_op(struct btrfs_delayed_extent_op *op)
 		kmem_cache_free(btrfs_delayed_extent_op_cachep, op);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 static inline struct btrfs_delayed_data_ref *
 btrfs_delayed_node_to_data_ref(struct btrfs_delayed_ref_node *node)
 {
 	return container_of(node, struct btrfs_delayed_data_ref, node);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 static inline void btrfs_put_delayed_ref(struct btrfs_delayed_ref_node *ref)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	struct btrfs_delayed_data_ref *data_ref;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	WARN_ON(refcount_read(&ref->refs) == 0);
 	if (refcount_dec_and_test(&ref->refs)) {
@@ -393,10 +390,10 @@ static inline void btrfs_put_delayed_ref(struct btrfs_delayed_ref_node *ref)
 			break;
 		case BTRFS_EXTENT_DATA_REF_KEY:
 		case BTRFS_SHARED_DATA_REF_KEY:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			data_ref = btrfs_delayed_node_to_data_ref(ref);
 			syno_usrquota_inode_put(data_ref->inode);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 			kmem_cache_free(btrfs_delayed_data_ref_cachep, ref);
 			break;
 		default:
@@ -448,10 +445,10 @@ void btrfs_delete_ref_head(struct btrfs_delayed_ref_root *delayed_refs,
 
 struct btrfs_delayed_ref_head *btrfs_select_ref_head(
 		struct btrfs_delayed_ref_root *delayed_refs);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 struct btrfs_delayed_ref_head *btrfs_select_data_ref_head(
 		struct btrfs_delayed_ref_root *delayed_refs);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 int btrfs_check_delayed_seq(struct btrfs_fs_info *fs_info, u64 seq);
 
@@ -474,13 +471,13 @@ btrfs_delayed_node_to_tree_ref(struct btrfs_delayed_ref_node *node)
 	return container_of(node, struct btrfs_delayed_tree_ref, node);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #else
 static inline struct btrfs_delayed_data_ref *
 btrfs_delayed_node_to_data_ref(struct btrfs_delayed_ref_node *node)
 {
 	return container_of(node, struct btrfs_delayed_data_ref, node);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 #endif

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /**
  * eCryptfs: Linux filesystem encryption layer
@@ -166,15 +163,15 @@ static int ecryptfs_show_options(struct seq_file *m, struct dentry *root)
 		seq_printf(m, ",ecryptfs_unlink_sigs");
 	if (mount_crypt_stat->flags & ECRYPTFS_GLOBAL_MOUNT_AUTH_TOK_ONLY)
 		seq_printf(m, ",ecryptfs_mount_auth_tok_only");
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_FAST_LOOKUP
 	if (!(mount_crypt_stat->flags & ECRYPTFS_GLOBAL_FAST_LOOKUP_ENABLED))
 		seq_printf(m, ",no_fast_lookup");
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_FAST_LOOKUP */
 
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_ARCHIVE_VERSION
 static int ecryptfs_syno_get_sb_archive_version(struct super_block *sb, u32 *version)
 {
 	struct super_block *lower_sb = ecryptfs_superblock_to_lower(sb);
@@ -188,7 +185,7 @@ static int ecryptfs_syno_set_sb_archive_version(struct super_block *sb, u32 vers
 
 	return syno_op_set_sb_archive_version(lower_sb, version);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_ARCHIVE_VERSION */
 
 const struct super_operations ecryptfs_sops = {
 	.alloc_inode = ecryptfs_alloc_inode,
@@ -197,12 +194,12 @@ const struct super_operations ecryptfs_sops = {
 	.statfs = ecryptfs_statfs,
 	.remount_fs = NULL,
 	.evict_inode = ecryptfs_evict_inode,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_FILENAME_SYSCALL
 	.syno_decrypt_filename = ecryptfs_decode_and_decrypt_filename,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_ECRYPTFS_FILENAME_SYSCALL */
+#ifdef CONFIG_SYNO_ECRYPTFS_ARCHIVE_VERSION
 	.syno_get_sb_archive_version = ecryptfs_syno_get_sb_archive_version,
 	.syno_set_sb_archive_version = ecryptfs_syno_set_sb_archive_version,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_ARCHIVE_VERSION */
 	.show_options = ecryptfs_show_options
 };

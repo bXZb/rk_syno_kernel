@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Core registration and callback routines for MTD
@@ -1088,11 +1085,11 @@ int mtd_erase(struct mtd_info *mtd, struct erase_info *instr)
 	struct erase_info adjinstr;
 	int ret;
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_MTD_PSTORE
 	unsigned int erasesize = master->erasesize;
 #endif /* CONFIG_MTD_PSTORE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 
 
 	instr->fail_addr = MTD_FAIL_ADDR_UNKNOWN;
@@ -1109,11 +1106,11 @@ int mtd_erase(struct mtd_info *mtd, struct erase_info *instr)
 	if (!instr->len)
 		return 0;
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_MTD_PSTORE
 	master->erasesize = min(master->erasesize, mtd->erasesize);
 #endif /* CONFIG_MTD_PSTORE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	ledtrig_mtd_activity();
 
 	if (mtd->flags & MTD_SLC_ON_MLC_EMULATION) {
@@ -1137,11 +1134,11 @@ int mtd_erase(struct mtd_info *mtd, struct erase_info *instr)
 		}
 	}
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_MTD_PSTORE
 	master->erasesize = erasesize;
 #endif /* CONFIG_MTD_PSTORE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	return ret;
 }
 EXPORT_SYMBOL_GPL(mtd_erase);

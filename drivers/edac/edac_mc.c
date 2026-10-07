@@ -29,6 +29,11 @@
 #include <linux/edac.h>
 #include <linux/bitops.h>
 #include <linux/uaccess.h>
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+#include <linux/synolib.h>
+#include <linux/of.h>
+#include <linux/dmi.h>
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 #include <asm/page.h>
 #include "edac_mc.h"
 #include "edac_module.h"
@@ -158,10 +163,13 @@ const char * const edac_mem_types[] = {
 	[MEM_DDR3]	= "Unbuffered-DDR3",
 	[MEM_RDDR3]	= "Registered-DDR3",
 	[MEM_LRDDR3]	= "Load-Reduced-DDR3-RAM",
+	[MEM_LPDDR3]	= "Low-Power-DDR3-RAM",
 	[MEM_DDR4]	= "Unbuffered-DDR4",
 	[MEM_RDDR4]	= "Registered-DDR4",
+	[MEM_LPDDR4]	= "Low-Power-DDR4-RAM",
 	[MEM_LRDDR4]	= "Load-Reduced-DDR4-RAM",
 	[MEM_NVDIMM]	= "Non-volatile-RAM",
+	[MEM_WIO2]	= "Wide-IO-2",
 };
 EXPORT_SYMBOL_GPL(edac_mem_types);
 
@@ -300,12 +308,684 @@ static int edac_mc_alloc_csrows(struct mem_ctl_info *mci)
 	return 0;
 }
 
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+/*
+ * DMI/SMBIOS mapping logic
+ *
+ * This section implements the logic to map EDAC-discovered DIMMs to their
+ * physical labels provided by the system firmware via DMI/SMBIOS.
+ */
+
+#define EDAC_DMI_MAP_MAX (EDAC_MAX_LAYERS * 2)
+
+struct dmi_dimm_info {
+	u16 handle;
+	char *label;
+	struct list_head list;
+};
+
+static LIST_HEAD(dmi_dimms_list);
+static struct dmi_dimm_info *next_dmi_entry;
+static bool dmi_collected = false;
+static unsigned int n_phy_dimms_override = 0;
+
+struct dmi_dimm_mapping_info {
+	int layer;
+	int offset;
+	bool is_char;
+	int skip_entry;
+};
+
+/*
+ * A simple callback to collect all DMI Type 17 handles and their labels.
+ */
+static void dmi_collect_dimm_info(const struct dmi_header *dh, void *data)
+{
+	struct list_head *head = data;
+	const char *bank, *locator;
+	struct dmi_dimm_info *dmi_dimm;
+	size_t len;
+
+	if (dh->type != DMI_ENTRY_MEM_DEVICE) {
+		return;
+	}
+
+	dmi_dimm = kzalloc(sizeof(*dmi_dimm), GFP_KERNEL);
+	if (!dmi_dimm) {
+		return;
+	}
+
+	dmi_memdev_name(dh->handle, &bank, &locator);
+
+	if (!bank && !locator) {
+		kfree(dmi_dimm);
+		return;
+	}
+
+	bank = bank ? : "";
+	locator = locator ? : "";
+	len = strlen(bank) + strlen(locator) + 2;
+
+	dmi_dimm->label = kmalloc(len, GFP_KERNEL);
+	if (!dmi_dimm->label) {
+		kfree(dmi_dimm);
+		return;
+	}
+
+	snprintf(dmi_dimm->label, len, "%s %s", bank, locator);
+	strim(dmi_dimm->label);
+	dmi_dimm->handle = dh->handle;
+
+	edac_dbg(1, "DMI: Found DMI handle 0x%x, Label: '%s'\n", dmi_dimm->handle, dmi_dimm->label);
+
+	list_add_tail(&dmi_dimm->list, head);
+}
+
+/*
+ * Collect and count DMI entries, handle special case of single entry
+ */
+static int edac_dmi_collect_and_count(struct mem_ctl_info *mci,
+				       struct dmi_dimm_info **first_d)
+{
+	struct dmi_dimm_info *d;
+	struct dimm_info *dimm;
+	int dmi_count = 0;
+	int segment_size = 0;
+	int i;
+	bool has_slot = false;
+
+	if (!dmi_collected) {
+		dmi_walk(dmi_collect_dimm_info, &dmi_dimms_list);
+		dmi_collected = true;
+		next_dmi_entry = list_first_entry_or_null(&dmi_dimms_list, struct dmi_dimm_info, list);
+	}
+
+	list_for_each_entry(d, &dmi_dimms_list, list) {
+		dmi_count++;
+	}
+
+	edac_dbg(1, "DMI: Found %d DMI entries, expects %d DIMMs.\n",
+		 dmi_count, mci->tot_dimms);
+
+	if (dmi_count == 0) {
+		edac_printk(KERN_INFO, EDAC_DMI, "No DMI entries found. Aborting.\n");
+		return 0;
+	}
+
+	/* Determine segment size */
+	if (n_phy_dimms_override > 0) {
+		segment_size = n_phy_dimms_override;
+		edac_dbg(1, "DMI: Using driver specified physical DIMM count: %d\n", segment_size);
+	} else {
+		segment_size = mci->tot_dimms;
+
+		for (i = 0; i < mci->n_layers; i++) {
+			if (mci->layers[i].type == EDAC_MC_LAYER_SLOT) {
+				has_slot = true;
+				break;
+			}
+		}
+
+		if (!has_slot && (mci->tot_dimms < dmi_count)) {
+			edac_printk(KERN_WARNING, EDAC_DMI, "No SLOT layer found. Using total DIMMs (%d) as segment size. "
+				    "This might be incorrect if there are multiple ranks per DIMM.\n", segment_size);
+		}
+	}
+
+	edac_dbg(1, "DMI: Segment size calculated as %d (has_slot=%d)\n", segment_size, has_slot);
+
+	if (mci->tot_dimms < dmi_count) {
+		if (!next_dmi_entry) {
+			edac_printk(KERN_WARNING, EDAC_DMI, "No more DMI entries available for this MC.\n");
+			return 0;
+		}
+		*first_d = next_dmi_entry;
+
+		/* Advance next_dmi_entry by segment_size */
+		for (i = 0; i < segment_size; i++) {
+			if (&next_dmi_entry->list == &dmi_dimms_list) {
+				next_dmi_entry = NULL;
+				break;
+			}
+			next_dmi_entry = list_next_entry(next_dmi_entry, list);
+		}
+
+		/* If we wrapped around or hit head, set to NULL */
+		if (&next_dmi_entry->list == &dmi_dimms_list) {
+			next_dmi_entry = NULL;
+		}
+
+		dmi_count = segment_size;
+	} else {
+		*first_d = list_first_entry(&dmi_dimms_list, struct dmi_dimm_info, list);
+	}
+
+	/* If only one DMI entry, all EDAC DIMMs map to it. */
+	if (dmi_count == 1) {
+		edac_printk(KERN_INFO, EDAC_DMI, "DMI: Single DMI entry. Applying label '%s' to all DIMMs.\n",
+			 (*first_d)->label);
+		mci_for_each_dimm(mci, dimm) {
+			snprintf(dimm->label, sizeof(dimm->label), "%s", (*first_d)->label);
+			dimm->smbios_handle = (*first_d)->handle;
+		}
+	}
+
+	return dmi_count;
+}
+
+/*
+ * Derive the label format by finding differences between first and last labels
+ */
+static int edac_dmi_derive_format(char *first_label, char *last_label,
+				   struct dmi_dimm_mapping_info *map_info,
+				   int *char_offset)
+{
+	size_t len;
+	int map_count = 0;
+	int i;
+
+	len = min(strlen(first_label), strlen(last_label));
+
+	edac_dbg(1, "DMI: First label: '%s', Last label: '%s'\n",
+		 first_label, last_label);
+
+	/* Derive the format by finding differences between the first and last labels */
+	for (i = 0; i < len && map_count < EDAC_DMI_MAP_MAX; i++) {
+		if (first_label[i] != last_label[i]) {
+			map_info[map_count].offset = i;
+			map_info[map_count].is_char = isalpha(first_label[i]);
+			if (map_info[map_count].is_char && *char_offset == -1) {
+				*char_offset = map_count;
+			}
+			edac_dbg(1, "DMI: Found difference at offset %d ('%c' vs '%c'), is_char=%d\n",
+				 i, first_label[i], last_label[i], map_info[map_count].is_char);
+			map_count++;
+		}
+	}
+
+	return map_count;
+}
+
+/*
+ * Check for skips in character fields
+ */
+static void edac_dmi_check_skips(struct dmi_dimm_info *first_d,
+				  int dmi_count,
+				  struct dmi_dimm_mapping_info *map_info,
+				  int map_count)
+{
+	struct dmi_dimm_info *d;
+	int i, j;
+
+	for (i = 0; i < map_count; i++) {
+		if (map_info[i].offset != -1) {
+			char last_char = 0;
+			bool first = true;
+
+			d = first_d;
+			for (j = 0; j < dmi_count; j++) {
+				char current_char = d->label[map_info[i].offset];
+
+				if (first) {
+					last_char = current_char;
+					first = false;
+					d = list_next_entry(d, list);
+					continue;
+				}
+
+				if (current_char == last_char) {
+					d = list_next_entry(d, list);
+					continue;
+				}
+
+				if (current_char == last_char + 2) {
+					map_info[i].skip_entry = last_char + 1;
+					edac_dbg(1, "DMI: Found skip at offset %d, skipped char '%c'\n",
+						 map_info[i].offset, map_info[i].skip_entry);
+					break;
+				}
+				last_char = current_char;
+				d = list_next_entry(d, list);
+			}
+		}
+	}
+}
+
+/*
+ * Find layer indices in MCI structure
+ */
+static void edac_dmi_find_layer_indices(struct mem_ctl_info *mci, int *layer_indices)
+{
+	int layer_types[] = { EDAC_MC_LAYER_BRANCH, EDAC_MC_LAYER_CHANNEL,
+			      EDAC_MC_LAYER_SLOT, EDAC_MC_LAYER_CHIP_SELECT };
+	int i, j;
+
+	/* Find layers in MCI */
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < mci->n_layers; j++) {
+			if (mci->layers[j].type == layer_types[i]) {
+				layer_indices[i] = j;
+				break;
+			}
+		}
+	}
+}
+
+/*
+ * Calculate rank multiplier
+ */
+static int edac_dmi_calc_rank_multiplier(struct mem_ctl_info *mci, int *layer_indices)
+{
+	int rank_multiplier = 2;
+
+	/* Calculate rank_multiplier */
+	if (layer_indices[2] != -1 && layer_indices[3] != -1) { /* Slot and Chip_Select exist */
+		// XXX: The hierarchy may not be current, but we assume it is for now.
+		rank_multiplier = mci->layers[layer_indices[3]].size;
+		edac_dbg(1, "DMI: Rank multiplier calculated as %d (Chip_Select size)\n",
+			 rank_multiplier);
+	}
+
+	return rank_multiplier;
+}
+
+/*
+ * Map layers to offsets
+ * Priority: Branch -> Channel -> Slot -> Chip_Select
+ * layer_indices: 0=Branch, 1=Channel, 2=Slot, 3=Chip_Select
+ */
+static void edac_dmi_map_layers_to_offsets(struct mem_ctl_info *mci,
+					    struct dmi_dimm_mapping_info *map_info,
+					    int map_count, int char_offset,
+					    int *layer_indices)
+{
+	int layer_types[] = { EDAC_MC_LAYER_BRANCH, EDAC_MC_LAYER_CHANNEL,
+			      EDAC_MC_LAYER_SLOT, EDAC_MC_LAYER_CHIP_SELECT };
+	int current_offset;
+	int i;
+
+	if (char_offset != -1) {
+		/* Alphabet exists, map Channel to it */
+		if (layer_indices[1] != -1) {
+			map_info[char_offset].layer = layer_indices[1];
+			edac_dbg(1, "DMI: Mapped Channel (layer %d) to char offset %d\n",
+				 layer_indices[1], char_offset);
+		}
+
+		/* Map layers before Channel */
+		current_offset = 0;
+		if (layer_indices[0] != -1) { /* Branch */
+			if (current_offset < char_offset) {
+				map_info[current_offset].layer = layer_indices[0];
+				edac_dbg(1, "DMI: Mapped Branch (layer %d) to offset %d\n",
+					 layer_indices[0], current_offset);
+				current_offset++;
+			}
+		}
+
+		/* Map layers after Channel */
+		current_offset = char_offset + 1;
+		for (i = 2; i < 4; i++) { /* Slot, Chip_Select */
+			if (layer_indices[i] != -1 && current_offset < map_count) {
+				map_info[current_offset].layer = layer_indices[i];
+				edac_dbg(1, "DMI: Mapped %s (layer %d) to offset %d\n",
+					 edac_layer_name[layer_types[i]], layer_indices[i], current_offset);
+				current_offset++;
+			}
+		}
+	} else {
+		/* No alphabet, map in order */
+		current_offset = 0;
+		for (i = 0; i < 4; i++) {
+			if (layer_indices[i] != -1 && current_offset < map_count) {
+				map_info[current_offset].layer = layer_indices[i];
+				edac_dbg(1, "DMI: Mapped %s (layer %d) to offset %d\n",
+					 edac_layer_name[layer_types[i]], layer_indices[i], current_offset);
+				current_offset++;
+			}
+		}
+	}
+}
+
+/*
+ * Check if a DMI label matches a DIMM location
+ */
+static bool edac_dmi_label_matches(struct mem_ctl_info *mci,
+				    struct dimm_info *dimm,
+				    struct dmi_dimm_info *d,
+				    char *first_label,
+				    struct dmi_dimm_mapping_info *map_info,
+				    int map_count, int rank_multiplier)
+{
+	size_t d_len = strlen(d->label);
+	int k;
+
+	if (d_len != strlen(first_label)) { /* Assuming all labels have same length as first/last */
+		return false;
+	}
+
+	for (k = 0; k < d_len; k++) {
+		/* Check if k is a mapped offset */
+		int mapped_layer = -1;
+		bool is_offset = false;
+		int l;
+
+		for (l = 0; l < map_count; l++) {
+			if (map_info[l].offset == k) {
+				is_offset = true;
+				mapped_layer = map_info[l].layer;
+				break;
+			}
+		}
+
+		if (is_offset) {
+			if (mapped_layer != -1) {
+				/* Mapped offset: Check specific layer value */
+				int edac_val = dimm->location[mapped_layer];
+				if (mci->layers[mapped_layer].type == EDAC_MC_LAYER_CHIP_SELECT) {
+					edac_val /= rank_multiplier;
+				}
+
+				/* Check if d->label[k] matches expected value */
+				/* Expected: first_label[k] + edac_val */
+				{
+					int expected_val = first_label[k] + edac_val;
+
+					if (map_info[l].skip_entry != -1 && expected_val >= map_info[l].skip_entry) {
+						expected_val++;
+					}
+					if (d->label[k] != expected_val) {
+						return false;
+					}
+				}
+			} else {
+				/* Unmapped offset: Check if it matches ANY layer */
+				bool possible = false;
+				int m;
+				for (m = 0; m < mci->n_layers; m++) {
+					int val = dimm->location[m];
+					if (mci->layers[m].type == EDAC_MC_LAYER_CHIP_SELECT) {
+						val /= rank_multiplier;
+					}
+
+					if (d->label[k] == (first_label[k] + val)) {
+						possible = true;
+						break;
+					}
+				}
+				if (!possible) {
+					return false;
+				}
+			}
+		} else {
+			/* Constant part */
+			if (d->label[k] != first_label[k]) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+/*
+ * Assign labels to each EDAC DIMM by matching with DMI entries
+ */
+static void edac_dmi_assign_labels(struct mem_ctl_info *mci,
+				    struct dmi_dimm_info *first_d,
+				    int dmi_count,
+				    char *first_label,
+				    struct dmi_dimm_mapping_info *map_info,
+				    int map_count, int rank_multiplier)
+{
+	struct dimm_info *dimm;
+	struct dmi_dimm_info *d;
+	int i;
+
+	mci_for_each_dimm(mci, dimm) {
+		struct dmi_dimm_info *found_dmi = NULL;
+
+		edac_dbg(1, "DMI: Processing DIMM idx %d, location: L0=%d L1=%d L2=%d\n",
+			    dimm->idx, dimm->location[0], dimm->location[1], dimm->location[2]);
+
+		/* Search for matching DMI entry */
+		d = first_d;
+		for (i = 0; i < dmi_count; i++) {
+			if (edac_dmi_label_matches(mci, dimm, d, first_label,
+						   map_info, map_count, rank_multiplier)) {
+				found_dmi = d;
+				break;
+			}
+			d = list_next_entry(d, list);
+		}
+
+		if (found_dmi) {
+			snprintf(dimm->label, sizeof(dimm->label), "%s", found_dmi->label);
+			dimm->smbios_handle = found_dmi->handle;
+			edac_printk(KERN_INFO, EDAC_DMI, "Mapped DIMM idx %d to label '%s' (handle 0x%x)\n",
+				    dimm->idx, dimm->label, dimm->smbios_handle);
+		} else {
+			edac_printk(KERN_WARNING, EDAC_DMI, "Could not find DMI label for DIMM idx %d location %d %d %d\n",
+				    dimm->idx, dimm->location[0], dimm->location[1], dimm->location[2]);
+		}
+	}
+}
+
+/*
+ * Assign labels to EDAC DIMMs based on DMI/SMBIOS information
+ */
+static bool edac_mc_map_dmi_labels(struct mem_ctl_info *mci)
+{
+	struct dmi_dimm_info *first_d, *last_d;
+	struct dmi_dimm_mapping_info map_info[EDAC_DMI_MAP_MAX];
+	char *first_label, *last_label;
+	int layer_indices[4] = { -1, -1, -1, -1 };
+	int dmi_count, map_count, char_offset = -1;
+	int rank_multiplier;
+	int i;
+
+	/* Initialize map_info */
+	for (i = 0; i < EDAC_DMI_MAP_MAX; i++) {
+		map_info[i].layer = -1;
+		map_info[i].offset = -1;
+		map_info[i].is_char = false;
+		map_info[i].skip_entry = -1;
+	}
+
+	edac_printk(KERN_INFO, EDAC_DMI, "Starting DMI label mapping for mc%d.\n", mci->mc_idx);
+
+	/*
+	 * ghes_edac already uses dimm name on smbios for mapping, so no need to
+	 * do edac_mc_map_dmi_labels again.
+	 */
+	if (mci->n_layers == 1 &&
+		mci->layers[0].type == EDAC_MC_LAYER_ALL_MEM &&
+		mci->layers[0].is_virt_csrow) {
+
+		edac_printk(KERN_INFO, EDAC_DMI, "DMI mapping skipped due to ghes_edac usage.\n");
+		return false;
+	}
+
+	/* Collect and count DMI entries */
+	dmi_count = edac_dmi_collect_and_count(mci, &first_d);
+	if (dmi_count == 0) {
+		return false; /* No DMI entries found */
+	}
+	if (dmi_count == 1) {
+		goto success; /* Single entry case already handled in collect function */
+	}
+
+	/* Get first and last labels for format derivation */
+	last_d = first_d;
+	for (i = 0; i < dmi_count - 1; i++) {
+		last_d = list_next_entry(last_d, list);
+	}
+
+	first_label = first_d->label;
+	last_label = last_d->label;
+
+	/* Derive the label format */
+	map_count = edac_dmi_derive_format(first_label, last_label, map_info, &char_offset);
+	if (map_count == 0) {
+		edac_mc_printk(mci, KERN_WARNING, "Could not derive DMI label format.\n");
+		goto fail;
+	}
+
+	edac_dbg(1, "DMI: Derived %d variable fields.\n", map_count);
+
+	/* Check for skips in character fields */
+	edac_dmi_check_skips(first_d, dmi_count, map_info, map_count);
+
+	/* Find layer indices in MCI */
+	edac_dmi_find_layer_indices(mci, layer_indices);
+
+	/* Calculate rank multiplier */
+	rank_multiplier = edac_dmi_calc_rank_multiplier(mci, layer_indices);
+
+	/* Map layers to offsets */
+	edac_dmi_map_layers_to_offsets(mci, map_info, map_count, char_offset, layer_indices);
+
+	/* Assign labels to each EDAC DIMM */
+	edac_dmi_assign_labels(mci, first_d, dmi_count, first_label, map_info, map_count, rank_multiplier);
+
+success:
+	/* Success */
+	edac_printk(KERN_INFO, EDAC_DMI, "DMI mapping successful.\n");
+	return true;
+
+fail:
+	edac_printk(KERN_WARNING, EDAC_DMI, "DMI mapping failed. Falling back to default labels.\n");
+	return false;
+}
+
+/*
+ * Assign labels to EDAC DIMMs based on Synology Device Tree information
+ */
+static bool edac_mc_map_dts_labels(struct mem_ctl_info *mci)
+{
+	struct device_node *np;
+	bool found_any = false;
+	int n_layers = mci->n_layers;
+
+	if (!of_root) {
+		return false;
+	}
+
+	for_each_child_of_node(of_root, np) {
+		const char *label;
+		int count;
+		u32 *loc_array;
+		int i;
+		u32 mc_idx;
+		u32 smbios_handle = 0;
+
+		if (!np->name || strncmp(np->name, DT_DIMM_SLOT, strlen(DT_DIMM_SLOT)) != 0) {
+			continue;
+		}
+
+		if (of_property_read_u32(np, DT_DIMM_MC_INDEX, &mc_idx) == 0) {
+			if (mc_idx != mci->mc_idx) {
+				continue;
+			}
+		}
+
+		if (of_property_read_string(np, DT_DIMM_LABEL, &label)) {
+			continue;
+		}
+
+		of_property_read_u32(np, DT_DIMM_SMBIOS_HANDLE, &smbios_handle);
+
+		count = of_property_count_u32_elems(np, DT_DIMM_LOCATION);
+		if (count <= 0 || count % EDAC_MAX_LAYERS != 0) {
+			if (count > 0) {
+				edac_mc_printk(mci, KERN_WARNING,
+					"DTS: 'locations' length %d is not a multiple of layers %d for node %s\n",
+					count, EDAC_MAX_LAYERS, np->full_name);
+			}
+			continue;
+		}
+
+		loc_array = kcalloc(count, sizeof(u32), GFP_KERNEL);
+		if (!loc_array) {
+			continue;
+		}
+
+		if (of_property_read_u32_array(np, DT_DIMM_LOCATION, loc_array, count)) {
+			kfree(loc_array);
+			continue;
+		}
+
+		for (i = 0; i < count; i += EDAC_MAX_LAYERS) {
+			struct dimm_info *dimm;
+
+			mci_for_each_dimm(mci, dimm) {
+				int l;
+				bool match = true;
+				for (l = 0; l < n_layers; l++) {
+					if (dimm->location[l] != loc_array[i + l]) {
+						match = false;
+						break;
+					}
+				}
+				if (match) {
+					if (smbios_handle) {
+						dimm->smbios_handle = (u16)smbios_handle;
+					}
+
+					if (dimm->smbios_handle == 0) {
+						dimm->smbios_handle = 1;
+					}
+
+					if (dimm->smbios_handle > 0xff) {
+						edac_mc_printk(mci, KERN_WARNING,
+							"DTS: SMBIOS handle 0x%x exceeds 2 digits, truncation may occur\n",
+							dimm->smbios_handle);
+					}
+
+					// 11 = length of " (DMI 0xXX)"
+					if (strlen(label) + 11 > EDAC_MC_LABEL_LEN) {
+						edac_mc_printk(mci, KERN_WARNING,
+							"DTS: Label '%s' plus handle suffix will be truncated (max %d)\n",
+							label, EDAC_MC_LABEL_LEN);
+					}
+
+					snprintf(dimm->label, sizeof(dimm->label), "%s (DMI 0x%02x)", label, dimm->smbios_handle);
+					found_any = true;
+					edac_mc_printk(mci, KERN_INFO, "DTS: Assigned label '%s' to DIMM idx %d\n",
+							label, dimm->idx);
+				}
+			}
+		}
+		kfree(loc_array);
+	}
+
+	if (found_any) {
+		struct dimm_info *dimm;
+
+		mci_for_each_dimm(mci, dimm) {
+			if (!strstr(dimm->label, "(DMI 0x")) {
+				snprintf(dimm->label, sizeof(dimm->label),
+					 "Not Implemented");
+			}
+		}
+	}
+
+	return found_any;
+}
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
+
 static int edac_mc_alloc_dimms(struct mem_ctl_info *mci)
 {
 	unsigned int pos[EDAC_MAX_LAYERS];
 	unsigned int row, chn, idx;
 	int layer;
 	void *p;
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+	struct dimm_info *d;
+	int i;
+	bool use_dts_labels = false;
+	bool use_dmi_labels = false;
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 
 	/*
 	 * Allocate and fill the dimm structs
@@ -379,6 +1059,35 @@ static int edac_mc_alloc_dimms(struct mem_ctl_info *mci)
 			pos[layer] = 0;
 		}
 	}
+
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+	/* Print mci dimm information */
+	edac_mc_printk(mci, KERN_INFO, "MCI has %d layers: ", mci->n_layers);
+	for (i = 0; i < mci->n_layers; i++) {
+		if (mci->layers[i].type >= 0) {
+			printk(KERN_CONT "%s ", edac_layer_name[mci->layers[i].type]);
+		}
+	}
+	printk(KERN_CONT "\n");
+
+	mci_for_each_dimm(mci, d) {
+		edac_mc_printk(mci, KERN_INFO, "DIMM idx %d, location: L0=%d L1=%d L2=%d\n",
+			    d->idx, d->location[0], d->location[1], d->location[2]);
+	}
+
+	/* Try DMI mapping first */
+	use_dmi_labels = edac_mc_map_dmi_labels(mci);
+
+	/* Override with DTS mapping if available */
+	use_dts_labels = edac_mc_map_dts_labels(mci);
+	if (use_dts_labels) {
+		use_dmi_labels = false;
+	}
+
+	if (!use_dmi_labels && !use_dts_labels) {
+		edac_mc_printk(mci, KERN_INFO, "No DIMM labels assigned from DMI or DTS. Using default labels.\n");
+	}
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 
 	return 0;
 }
@@ -576,8 +1285,6 @@ void edac_mc_reset_delay_period(unsigned long value)
 	}
 	mutex_unlock(&mem_ctls_mutex);
 }
-
-
 
 /* Return 0 on success, 1 on failure.
  * Before calling this function, caller must
@@ -786,6 +1493,14 @@ struct mem_ctl_info *edac_mc_del_mc(struct device *dev)
 	return mci;
 }
 EXPORT_SYMBOL_GPL(edac_mc_del_mc);
+
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+void edac_mc_set_phy_dimm_count(unsigned int n_dimms)
+{
+	n_phy_dimms_override = n_dimms;
+}
+EXPORT_SYMBOL_GPL(edac_mc_set_phy_dimm_count);
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 
 static void edac_mc_scrub_block(unsigned long page, unsigned long offset,
 				u32 size)

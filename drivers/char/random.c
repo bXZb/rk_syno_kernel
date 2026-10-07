@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * random.c -- A strong random number generator
  *
@@ -2103,7 +2100,7 @@ static int proc_do_entropy(struct ctl_table *table, int write,
 	return proc_dointvec(&fake_table, write, buffer, lenp, ppos);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_RND_ENTROPY_GEN
 int syno_gen_entropy = 0;
 static int proc_syno_gen_entropy(struct ctl_table *table, int write,
 			   void __user *buffer, size_t *lenp, loff_t *ppos)
@@ -2117,7 +2114,7 @@ static int proc_syno_gen_entropy(struct ctl_table *table, int write,
 	fake_table.maxlen = sizeof(syno_gen_entropy);
 	return proc_dostring(&fake_table, write, buffer, lenp, ppos);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RND_ENTROPY_GEN */
 
 static int sysctl_poolsize = INPUT_POOL_WORDS * 32;
 extern struct ctl_table random_table[];
@@ -2181,7 +2178,7 @@ struct ctl_table random_table[] = {
 		.proc_handler	= proc_doulongvec_minmax,
 	},
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_RND_ENTROPY_GEN
 	{
 		.procname	= "syno_gen_entropy",
 		.data		= &syno_gen_entropy,
@@ -2189,7 +2186,7 @@ struct ctl_table random_table[] = {
 		.mode		= 0644,
 		.proc_handler	= proc_syno_gen_entropy,
 	},
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RND_ENTROPY_GEN */
 	{ }
 };
 #endif 	/* CONFIG_SYSCTL */

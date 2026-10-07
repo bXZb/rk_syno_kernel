@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _SCSI_SCSI_DEVICE_H
 #define _SCSI_SCSI_DEVICE_H
@@ -12,9 +9,9 @@
 #include <scsi/scsi.h>
 #include <linux/atomic.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_ERROR_REPORT
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_ERROR_REPORT */
 
 struct device;
 struct request_queue;
@@ -132,9 +129,9 @@ struct scsi_device {
 	unsigned int id, channel;
 	u64 lun;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 	char syno_disk_name[BDEVNAME_SIZE];		/* name of major driver */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
 	unsigned int manufacturer;	/* Manufacturer of device, for using 
 					 * vendor-specific cmd's */
@@ -216,13 +213,13 @@ struct scsi_device {
 	unsigned unmap_limit_for_ws:1;	/* Use the UNMAP limit for WRITE SAME */
 	unsigned rpm_autosuspend:1;	/* Enable runtime autosuspend at device
 					 * creation time */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_SPINDOWN_DISK_BEFORE_POWERLOSS
 	//TODO: Remove this variable if schedule is suitable for ABI change
 	unsigned power_loss_during_reboot:1;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SCSI_SPINDOWN_DISK_BEFORE_POWERLOSS */
+#ifdef CONFIG_SYNO_SATA_LIBATA_FUA
 	unsigned default_disable_fua:1;	/* Default disable FUA or not */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_LIBATA_FUA */
 
 	bool offline_already;		/* Device offline message logged */
 
@@ -240,14 +237,14 @@ struct scsi_device {
 	atomic_t iodone_cnt;
 	atomic_t ioerr_cnt;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DEVICE_IDLE_TIME
 	unsigned long   last_accessed;   /* last accessed time in jiffies */
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SCSI_DEVICE_IDLE_TIME */
+#ifdef CONFIG_SYNO_DISK_HIBERNATION
 	unsigned char	spindown;
 	unsigned char   nospindown;
 	unsigned char   do_standby_syncing;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DISK_HIBERNATION */
 
 	struct device		sdev_gendev,
 				sdev_dev;
@@ -265,7 +262,7 @@ struct scsi_device {
 	struct mutex		state_mutex;
 	enum scsi_device_state sdev_state;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SPINUP_DELAY
 	/* Which queue is this disk in.
 	 * 0 indicates none and should spin up immediately. */
 	unsigned int	    spinup_queue_id;
@@ -279,29 +276,32 @@ struct scsi_device {
 	unsigned long		spinup_timer;
 	struct work_struct	spinup_work;
 #define SYNO_SPINUP_RESEND_TIMER 30 * HZ
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SPINUP_DELAY */
 
 	struct task_struct	*quiesced_by;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT
 	unsigned int        scmd_timeout_sec;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT */
+#ifdef CONFIG_SYNO_SCSI_DISK_SERIAL
 #define SERIAL_NUM_SIZE        36      /* Largest string for a scsi device serial number */
 	char syno_disk_serial[SERIAL_NUM_SIZE + 1];
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SCSI_DISK_SERIAL */
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 #define BLOCK_INFO_SIZE        512     /* Largest string for a scsi device block information */
 	char syno_block_info[BLOCK_INFO_SIZE];
 	rwlock_t syno_block_info_rwlock;        /* lock for syno_block_info */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_ERROR_REPORT
 	struct work_struct sendScsiErrorEventTask;
 	SYNOBIOS_EVENT_PARM scsiErrorEventParm;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_ERROR_REPORT */
+#ifdef CONFIG_SYNO_SAS_SPINUP_DELAY
+	atomic_t			spinup_retry_times;
+#endif /* CONFIG_SYNO_SAS_SPINUP_DELAY */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP
 	unsigned long sas_sata_standby_flag;
 #endif
 
@@ -404,11 +404,11 @@ static inline struct scsi_target *scsi_target(struct scsi_device *sdev)
 #define starget_printk(prefix, starget, fmt, a...)	\
 	dev_printk(prefix, &(starget)->dev, fmt, ##a)
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SPINUP_DELAY
 int SynoSpinupBegin(struct scsi_device *device);
-void SynoSpinupEnd(struct scsi_device *sdev);
+void SynoSpinupEnd(struct scsi_device *sdev, struct request *req, blk_status_t error);
 int SynoSpinupRemove(struct scsi_device *sdev);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SPINUP_DELAY */
 
 extern struct scsi_device *__scsi_add_device(struct Scsi_Host *,
 		uint, uint, u64, void *hostdata);

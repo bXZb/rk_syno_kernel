@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0+
 /*
  *  Base port operations for 8250/16550-type serial ports
@@ -55,14 +52,14 @@
 
 #define BOTH_EMPTY	(UART_LSR_TEMT | UART_LSR_THRE)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_TTY_AES_COMMAND
 extern int (*syno_test_list)(unsigned char, struct tty_struct *);
-#endif /* MY_ABC_HERE  */
+#endif /* CONFIG_SYNO_TTY_AES_COMMAND  */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_TTY_MICROP_FUNCTIONS
 #include <linux/synobios.h>
 extern int (*syno_get_current)(unsigned char, struct tty_struct *);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_TTY_MICROP_FUNCTIONS */
 
 /*
  * Here we define the default xmit fifo size used for each type of UART.
@@ -1340,7 +1337,15 @@ static void autoconfig(struct uart_8250_port *up)
 	port->fifosize = uart_config[up->port.type].fifo_size;
 	old_capabilities = up->capabilities;
 	up->capabilities = uart_config[port->type].flags;
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
+	if (SYNO_OOB_TTY == up->port.line) {
+		up->tx_loadsz = 1;
+	} else {
+		up->tx_loadsz = uart_config[port->type].tx_loadsz;
+	}
+#else
 	up->tx_loadsz = uart_config[port->type].tx_loadsz;
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 
 	if (port->type == PORT_UNKNOWN)
 		goto out_lock;
@@ -1719,6 +1724,10 @@ static void serial8250_enable_ms(struct uart_port *port)
 	serial8250_rpm_put(up);
 }
 
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+extern int gSynoMicropSeries;
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
+
 void serial8250_read_char(struct uart_8250_port *up, unsigned char lsr)
 {
 	struct uart_port *port = &up->port;
@@ -1777,19 +1786,33 @@ void serial8250_read_char(struct uart_8250_port *up, unsigned char lsr)
 	if (uart_prepare_sysrq_char(port, ch))
 		return;
 
-#ifdef MY_ABC_HERE
-	if (NULL != syno_test_list && syno_test_list(ch, port->state->port.tty)) {
-		return;
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+	if (1 < gSynoMicropSeries) {
+		goto SKIP;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 
-#ifdef MY_ABC_HERE
-	if (NULL != syno_get_current && syno_get_current(ch, port->state->port.tty)) {
-		return;
-	} else if (NULL != func_synobios_event_handler && !strcmp(port->state->port.tty->name, SYNO_MICROP_TTY_NAME)) {
-		func_synobios_event_handler(SYNO_EVENT_MICROP_GET, 0);
+#if defined(CONFIG_SYNO_TTY_AES_COMMAND) || defined(CONFIG_SYNO_TTY_MICROP_FUNCTIONS)	
+	if (port->state->port.tty) {
+#ifdef CONFIG_SYNO_TTY_AES_COMMAND
+		if (NULL != syno_test_list && syno_test_list(ch, port->state->port.tty)) {
+			return;
+		}
+#endif /* CONFIG_SYNO_TTY_AES_COMMAND */
+
+#ifdef CONFIG_SYNO_TTY_MICROP_FUNCTIONS
+		if (NULL != syno_get_current && syno_get_current(ch, port->state->port.tty)) {
+			return;
+		} else if (NULL != func_synobios_event_handler && !strcmp(port->state->port.tty->name, SYNO_MICROP_TTY_NAME)) {
+			func_synobios_event_handler(SYNO_EVENT_MICROP_GET, 0);
+		}
+#endif /* CONFIG_SYNO_TTY_MICROP_FUNCTIONS */
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_TTY_AES_COMMAND || CONFIG_SYNO_TTY_MICROP_FUNCTIONS */
+
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+SKIP:
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 
 	uart_insert_char(port, lsr, UART_LSR_OE, ch, flag);
 }
@@ -2090,7 +2113,7 @@ static void serial8250_break_ctl(struct uart_port *port, int break_state)
 /*
  *	Wait for transmitter & holding register to empty
  */
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
 static void syno_kt_wait_for_xmitr(struct uart_8250_port *up, int bits)
 {
 	unsigned int status, tmout = 10000;
@@ -2157,7 +2180,7 @@ static void syno_kt_wait_for_xmitr(struct uart_8250_port *up, int bits)
 		}
 	}
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 
 /*
  *	Wait for transmitter & holding register to empty
@@ -3215,7 +3238,7 @@ static ssize_t rx_trig_bytes_store(struct device *dev,
 
 static DEVICE_ATTR_RW(rx_trig_bytes);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
 static ssize_t serial8250_get_attr_console_enable(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
@@ -3272,13 +3295,13 @@ static ssize_t serial8250_set_attr_console_enable(struct device *dev,
 static DEVICE_ATTR(console_enable, S_IRUSR | S_IWUSR | S_IRGRP,
 		   serial8250_get_attr_console_enable,
 		   serial8250_set_attr_console_enable);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 
 static struct attribute *serial8250_dev_attrs[] = {
 	&dev_attr_rx_trig_bytes.attr,
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
 	&dev_attr_console_enable.attr,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 	NULL
 };
 
@@ -3426,15 +3449,15 @@ static void serial8250_console_putchar(struct uart_port *port, int ch)
 {
 	struct uart_8250_port *up = up_to_u8250p(port);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
 	if (SYNO_OOB_TTY == up->port.line) {
 		syno_kt_wait_for_xmitr(up, UART_LSR_THRE);
 	} else {
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 	wait_for_xmitr(up, UART_LSR_THRE);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 	serial_port_out(port, UART_TX, ch);
 }
 
@@ -3553,11 +3576,11 @@ static unsigned int probe_baud(struct uart_port *port)
 
 int serial8250_console_setup(struct uart_port *port, char *options, bool probe)
 {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_X86_CONSOLE_OUTPUT
 	int baud = 115200;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_TTY_X86_CONSOLE_OUTPUT */
 	int baud = 9600;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_X86_CONSOLE_OUTPUT */
 	int bits = 8;
 	int parity = 'n';
 	int flow = 'n';

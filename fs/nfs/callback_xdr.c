@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * linux/fs/nfs/callback_xdr.c
@@ -1074,17 +1071,17 @@ static const struct svc_procedure nfs4_callback_procedures1[] = {
 };
 
 static unsigned int nfs4_callback_count1[ARRAY_SIZE(nfs4_callback_procedures1)];
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 static struct svc_lat nfs4_callback_latency1[ARRAY_SIZE(nfs4_callback_procedures1)];
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 const struct svc_version nfs4_callback_version1 = {
 	.vs_vers = 1,
 	.vs_nproc = ARRAY_SIZE(nfs4_callback_procedures1),
 	.vs_proc = nfs4_callback_procedures1,
 	.vs_count = nfs4_callback_count1,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	.vs_latency = nfs4_callback_latency1,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	.vs_xdrsize = NFS4_CALLBACK_XDRSIZE,
 	.vs_dispatch = NULL,
 	.vs_hidden = true,
@@ -1092,17 +1089,17 @@ const struct svc_version nfs4_callback_version1 = {
 };
 
 static unsigned int nfs4_callback_count4[ARRAY_SIZE(nfs4_callback_procedures1)];
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 static struct svc_lat nfs4_callback_latency4[ARRAY_SIZE(nfs4_callback_procedures1)];
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 const struct svc_version nfs4_callback_version4 = {
 	.vs_vers = 4,
 	.vs_nproc = ARRAY_SIZE(nfs4_callback_procedures1),
 	.vs_proc = nfs4_callback_procedures1,
 	.vs_count = nfs4_callback_count4,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	.vs_latency = nfs4_callback_latency4,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	.vs_xdrsize = NFS4_CALLBACK_XDRSIZE,
 	.vs_dispatch = NULL,
 	.vs_hidden = true,

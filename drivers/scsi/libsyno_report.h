@@ -1,12 +1,9 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // Copyright (c) 2000-2020 Synology Inc. All rights reserved.
 #ifndef _SCSI_LIBSYNO_REPORT_H
 #define _SCSI_LIBSYNO_REPORT_H
 #include <scsi/scsi_device.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_ERROR_REPORT
 int SynoScsiDeviceToDiskIndex(const struct scsi_device *psdev);
 
 void SynoSendScsiErrorEvent(struct work_struct *work);
@@ -18,7 +15,7 @@ void SynoScsiTimeoutReport(struct scsi_device *psdev,
 		unsigned char op, int iRetries);
 
 bool SynoIsPhysicalDrive(const struct scsi_device *psdev);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_ERROR_REPORT */
 
 #endif /* _SCSI_LIBSYNO_REPORT_H */
 

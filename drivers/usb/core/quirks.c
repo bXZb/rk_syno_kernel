@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * USB device quirk handling logic and table
@@ -12,9 +9,9 @@
 #include <linux/moduleparam.h>
 #include <linux/usb.h>
 #include <linux/usb/quirks.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_DEVICE_QUIRKS
 #include <linux/usb/syno_quirks.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_DEVICE_QUIRKS */
 #include <linux/usb/hcd.h>
 #include "usb.h"
 
@@ -223,12 +220,12 @@ static const struct usb_device_id usb_quirk_list[] = {
 	/* Microsoft LifeCam-VX700 v2.0 */
 	{ USB_DEVICE(0x045e, 0x0770), .driver_info = USB_QUIRK_RESET_RESUME },
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	/* Microsoft Wireless Mouse 5000 */
 	{ USB_DEVICE(0x045e, 0x0745), .driver_info = USB_QUIRK_RESET },
 #endif // CONFIG_USB_PATCH_ON_RTK
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	/* Microsoft Surface Dock Ethernet (RTL8153 GigE) */
 	{ USB_DEVICE(0x045e, 0x07c6), .driver_info = USB_QUIRK_NO_LPM },
 
@@ -276,13 +273,13 @@ static const struct usb_device_id usb_quirk_list[] = {
 	/* Logitech Harmony 700-series */
 	{ USB_DEVICE(0x046d, 0xc122), .driver_info = USB_QUIRK_DELAY_INIT },
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	/* Logitech Wireless Mouse M705 */
 	{ USB_DEVICE(0x046d, 0xc52b), .driver_info = USB_QUIRK_RESET },
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	/* Philips PSC805 audio device */
 	{ USB_DEVICE(0x0471, 0x0155), .driver_info = USB_QUIRK_RESET_RESUME },
 
@@ -507,7 +504,7 @@ static const struct usb_device_id usb_quirk_list[] = {
 	/* Blackmagic Design UltraStudio SDI */
 	{ USB_DEVICE(0x1edb, 0xbd4f), .driver_info = USB_QUIRK_NO_LPM },
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	/* Kingston DataTraveler 3.0 G4 */
 	{ USB_DEVICE_VER(0x0951, 0x1666, 0, 0x1100), .driver_info = USB_QUIRK_RESET_RESUME },
@@ -519,7 +516,7 @@ static const struct usb_device_id usb_quirk_list[] = {
 	{ USB_DEVICE(0x0930, 0x6545), .driver_info = USB_QUIRK_NO_LPM },
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	/* Hauppauge HVR-950q */
 	{ USB_DEVICE(0x2040, 0x7200), .driver_info =
 			USB_QUIRK_CONFIG_INTF_STRINGS },
@@ -564,7 +561,7 @@ static const struct usb_device_id usb_amd_resume_quirk_list[] = {
 	{ }  /* terminating entry must be last */
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_DEVICE_QUIRKS
 /*
  * List of quirky USB devices which should be applied with Synology USB quirks
  */
@@ -604,7 +601,7 @@ static const struct usb_device_id syno_usb_quirk_list[] = {
 
 	{ }  /* terminating entry must be last */
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_DEVICE_QUIRKS */
 
 /*
  * Entries for endpoints that should be ignored when parsing configuration
@@ -725,9 +722,9 @@ static u32 usb_detect_dynamic_quirks(struct usb_device *udev)
 void usb_detect_quirks(struct usb_device *udev)
 {
 	udev->quirks = usb_detect_static_quirks(udev, usb_quirk_list);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_DEVICE_QUIRKS
 	udev->syno_quirks = usb_detect_static_quirks(udev, syno_usb_quirk_list);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_DEVICE_QUIRKS */
 
 	/*
 	 * Pixart-based mice would trigger remote wakeup issue on AMD

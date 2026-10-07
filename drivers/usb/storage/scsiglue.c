@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Driver for USB Mass Storage compliant devices
@@ -596,7 +593,7 @@ static struct device_attribute *sysfs_device_attr_list[] = {
 	NULL,
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 static void syno_usb_info_enum(struct scsi_device *sdev) {
 	struct us_data *us = NULL;
 
@@ -612,7 +609,7 @@ static void syno_usb_info_enum(struct scsi_device *sdev) {
 
 	snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%susb_path=%s\n", sdev->syno_block_info, dev_name(&us->pusb_dev->dev));
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
 /*
  * this defines our host template, with which we'll allocate hosts
@@ -676,10 +673,10 @@ static const struct scsi_host_template usb_stor_host_template = {
 	/* sysfs device attributes */
 	.sdev_attrs =			sysfs_device_attr_list,
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 	.syno_port_type         = SYNO_PORT_TYPE_USB,
 	.syno_sdev_info_enum = syno_usb_info_enum,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
 	/* module management */
 	.module =			THIS_MODULE

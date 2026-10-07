@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Block data types and constants.  Directly include this file only to
@@ -210,11 +207,11 @@ struct bio {
 						 * top bits REQ_OP. Use
 						 * accessors.
 						 */
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_DATA_CORRECTION) || defined(CONFIG_SYNO_MD_FULL_STRIPE_MERGE)
 	unsigned int bi_flags;
-#else /* defined(MY_ABC_HERE) || defined(MY_ABC_HERE) */
+#else /* defined(CONFIG_SYNO_DATA_CORRECTION) || defined(CONFIG_SYNO_MD_FULL_STRIPE_MERGE) */
 	unsigned short		bi_flags;	/* status, etc and bvec pool number */
-#endif /* defined(MY_ABC_HERE) || defined(MY_ABC_HERE) */
+#endif /* defined(CONFIG_SYNO_DATA_CORRECTION) || defined(CONFIG_SYNO_MD_FULL_STRIPE_MERGE) */
 	unsigned short		bi_ioprio;
 	unsigned short		bi_write_hint;
 	blk_status_t		bi_status;
@@ -291,7 +288,7 @@ enum {
 				 * of this bio. */
 	BIO_CGROUP_ACCT,	/* has been accounted to a cgroup */
 	BIO_TRACKED,		/* set if bio goes through the rq_qos path */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 	/*
 	 * Tell lower layer to get the redundant version for this block.
 	 */
@@ -304,8 +301,8 @@ enum {
 	 * Tell lower layer that we give up the retry for this block.
 	 */
 	BIO_CORRECTION_ABORT,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_DATA_CORRECTION */
+#ifdef CONFIG_SYNO_BLOCK_FIX_BIO_SPLIT_ORDER
 	/**
 	 * Make the bio be rearranged behind the other bios which are submitted
 	 * after it in current ->submit_bio.
@@ -320,13 +317,13 @@ enum {
 	 * last-in-first-out order.
 	 */
 	BIO_SYNO_DELAYED,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BLOCK_FIX_BIO_SPLIT_ORDER */
+#ifdef CONFIG_SYNO_MD_AUTO_REMAP_REPORT
 	BIO_SYNO_AUTO_REMAP,	/* record if auto-remap occurred */
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_AUTO_REMAP_REPORT */
+#ifdef CONFIG_SYNO_MD_FULL_STRIPE_MERGE
 	BIO_SYNO_FULL_STRIPE_MERGE,	/* This bio should apply full stripe merge */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FULL_STRIPE_MERGE */
 	BIO_FLAG_LAST
 };
 
@@ -345,11 +342,11 @@ enum {
  * freed.
  */
 #define BVEC_POOL_BITS		(3)
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_DATA_CORRECTION) || defined(CONFIG_SYNO_MD_FULL_STRIPE_MERGE)
 #define BVEC_POOL_OFFSET (32 - BVEC_POOL_BITS)
-#else /* defined(MY_ABC_HERE) || defined(MY_ABC_HERE) */
+#else /* defined(CONFIG_SYNO_DATA_CORRECTION) || defined(CONFIG_SYNO_MD_FULL_STRIPE_MERGE) */
 #define BVEC_POOL_OFFSET	(16 - BVEC_POOL_BITS)
-#endif /* defined(MY_ABC_HERE) || defined(MY_ABC_HERE) */
+#endif /* defined(CONFIG_SYNO_DATA_CORRECTION) || defined(CONFIG_SYNO_MD_FULL_STRIPE_MERGE) */
 #define BVEC_POOL_IDX(bio)	((bio)->bi_flags >> BVEC_POOL_OFFSET)
 #if (1<< BVEC_POOL_BITS) < (BVEC_POOL_NR+1)
 # error "BVEC_POOL_BITS is too small"
@@ -414,10 +411,10 @@ enum req_opf {
 	/* Driver private requests */
 	REQ_OP_DRV_IN		= 34,
 	REQ_OP_DRV_OUT		= 35,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 	/* Unused hint to raid driver */
 	REQ_OP_UNUSED_HINT	= 128,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 
 	REQ_OP_LAST,
 };
@@ -456,9 +453,12 @@ enum req_flag_bits {
 	__REQ_DRV,
 	__REQ_SWAP,		/* swapping request. */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_DEV
 	__REQ_SYNO_RBD, /* synorbd : this only for bio flag */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_DEV */
+#ifdef CONFIG_SYNO_FIX_TASK_ABORT_AND_SCSI_DONE_RACE_CONDITION
+	__REQ_SYNO_COMPELETED_HARDIRQ_DONE, /* finish hard irq runtine after being marked compelete */
+#endif /* CONFIG_SYNO_FIX_TASK_ABORT_AND_SCSI_DONE_RACE_CONDITION */
 
 	__REQ_NR_BITS,		/* stops here */
 };
@@ -485,9 +485,12 @@ enum req_flag_bits {
 #define REQ_DRV			(1ULL << __REQ_DRV)
 #define REQ_SWAP		(1ULL << __REQ_SWAP)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_DEV
 #define REQ_SYNO_RBD		(1ULL << __REQ_SYNO_RBD)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_DEV */
+#ifdef CONFIG_SYNO_FIX_TASK_ABORT_AND_SCSI_DONE_RACE_CONDITION
+#define REQ_SYNO_COMPELETED_HARDIRQ_DONE	(1ULL << __REQ_SYNO_COMPELETED_HARDIRQ_DONE)
+#endif /* CONFIG_SYNO_FIX_TASK_ABORT_AND_SCSI_DONE_RACE_CONDITION */
 
 #define REQ_FAILFAST_MASK \
 	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)

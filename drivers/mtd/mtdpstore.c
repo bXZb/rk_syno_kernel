@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 
 #define dev_fmt(fmt) "mtdoops-pstore: " fmt
@@ -185,24 +182,24 @@ static int mtdpstore_block_is_removed(struct mtdpstore_context *cxt,
 
 static int mtdpstore_erase_do(struct mtdpstore_context *cxt, loff_t off)
 {
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 	struct pstore_blk_config *info = &cxt->info;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	struct mtd_info *mtd = cxt->mtd;
 	struct erase_info erase;
 	int ret;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 	unsigned int erasesize = cxt->mtd->erasesize;
 
 	cxt->mtd->erasesize = 4096; /* force 4k erasesize */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	off = ALIGN_DOWN(off, cxt->mtd->erasesize);
 	dev_dbg(&mtd->dev, "try to erase off 0x%llx\n", off);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 	erase.len = info->kmsg_size;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LSP_RTD1619B */
 	erase.len = cxt->mtd->erasesize;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	erase.addr = off;
 	ret = mtd_erase(cxt->mtd, &erase);
 	if (!ret)
@@ -211,10 +208,10 @@ static int mtdpstore_erase_do(struct mtdpstore_context *cxt, loff_t off)
 		dev_err(&mtd->dev, "erase of region [0x%llx, 0x%llx] on \"%s\" failed\n",
 		       (unsigned long long)erase.addr,
 		       (unsigned long long)erase.len, cxt->info.device);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 
 	cxt->mtd->erasesize = erasesize;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	return ret;
 }
 
@@ -237,11 +234,11 @@ static ssize_t mtdpstore_erase(size_t size, loff_t off)
 	/* If the block still has valid data, mtdpstore do erase lazily */
 	if (likely(mtdpstore_block_is_used(cxt, off))) {
 		mtdpstore_mark_removed(cxt, off);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 		/* return 0; */
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LSP_RTD1619B */
 		return 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	}
 
 	/* all zones are unused, erase it */
@@ -370,13 +367,13 @@ static ssize_t mtdpstore_read(char *buf, size_t size, loff_t off)
 		mtdpstore_mark_unused(cxt, off);
 	else
 		mtdpstore_mark_used(cxt, off);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #if 0
 	mtdpstore_security(cxt, off);
 #endif
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LSP_RTD1619B */
 	mtdpstore_security(cxt, off);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	return retlen;
 }
 
@@ -432,18 +429,18 @@ static void mtdpstore_notify_add(struct mtd_info *mtd)
 	 * is designed on it.
 	 */
 	if (mtd->erasesize < info->kmsg_size) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_RTD1619B
 		mtd->erasesize = info->kmsg_size;
 		// mtd->erasesize determines how many pstore zone to be erase together.
 		// for more information, please reference the following statement,
 		// u32 zonecnt = mtd->erasesize / cxt->info.kmsg_size;
 		dev_err(&mtd->dev, "force setting eraseblock size of MTD partition %d to KMSG_SIZE\n",
 				mtd->index);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_RTD1619B */
 		dev_err(&mtd->dev, "eraseblock size of MTD partition %d too small\n",
 				mtd->index);
 		return;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 	}
 	if (unlikely(info->kmsg_size % mtd->writesize)) {
 		dev_err(&mtd->dev, "record size %lu KB must align to write size %d KB\n",

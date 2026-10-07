@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  Copyright (C) 1991, 1992  Linus Torvalds
@@ -190,12 +187,12 @@ int do_sys_settimeofday64(const struct timespec64 *tv, const struct timezone *tz
 		update_vsyscall_tz();
 		if (firsttime) {
 			firsttime = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_KERNEL_UTC_TIME
 /* Keep UTC Time In Kernel And RTC */
 #else
 			if (!tv)
 				timekeeping_warp_clock();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_KERNEL_UTC_TIME */
 		}
 	}
 	if (tv)

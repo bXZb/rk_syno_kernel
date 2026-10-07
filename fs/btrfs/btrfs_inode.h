@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
@@ -15,9 +12,9 @@
 #include "extent_io.h"
 #include "ordered-data.h"
 #include "delayed-inode.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #include "delalloc-space.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 /*
  * ordered_data_close is set by truncate when a file that used
@@ -57,20 +54,20 @@ enum {
 	 * the file range, inode's io_tree).
 	 */
 	BTRFS_INODE_NO_DELALLOC_FLUSH,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CREATE_TIME
 	BTRFS_INODE_CREATE_TIME,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_CREATE_TIME */
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 	/* these two bits are mutually exclusive */
 	BTRFS_INODE_LOCKER_NOLOCK,
 	BTRFS_INODE_LOCKER_LOCKABLE,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
+#ifdef CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK
 	BTRFS_INODE_SYNO_WRITEBACK_LRU_LIST,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	BTRFS_INODE_USRQUOTA_META_RESERVED,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 };
 
 /* in memory btrfs inode */
@@ -120,9 +117,9 @@ struct btrfs_inode {
 	 */
 	struct list_head delalloc_inodes;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK
 	struct list_head syno_dirty_lru_inode;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK */
 
 	/* node for the red-black tree that links inodes in subvolume root */
 	struct rb_node rb_node;
@@ -235,6 +232,9 @@ struct btrfs_inode {
 	 * different from prop_compress and takes precedence if set
 	 */
 	unsigned defrag_compress;
+#ifdef CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS
+	unsigned syno_defrag_compress;
+#endif /* CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS */
 
 	struct btrfs_delayed_node *delayed_node;
 
@@ -255,7 +255,7 @@ struct btrfs_inode {
 	struct rw_semaphore dio_sem;
 
 	struct inode vfs_inode;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 	union {
 		enum locker_state __locker_state;
 		const enum locker_state locker_state;
@@ -274,16 +274,16 @@ struct btrfs_inode {
 	};
 	bool locker_dirty;
 	spinlock_t locker_lock;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 #if 0
 	struct list_head free_extent_map_inode;
 	atomic_t free_extent_map_counts;
 #endif
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	// For chown, used by quota v2 and v1.
 	u64 uq_reserved;
 
@@ -292,11 +292,11 @@ struct btrfs_inode {
 
 	// Reserve meta for user quota v1 update.
 	atomic_t syno_uq_refs;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RBD_META
 	struct list_head syno_rbd_meta_file;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RBD_META */
 };
 
 static inline u32 btrfs_inode_sectorsize(const struct btrfs_inode *inode)
@@ -402,9 +402,16 @@ static inline int btrfs_inode_in_log(struct btrfs_inode *inode, u64 generation)
  */
 static inline bool btrfs_inode_can_compress(const struct btrfs_inode *inode)
 {
+#ifdef CONFIG_SYNO_BTRFS_DECOUPLE_NODATACOW_AND_NODATASUM
+	/* Only forbid NODATACOW (NOCOW data cannot be compressed) */
+	/* Allow NODATASUM + COMPRESS combination */
+	if (inode->flags & BTRFS_INODE_NODATACOW)
+		return false;
+#else
 	if (inode->flags & BTRFS_INODE_NODATACOW ||
 	    inode->flags & BTRFS_INODE_NODATASUM)
 		return false;
+#endif /* CONFIG_SYNO_BTRFS_DECOUPLE_NODATACOW_AND_NODATASUM */
 	return true;
 }
 
@@ -433,9 +440,9 @@ struct btrfs_dio_private {
 
 static inline void btrfs_print_data_csum_error(struct btrfs_inode *inode,
 		u64 logical_start, u8 *csum, u8 *csum_expected, int mirror_num
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		, enum syno_data_correction_suppress_log_status flag
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		)
 {
 	struct btrfs_root *root = inode->root;
@@ -444,11 +451,11 @@ static inline void btrfs_print_data_csum_error(struct btrfs_inode *inode,
 
 	/* Output minus objectid, which is more meaningful */
 	if (root->root_key.objectid >= BTRFS_LAST_FREE_OBJECTID)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		btrfs_data_correction_print(root->fs_info, flag,
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		btrfs_warn_rl(root->fs_info,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 "csum failed root %lld ino %lld off %llu csum " CSUM_FMT " expected csum " CSUM_FMT " mirror %d",
 			root->root_key.objectid, btrfs_ino(inode),
 			logical_start,
@@ -456,11 +463,11 @@ static inline void btrfs_print_data_csum_error(struct btrfs_inode *inode,
 			CSUM_FMT_VALUE(csum_size, csum_expected),
 			mirror_num);
 	else
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		btrfs_data_correction_print(root->fs_info, flag,
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		btrfs_warn_rl(root->fs_info,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 "csum failed root %llu ino %llu off %llu csum " CSUM_FMT " expected csum " CSUM_FMT " mirror %d",
 			root->root_key.objectid, btrfs_ino(inode),
 			logical_start,
@@ -469,7 +476,7 @@ static inline void btrfs_print_data_csum_error(struct btrfs_inode *inode,
 			mirror_num);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 static inline bool btrfs_usrquota_fast_chown_enable(struct inode *inode)
 {
 	struct btrfs_fs_info *fs_info;
@@ -505,7 +512,12 @@ static inline void syno_usrquota_inode_put(struct inode *inode)
 	struct btrfs_fs_info *fs_info;
 	bool free_reserve = false;
 
-	if (!btrfs_usrquota_fast_chown_enable(inode))
+	/*
+	 * Release must mirror a successful syno_usrquota_inode_get().
+	 * The filesystem quota mode may have changed since the reference was
+	 * acquired, so do not gate the put path on the current usrquota state.
+	 */
+	if (unlikely(!inode || !BTRFS_I(inode)->root))
 		return;
 
 	fs_info = BTRFS_I(inode)->root->fs_info;
@@ -525,6 +537,6 @@ static inline void syno_usrquota_inode_put(struct inode *inode)
 
 	btrfs_add_delayed_iput(inode);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 #endif

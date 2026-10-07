@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
@@ -55,13 +52,13 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/btrfs.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_WINACL
 #include <linux/syno_acl.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_WINACL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RBD_META
 #include "syno-rbd-meta.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RBD_META */
 
 static const struct super_operations btrfs_super_ops;
 
@@ -386,33 +383,33 @@ enum {
 #ifdef CONFIG_BTRFS_FS_REF_VERIFY
 	Opt_ref_verify,
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RECLAIM_SPACE
 	Opt_reclaim_space, Opt_noreclaim_space,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_RECLAIM_SPACE */
+#ifdef CONFIG_SYNO_BTRFS_WINACL
 	Opt_synoacl, Opt_nosynoacl,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_WINACL */
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_HINT_TREE
 	Opt_no_block_group_hint,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_HINT_TREE */
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE
 	Opt_block_group_cache_tree, Opt_clear_block_group_cache_tree,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE */
+#ifdef CONFIG_SYNO_BTRFS_SKIP_BLOCK_GROUP
 	Opt_no_block_group,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SKIP_BLOCK_GROUP */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	Opt_no_quota_tree,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
+#ifdef CONFIG_SYNO_BTRFS_DROP_LOG_TREE
 	Opt_drop_log_tree,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_DROP_LOG_TREE */
+#ifdef CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP
 	Opt_skip_cleaner, Opt_no_skip_cleaner,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP */
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	Opt_syno_allocator, Opt_clear_syno_allocator,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 	Opt_err,
 };
 
@@ -487,38 +484,38 @@ static const match_table_t tokens = {
 #ifdef CONFIG_BTRFS_FS_REF_VERIFY
 	{Opt_ref_verify, "ref_verify"},
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RECLAIM_SPACE
 	{Opt_reclaim_space, "auto_reclaim_space"},
 	{Opt_noreclaim_space, "noauto_reclaim_space"},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_RECLAIM_SPACE */
+#ifdef CONFIG_SYNO_BTRFS_WINACL
 	{Opt_synoacl, SYNO_ACL_MNT_OPT},
 	{Opt_nosynoacl, SYNO_ACL_NOT_MNT_OPT},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_WINACL */
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_HINT_TREE
 	{Opt_no_block_group_hint, "no_block_group_hint"},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_HINT_TREE */
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE
 	{Opt_block_group_cache_tree, "block_group_cache_tree"},
 	{Opt_clear_block_group_cache_tree, "clear_block_group_cache_tree"},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE */
+#ifdef CONFIG_SYNO_BTRFS_SKIP_BLOCK_GROUP
 	{Opt_no_block_group, "no_block_group"},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SKIP_BLOCK_GROUP */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	{Opt_no_quota_tree, "no_quota_tree"},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
+#ifdef CONFIG_SYNO_BTRFS_DROP_LOG_TREE
 	{Opt_drop_log_tree, "drop_log_tree"},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_DROP_LOG_TREE */
+#ifdef CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP
 	{Opt_skip_cleaner, "skip_cleaner"},
 	{Opt_no_skip_cleaner, "noskip_cleaner"},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP */
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	{Opt_syno_allocator, "syno_allocator"},
 	{Opt_clear_syno_allocator, "clear_syno_allocator"},
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 	{Opt_err, NULL},
 };
 
@@ -589,26 +586,26 @@ int btrfs_parse_options(struct btrfs_fs_info *info, char *options,
 	int saved_compress_level;
 	bool saved_compress_force;
 	int no_compress = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	struct list_head *space_info_head = &info->space_info;
 	struct btrfs_space_info *space_info_found;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 
 	if (btrfs_fs_compat_ro(info, FREE_SPACE_TREE))
 		btrfs_set_opt(info->mount_opt, FREE_SPACE_TREE);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DEFAULT_SAPCE_CACHE_V2
 	else if (btrfs_fs_compat_ro(info, FREE_SPACE_TREE_VALID))
 		btrfs_set_opt(info->mount_opt, FREE_SPACE_TREE);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DEFAULT_SAPCE_CACHE_V2 */
 	else if (btrfs_free_space_cache_v1_active(info)) {
 		btrfs_set_opt(info->mount_opt, SPACE_CACHE);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DEFAULT_SAPCE_CACHE_V2 */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE
 	if (btrfs_fs_compat(info, BLOCK_GROUP_CACHE_TREE) || btrfs_fs_compat(info, BLOCK_GROUP_CACHE_TREE_AUTO))
 		btrfs_set_opt(info->mount_opt, BLOCK_GROUP_CACHE_TREE);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE */
 
 	/*
 	 * Even the options are empty, we still need to do extra check
@@ -830,14 +827,14 @@ int btrfs_parse_options(struct btrfs_fs_info *info, char *options,
 		case Opt_noacl:
 			info->sb->s_flags &= ~SB_POSIXACL;
 			break;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_WINACL
 		case Opt_synoacl:
 			btrfs_set_opt(info->mount_opt, SYNO_ACL);
 			break;
 		case Opt_nosynoacl:
 			btrfs_clear_opt(info->mount_opt, SYNO_ACL);
 			break;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_WINACL */
 		case Opt_notreelog:
 			btrfs_set_and_info(info, NOTREELOG,
 					   "disabling tree log");
@@ -1050,7 +1047,7 @@ int btrfs_parse_options(struct btrfs_fs_info *info, char *options,
 			btrfs_set_opt(info->mount_opt, REF_VERIFY);
 			break;
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RECLAIM_SPACE
 		case Opt_reclaim_space:
 			btrfs_set_and_info(info, AUTO_RECLAIM_SPACE,
 					   "enabling auto syno reclaim space");
@@ -1059,26 +1056,26 @@ int btrfs_parse_options(struct btrfs_fs_info *info, char *options,
 			btrfs_clear_and_info(info, AUTO_RECLAIM_SPACE,
 					   "disabling auto syno reclaim space");
 			break;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_RECLAIM_SPACE */
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_HINT_TREE
 		case Opt_no_block_group_hint:
 			btrfs_clear_opt(info->mount_opt, BLOCK_GROUP_HINT_TREE);
 			break;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_HINT_TREE */
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE
 		case Opt_block_group_cache_tree:
 			btrfs_set_opt(info->mount_opt, BLOCK_GROUP_CACHE_TREE);
 			break;
 		case Opt_clear_block_group_cache_tree:
 			btrfs_clear_opt(info->mount_opt, BLOCK_GROUP_CACHE_TREE);
 			break;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE */
+#ifdef CONFIG_SYNO_BTRFS_SKIP_BLOCK_GROUP
 		case Opt_no_block_group:
 			btrfs_set_opt(info->mount_opt, NO_BLOCK_GROUP);
 			break;
-#endif /*MY_ABC_HERE*/
-#ifdef MY_ABC_HERE
+#endif /*CONFIG_SYNO_BTRFS_SKIP_BLOCK_GROUP*/
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 		case Opt_no_quota_tree:
 			if (test_bit(BTRFS_FS_STATE_REMOUNTING, &info->fs_state)) {
 				btrfs_info(info, "mount option '%s' cannot be used in remount", p);
@@ -1087,21 +1084,21 @@ int btrfs_parse_options(struct btrfs_fs_info *info, char *options,
 			}
 			btrfs_set_opt(info->mount_opt, NO_QUOTA_TREE);
 			break;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
+#ifdef CONFIG_SYNO_BTRFS_DROP_LOG_TREE
 		case Opt_drop_log_tree:
 			btrfs_set_opt(info->mount_opt, DROP_LOG_TREE);
 			break;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_DROP_LOG_TREE */
+#ifdef CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP
 		case Opt_skip_cleaner:
 			btrfs_set_opt(info->mount_opt, SKIP_CLEANER);
 			break;
 		case Opt_no_skip_cleaner:
 			btrfs_clear_opt(info->mount_opt, SKIP_CLEANER);
 			break;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP */
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 		case Opt_syno_allocator:
 			list_for_each_entry(space_info_found, space_info_head, list) {
 				space_info_found->syno_allocator.force_cluster_disable = true;
@@ -1111,7 +1108,7 @@ int btrfs_parse_options(struct btrfs_fs_info *info, char *options,
 		case Opt_clear_syno_allocator:
 			btrfs_clear_opt(info->mount_opt, SYNO_ALLOCATOR);
 			break;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 		case Opt_err:
 			btrfs_err(info, "unrecognized mount option '%s'", p);
 			ret = -EINVAL;
@@ -1121,7 +1118,7 @@ int btrfs_parse_options(struct btrfs_fs_info *info, char *options,
 		}
 	}
 check:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SKIP_BLOCK_GROUP
 	if (btrfs_test_opt(info, NO_BLOCK_GROUP) && !btrfs_test_opt(info, NOLOGREPLAY)) {
 		btrfs_err(info,
 			  "no_block_group must be used with nologreplay option");
@@ -1132,7 +1129,7 @@ check:
 			  "no_block_group must be used with ro mount option");
 		ret = -EINVAL;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SKIP_BLOCK_GROUP */
 	/*
 	 * Extra check for current option against current flag
 	 */
@@ -1153,14 +1150,14 @@ out:
 		btrfs_info(info, "disk space caching is enabled");
 	if (!ret && btrfs_test_opt(info, FREE_SPACE_TREE))
 		btrfs_info(info, "using free space tree");
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE
 	if (!ret && btrfs_test_opt(info, BLOCK_GROUP_CACHE_TREE))
 		btrfs_info(info, "using block group cache tree");
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	if (!ret && btrfs_test_opt(info, NO_QUOTA_TREE))
 		btrfs_info(info, "skip quota trees");
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 	return ret;
 }
 
@@ -1459,7 +1456,7 @@ static int get_default_subvol_objectid(struct btrfs_fs_info *fs_info, u64 *objec
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ARCHIVE_VERSION
 static void syno_fill_super_archive_version(struct super_block *sb, struct inode *inode)
 {
 	int err;
@@ -1476,7 +1473,7 @@ static void syno_fill_super_archive_version(struct super_block *sb, struct inode
 			btrfs_warn(fs_info, "syno_fill_super_archive_version failed. err: %d", err);
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ARCHIVE_VERSION */
 
 
 static int btrfs_fill_super(struct super_block *sb,
@@ -1524,18 +1521,18 @@ static int btrfs_fill_super(struct super_block *sb,
 		goto fail_close;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ARCHIVE_VERSION
 	syno_fill_super_archive_version(sb, inode);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ARCHIVE_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_WINACL
 	if (btrfs_raw_test_opt(fs_info->mount_opt, SYNO_ACL)) {
 		if (syno_acl_module_get())
 			sb->s_flags |= SB_SYNOACL;
 		else
 			btrfs_clear_opt(fs_info->mount_opt, SYNO_ACL);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_WINACL */
 
 	cleancache_init_fs(sb);
 	sb->s_flags |= SB_ACTIVE;
@@ -1635,10 +1632,10 @@ static int btrfs_show_options(struct seq_file *seq, struct dentry *dentry)
 		seq_puts(seq, ",discard=async");
 	if (!(info->sb->s_flags & SB_POSIXACL))
 		seq_puts(seq, ",noacl");
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_WINACL
 	if (btrfs_test_opt(info, SYNO_ACL))
 		seq_puts(seq, ","SYNO_ACL_MNT_OPT);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_WINACL */
 	if (btrfs_free_space_cache_v1_active(info))
 		seq_puts(seq, ",space_cache");
 	else if (btrfs_fs_compat_ro(info, FREE_SPACE_TREE))
@@ -1682,38 +1679,38 @@ static int btrfs_show_options(struct seq_file *seq, struct dentry *dentry)
 #endif
 	if (btrfs_test_opt(info, REF_VERIFY))
 		seq_puts(seq, ",ref_verify");
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RECLAIM_SPACE
 	if (btrfs_test_opt(info, AUTO_RECLAIM_SPACE))
 		seq_puts(seq, ",auto_reclaim_space");
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_RECLAIM_SPACE */
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_HINT_TREE
 	if (!btrfs_test_opt(info, BLOCK_GROUP_HINT_TREE))
 		seq_puts(seq, ",no_block_group_hint");
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_HINT_TREE */
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE
 	if (btrfs_test_opt(info, BLOCK_GROUP_CACHE_TREE))
 		seq_puts(seq, ",block_group_cache_tree");
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE */
+#ifdef CONFIG_SYNO_BTRFS_SKIP_BLOCK_GROUP
 	if (btrfs_test_opt(info, NO_BLOCK_GROUP))
 		seq_puts(seq, ",no_block_group");
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SKIP_BLOCK_GROUP */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	if (btrfs_test_opt(info, NO_QUOTA_TREE))
 		seq_puts(seq, ",no_quota_tree");
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
+#ifdef CONFIG_SYNO_BTRFS_DROP_LOG_TREE
 	if (btrfs_test_opt(info, DROP_LOG_TREE))
 		seq_puts(seq, ",drop_log_tree");
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_DROP_LOG_TREE */
+#ifdef CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP
 	if (btrfs_test_opt(info, SKIP_CLEANER))
 		seq_puts(seq, ",skip_cleaner");
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP */
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	if (btrfs_test_opt(info, SYNO_ALLOCATOR))
 		seq_puts(seq, ",syno_allocator");
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 	seq_printf(seq, ",subvolid=%llu",
 		  BTRFS_I(d_inode(dentry))->root->root_key.objectid);
 	subvol_name = btrfs_get_subvol_name_from_objectid(info,
@@ -2025,9 +2022,9 @@ static void btrfs_resize_thread_pool(struct btrfs_fs_info *fs_info,
 	btrfs_workqueue_set_max(fs_info->caching_workers, new_pool_size);
 	btrfs_workqueue_set_max(fs_info->endio_workers, new_pool_size);
 	btrfs_workqueue_set_max(fs_info->endio_meta_workers, new_pool_size);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CHECK_INTEGRITY
 	btrfs_workqueue_set_max(fs_info->endio_meta_fix_workers, new_pool_size);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CHECK_INTEGRITY */
 	btrfs_workqueue_set_max(fs_info->endio_meta_write_workers,
 				new_pool_size);
 	btrfs_workqueue_set_max(fs_info->endio_write_workers, new_pool_size);
@@ -2036,9 +2033,9 @@ static void btrfs_resize_thread_pool(struct btrfs_fs_info *fs_info,
 	btrfs_workqueue_set_max(fs_info->readahead_workers, new_pool_size);
 	btrfs_workqueue_set_max(fs_info->scrub_wr_completion_workers,
 				new_pool_size);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	btrfs_workqueue_set_max(fs_info->syno_allocator.caching_workers, new_pool_size);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 }
 
 static bool btrfs_defrag_running(struct btrfs_fs_info *fs_info,
@@ -2046,9 +2043,9 @@ static bool btrfs_defrag_running(struct btrfs_fs_info *fs_info,
 {
 
 	if (!btrfs_raw_test_opt(old_opts, AUTO_DEFRAG)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RECLAIM_SPACE
 		&& !btrfs_raw_test_opt(old_opts, AUTO_RECLAIM_SPACE)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RECLAIM_SPACE */
 		)
 		return false;
 
@@ -2059,11 +2056,11 @@ static bool btrfs_defrag_running(struct btrfs_fs_info *fs_info,
 	    !btrfs_raw_test_opt(fs_info->mount_opt, AUTO_DEFRAG))
 		return true;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RECLAIM_SPACE
 	if (btrfs_raw_test_opt(old_opts, AUTO_RECLAIM_SPACE) &&
 	    !btrfs_raw_test_opt(fs_info->mount_opt, AUTO_RECLAIM_SPACE))
 		return true;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RECLAIM_SPACE */
 
 	return false;
 }
@@ -2134,7 +2131,7 @@ static int btrfs_remount(struct super_block *sb, int *flags, char *data)
 	if (ret)
 		goto restore;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_WINACL
 	if ((sb->s_flags & SB_SYNOACL) && !btrfs_test_opt(fs_info, SYNO_ACL)) {
 		sb->s_flags = sb->s_flags & ~SB_SYNOACL;
 		syno_acl_module_put();
@@ -2144,7 +2141,7 @@ static int btrfs_remount(struct super_block *sb, int *flags, char *data)
 		else
 			btrfs_clear_opt(fs_info->mount_opt, SYNO_ACL);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_WINACL */
 
 	btrfs_remount_begin(fs_info, old_opts, *flags);
 	btrfs_resize_thread_pool(fs_info,
@@ -2176,18 +2173,18 @@ static int btrfs_remount(struct super_block *sb, int *flags, char *data)
 		 */
 		cancel_work_sync(&fs_info->async_reclaim_work);
 		cancel_work_sync(&fs_info->async_data_reclaim_work);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_METADATA_RECLAIM
 		cancel_work_sync(&fs_info->syno_async_metadata_reclaim_work);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_METADATA_RECLAIM */
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_DATA_FLUSH
 		cancel_work_sync(&fs_info->syno_async_data_flush_work);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_DATA_FLUSH */
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_METADATA_FLUSH_AND_THROTTLE
 		cancel_work_sync(&fs_info->syno_async_metadata_flush_work);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_METADATA_FLUSH_AND_THROTTLE */
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE
 		cancel_work_sync(&fs_info->async_metadata_cache_work);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE */
 
 		btrfs_discard_cleanup(fs_info);
 
@@ -2210,14 +2207,14 @@ static int btrfs_remount(struct super_block *sb, int *flags, char *data)
 		btrfs_dev_replace_suspend_for_unmount(fs_info);
 		btrfs_scrub_cancel(fs_info);
 		btrfs_pause_balance(fs_info);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 		cancel_work_sync(&fs_info->syno_usage_rescan_work);
 		cancel_work_sync(&fs_info->syno_usage_fast_rescan_work);
 		cancel_work_sync(&fs_info->syno_usage_full_rescan_work);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 		cancel_work_sync(&fs_info->syno_allocator.bg_prefetch_work);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 
 		/*
 		 * Pause the qgroup rescan worker if it is running. We don't want
@@ -2231,21 +2228,21 @@ static int btrfs_remount(struct super_block *sb, int *flags, char *data)
 		if (ret)
 			goto restore;
 	} else {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_COMPAT_RO_NO_REMOUNT_RW
 		if (btrfs_super_compat_ro_flags(fs_info->super_copy) & ~BTRFS_FEATURE_COMPAT_RO_SUPP) {
 			btrfs_err(fs_info, "cannot mount read-write because of unsupported optional features");
 			ret = -EINVAL;
 			goto restore;
 		}
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_COMPAT_RO_NO_REMOUNT_RW */
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 		if (btrfs_fs_compat_ro(fs_info, LOCKER) &&
 		    !btrfs_syno_locker_feature_is_support()) {
 			btrfs_err(fs_info, "cannot mount read-write because of no locker support");
 			ret = -EINVAL;
 			goto restore;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 		if (test_bit(BTRFS_FS_STATE_ERROR, &fs_info->fs_state)) {
 			btrfs_err(fs_info,
 				"Remounting read-write after error is not allowed");
@@ -2276,11 +2273,11 @@ static int btrfs_remount(struct super_block *sb, int *flags, char *data)
 		 * put it anywhere above this point, as we are not sure to be
 		 * safe to write until we pass the above checks.
 		 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_MOUNT_STATS
 		ret = btrfs_start_pre_rw_mount(fs_info, NULL);
 #else
 		ret = btrfs_start_pre_rw_mount(fs_info);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_MOUNT_STATS */
 		if (ret)
 			goto restore;
 
@@ -2288,13 +2285,13 @@ static int btrfs_remount(struct super_block *sb, int *flags, char *data)
 
 		set_bit(BTRFS_FS_OPEN, &fs_info->flags);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 		btrfs_syno_usage_rescan_resume(fs_info);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 		if (btrfs_test_opt(fs_info, SYNO_ALLOCATOR))
 			queue_work(system_unbound_wq, &fs_info->syno_allocator.bg_prefetch_work);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 	}
 out:
 	/*
@@ -2499,13 +2496,13 @@ static int btrfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	int ret;
 	u64 thresh = 0;
 	int mixed = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_METADATA_RESERVE
 	u64 total_used_metadata = 0;
 	u64 total_allocated_metadata = 0;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_METADATA_RESERVE */
+#ifdef CONFIG_SYNO_BTRFS_CLEANER_THROTTLE
 	struct btrfs_block_rsv *cleaner_rsv = &fs_info->cleaner_block_rsv;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLEANER_THROTTLE */
 
 	list_for_each_entry(found, &fs_info->space_info, list) {
 		if (found->flags & BTRFS_BLOCK_GROUP_DATA) {
@@ -2532,12 +2529,12 @@ static int btrfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 				total_free_meta += found->disk_total -
 					found->disk_used;
 		}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_METADATA_RESERVE
 		if (found->flags & BTRFS_BLOCK_GROUP_METADATA) {
 			total_used_metadata += found->disk_used;
 			total_allocated_metadata += found->disk_total;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_METADATA_RESERVE */
 
 		total_used += found->disk_used;
 	}
@@ -2554,14 +2551,14 @@ static int btrfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	else
 		buf->f_bfree = 0;
 	spin_unlock(&block_rsv->lock);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLEANER_THROTTLE
 	spin_lock(&cleaner_rsv->lock);
 	if (buf->f_bfree >= cleaner_rsv->size >> bits)
 		buf->f_bfree -= cleaner_rsv->size >> bits;
 	else
 		buf->f_bfree = 0;
 	spin_unlock(&cleaner_rsv->lock);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLEANER_THROTTLE */
 
 	buf->f_bavail = div_u64(total_free_data, factor);
 	ret = btrfs_calc_avail_data_space(fs_info, &total_free_data);
@@ -2570,7 +2567,7 @@ static int btrfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	buf->f_bavail += div_u64(total_free_data, factor);
 	buf->f_bavail = buf->f_bavail >> bits;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_METADATA_RESERVE
 	if (fs_info->metadata_ratio) {
 		u64 total_reserved_for_metadata;
 		u64 extra_reserved_for_metadata;
@@ -2600,7 +2597,7 @@ static int btrfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 		else if (buf->f_bavail > buf->f_bfree)
 			buf->f_bavail = buf->f_bfree;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_METADATA_RESERVE */
 
 	/*
 	 * We calculate the remaining metadata space minus global reserve. If
@@ -2624,11 +2621,11 @@ static int btrfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	 * still can allocate chunks and thus are fine using the currently
 	 * calculated f_bavail.
 	 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SKIP_BLOCK_GROUP
 	if (!mixed && block_rsv->space_info && block_rsv->space_info->full &&
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_SKIP_BLOCK_GROUP */
 	if (!mixed && block_rsv->space_info->full &&
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SKIP_BLOCK_GROUP */
 	    total_free_meta - thresh < block_rsv->size)
 		buf->f_bavail = 0;
 
@@ -2654,10 +2651,10 @@ static void btrfs_kill_super(struct super_block *sb)
 {
 	struct btrfs_fs_info *fs_info = btrfs_sb(sb);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_WINACL
 	if (SB_SYNOACL & sb->s_flags)
 		syno_acl_module_put();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_WINACL */
 
 	kill_anon_super(sb);
 	btrfs_free_fs_info(fs_info);
@@ -2679,9 +2676,9 @@ static struct file_system_type btrfs_root_fs_type = {
 	.fs_flags	= FS_REQUIRES_DEV | FS_BINARY_MOUNTDATA,
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 struct file_system_type *__btrfs_root_fs_type = &btrfs_root_fs_type;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 
 MODULE_ALIAS_FS("btrfs");
 
@@ -2808,7 +2805,7 @@ static int btrfs_show_devname(struct seq_file *m, struct dentry *root)
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ARCHIVE_VERSION
 static int btrfs_syno_get_sb_archive_version(struct super_block *sb, u32 *version)
 {
         *version = sb->s_archive_version;
@@ -2832,9 +2829,9 @@ static int btrfs_syno_set_sb_archive_version(struct super_block *sb, u32 archive
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ARCHIVE_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RBD_META
 static int btrfs_syno_rbd_set_first_mapping_table_offset(struct super_block *sb,
 							 u64 offset)
 {
@@ -2850,13 +2847,13 @@ static int btrfs_syno_rbd_set_first_mapping_table_offset(struct super_block *sb,
 
 	return btrfs_commit_transaction(trans);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RBD_META */
 
 static const struct super_operations btrfs_super_ops = {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ARCHIVE_VERSION
 	.syno_get_sb_archive_version = btrfs_syno_get_sb_archive_version,
 	.syno_set_sb_archive_version = btrfs_syno_set_sb_archive_version,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ARCHIVE_VERSION */
 	.drop_inode	= btrfs_drop_inode,
 	.evict_inode	= btrfs_evict_inode,
 	.put_super	= btrfs_put_super,
@@ -2870,10 +2867,10 @@ static const struct super_operations btrfs_super_ops = {
 	.remount_fs	= btrfs_remount,
 	.freeze_fs	= btrfs_freeze,
 	.unfreeze_fs	= btrfs_unfreeze,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RBD_META
 	.syno_rbd_set_first_mapping_table_offset = btrfs_syno_rbd_set_first_mapping_table_offset,
 	.syno_rbd_meta_file_cleanup_all	= btrfs_delete_all_rbd_meta_file_records,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RBD_META */
 };
 
 static const struct file_operations btrfs_ctl_fops = {
@@ -2922,7 +2919,7 @@ static void __init btrfs_print_mod_info(void)
 	pr_info("Btrfs loaded, crc32c=%s%s\n", crc32c_impl(), options);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 extern int (*funcSYNOSendErrorFsBtrfsEvent)(const u8*);
 
 void SynoAutoErrorFsBtrfsReport(const u8* fsid)
@@ -2949,7 +2946,7 @@ void SynoBtrfsMetaCorruptedReport(const u8* fsid, u64 start)
 	funcSYNOMetaCorruptedEvent(fsid, start);
 }
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 
 static int __init init_btrfs_fs(void)
@@ -3008,11 +3005,11 @@ static int __init init_btrfs_fs(void)
 	if (err)
 		goto free_end_io_wq;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT
 	err = qgroup_netlink_init();
 	if (err)
 		goto free_btrfs_interface;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT */
 
 	btrfs_print_mod_info();
 
@@ -3027,10 +3024,10 @@ static int __init init_btrfs_fs(void)
 	return 0;
 
 unregister_ioctl:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT
 	qgroup_netlink_exit();
 free_btrfs_interface:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT */
 	btrfs_interface_exit();
 free_end_io_wq:
 	btrfs_end_io_wq_exit();
@@ -3061,9 +3058,9 @@ free_compress:
 
 static void __exit exit_btrfs_fs(void)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT
 	qgroup_netlink_exit();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT */
 	btrfs_destroy_cachep();
 	btrfs_delayed_ref_exit();
 	btrfs_auto_defrag_exit();

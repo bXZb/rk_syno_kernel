@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /**
  * eCryptfs: Linux filesystem encryption layer
@@ -20,9 +17,9 @@
 #include <linux/security.h>
 #include <linux/compat.h>
 #include <linux/fs_stack.h>
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_BTRFS_QGROUP_QUERY) || defined(CONFIG_SYNO_ECRYPTFS_PASS_BTRFS_IOCTL)
 #include <linux/btrfs.h>
-#endif /* MY_ABC_HERE || MY_ABC_HERE*/
+#endif /* CONFIG_SYNO_BTRFS_QGROUP_QUERY || CONFIG_SYNO_ECRYPTFS_PASS_BTRFS_IOCTL*/
 #include "ecryptfs_kernel.h"
 
 /**
@@ -338,7 +335,7 @@ static int ecryptfs_fasync(int fd, struct file *file, int flag)
 	return rc;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_FALLOCATE_SUPPORT
 static long ecryptfs_fallocate(struct file *file, int mode,
 			       loff_t offset, loff_t len)
 {
@@ -357,14 +354,14 @@ static long ecryptfs_fallocate(struct file *file, int mode,
 	if (alloc_end > i_size_read(inode)) {
 		rc = ecryptfs_truncate(file->f_path.dentry, alloc_end);
 		if (rc) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING
 			if (-EDQUOT == rc || -ENOSPC == rc)
 				printk_once(KERN_ERR "%s: Error on attempt to "
 					    "truncate to (higher) offset [%lld];"
 					    " rc = [%d]\n", __func__,
 					    alloc_end, rc);
 			else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_SKIP_EDQUOT_WARNING */
 			printk(KERN_ERR "%s: Error on attempt to "
 			       "truncate to (higher) offset [%lld];"
 			       " rc = [%d]\n", __func__,
@@ -382,7 +379,7 @@ out:
 	inode_unlock(inode);
 	return rc;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_FALLOCATE_SUPPORT */
 
 static long
 ecryptfs_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -399,7 +396,7 @@ ecryptfs_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case FS_IOC_SETFLAGS:
 	case FS_IOC_GETVERSION:
 	case FS_IOC_SETVERSION:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_PASS_BTRFS_IOCTL
 	/*
 	 * In our sdk, we'll iterate every share by concatenate share name after
 	 * volume name. In ecryption share case, /volume1/ecrypt rather than
@@ -408,8 +405,8 @@ ecryptfs_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	 */
 	case BTRFS_IOC_DEFRAG:
 	case BTRFS_IOC_GET_SUBVOL_INFO:
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_ECRYPTFS_PASS_BTRFS_IOCTL */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	case BTRFS_IOC_USRQUOTA_QUERY:
 	case BTRFS_IOC_USRQUOTA_CTL:
 	case BTRFS_IOC_USRQUOTA_LIMIT:
@@ -417,13 +414,13 @@ ecryptfs_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case BTRFS_IOC_USRQUOTA_RESCAN_STATUS:
 	case BTRFS_IOC_USRQUOTA_RESCAN_WAIT:
 	case BTRFS_IOC_USRQUOTA_CLEAN:
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
+#ifdef CONFIG_SYNO_BTRFS_QGROUP_QUERY
 	case BTRFS_IOC_QGROUP_QUERY:
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_QGROUP_QUERY */
+#ifdef CONFIG_SYNO_BTRFS_COMPR_CTL
 	case BTRFS_IOC_COMPR_CTL:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_COMPR_CTL */
 		rc = lower_file->f_op->unlocked_ioctl(lower_file, cmd, arg);
 		fsstack_copy_attr_all(file_inode(file), file_inode(lower_file));
 
@@ -487,7 +484,7 @@ const struct file_operations ecryptfs_main_fops = {
 	.fsync = ecryptfs_fsync,
 	.fasync = ecryptfs_fasync,
 	.splice_read = generic_file_splice_read,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_FALLOCATE_SUPPORT
 	.fallocate  = ecryptfs_fallocate,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_FALLOCATE_SUPPORT */
 };

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 #include <linux/file.h>
 #include <linux/mount.h>
@@ -11,9 +8,9 @@
 #include <linux/compat.h>
 #include <asm/unistd.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 #include <linux/syno_acl.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 static bool nsec_valid(long nsec)
 {
@@ -232,8 +229,8 @@ SYSCALL_DEFINE2(utime, char __user *, filename, struct utimbuf __user *, times)
 }
 #endif
 
-#ifdef MY_ABC_HERE
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SYSTEM_CALL
+#ifdef CONFIG_SYNO_FS_CREATE_TIME
 static int _syno_utime(const char *filename, struct timespec64 *time)
 {
 	int error;
@@ -253,7 +250,7 @@ static int _syno_utime(const char *filename, struct timespec64 *time)
 
 	inode = path.dentry->d_inode;
 	if (!inode_owner_or_capable(inode)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 		if (IS_SYNOACL(path.dentry)) {
 			error = synoacl_op_permission(path.dentry, MAY_WRITE_ATTR | MAY_WRITE_EXT_ATTR);
 			if (error)
@@ -262,10 +259,10 @@ static int _syno_utime(const char *filename, struct timespec64 *time)
 			error = -EPERM;
 			goto drop_write;
 		}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 		error = -EPERM;
 		goto drop_write;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	}
 
 	error = syno_op_set_crtime(inode, time);
@@ -277,7 +274,7 @@ dput_and_out:
 out:
 	return error;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CREATE_TIME */
 /**
  * sys_syno_utime() is used to update create time.
  *
@@ -289,7 +286,7 @@ out:
  */
 SYSCALL_DEFINE2(syno_utime, const char __user *, filename, struct __kernel_timespec __user *, ctime)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CREATE_TIME
 	int error;
 	struct timespec64 time;
 
@@ -305,9 +302,9 @@ out:
 	return error;
 #else
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CREATE_TIME */
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SYSTEM_CALL */
 
 #ifdef CONFIG_COMPAT_32BIT_TIME
 /*
@@ -380,10 +377,10 @@ SYSCALL_DEFINE2(utimes_time32, const char __user *, filename, struct old_timeval
 }
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SYSTEM_CALL
 SYSCALL_DEFINE2(syno_utime32, const char __user *, filename, struct old_timespec32 __user *, ctime)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CREATE_TIME
 	int error;
 	struct timespec64 time;
 
@@ -399,8 +396,8 @@ out:
 	return error;
 #else
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CREATE_TIME */
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SYSTEM_CALL */
 
 #endif

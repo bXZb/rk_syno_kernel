@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Functions for working with the Flattened Device Tree data format
@@ -34,15 +31,18 @@
 
 #include "of_private.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OF
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OF */
+#include <linux/syno_fdt.h>
 
-#ifdef MY_ABC_HERE
+#include <linux/syno_fdt.h>
+
+#ifdef CONFIG_SYNO_INTERNAL_HD_NUM
 extern int gSynoInternalHddNumber;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_INTERNAL_HD_NUM */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_SMBUS
 extern int gSynoSmbusHddAdapter;
 extern int gSynoSmbusHddAddress;
 extern char gSynoSmbusHddType[16];
@@ -54,20 +54,26 @@ extern int gSynoHostPresentAdapter;
 extern int gSynoHostPresentAddr;
 extern int gSynoHostPresentReg;
 extern int gSynoHostPresentVal;
-#endif /*MY_DEF_HERE */
+extern int gSynoHostMicropMapping[SYNO_MAX_SMBUS_HDD_COUNT];
+#endif /*CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SPINUP_GROUP
 extern int gSynoHddPowerupSeq;
 extern int giSynoSpinupGroup[SYNO_SPINUP_GROUP_MAX];
 extern int giSynoSpinupGroupNum;
 extern int giSynoSpinupGroupDelay;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SPINUP_GROUP */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
 extern bool g_support_syno_dpm;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SAS_HBA_IDX
+char gSynoSASHBAAddr[CONFIG_SYNO_SAS_MAX_HBA_SLOT][13] = {{0}};
+EXPORT_SYMBOL(gSynoSASHBAAddr);
+#endif /* CONFIG_SYNO_SAS_HBA_IDX */
+
+#ifdef CONFIG_SYNO_INTERNAL_HD_NUM
 void __init syno_init_internal_hdd_number(void)
 {
 	int internalHDDNumber = 0;
@@ -83,14 +89,17 @@ void __init syno_init_internal_hdd_number(void)
 
 	gSynoInternalHddNumber = internalHDDNumber;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_INTERNAL_HD_NUM */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_SMBUS
 void __init syno_init_smbus_hdd_pwrctl(void)
 {
 	int retReadDT = 0;
 	int smbushddadapter = 0;
 	int smbushddaddress = 0;
+	char szSmbusHddMapping[SYNO_DTS_PROPERTY_CONTENT_LENGTH] = {0};
+	char szSingleSmbusHddMapping[SYNO_DTS_PROPERTY_CONTENT_LENGTH] = {0};
+	struct device_node *pSlotNode = NULL;
 	char *smbushddtype = NULL;
 	int i;
 	int smbusSwitchAdapter = 0;
@@ -116,6 +125,36 @@ void __init syno_init_smbus_hdd_pwrctl(void)
 		gSynoSmbusHddAddress = smbushddaddress;
 		printk("SYNO Smbus Hdd Address: 0x%02x\n", gSynoSmbusHddAddress);
 	}
+
+	// read smbus hdd control for each internal slot
+	memset(gSynoHostMicropMapping, 0, sizeof(gSynoHostMicropMapping));
+	for_each_child_of_node(of_root, pSlotNode) {
+		// find internal_slots
+		if (!pSlotNode->full_name || 0 != strncmp(pSlotNode->full_name, DT_INTERNAL_SLOT, strlen(DT_INTERNAL_SLOT))) {
+			continue;
+		}
+		if (1 != sscanf(pSlotNode->full_name, DT_INTERNAL_SLOT"@%d", &i)) {
+			continue;
+		}
+		if (0 == i && SYNO_MAX_SMBUS_HDD_COUNT < i) {
+			printk(KERN_ERR "Invalid internal slot index: %d\n", i);
+			continue;
+		}
+		// get smbus_port in internal_slots, for example, syno_smbus_hdd_port = <16>;
+		// if this slot has no smbus_port, gSynoHostMicropMapping[i-1] will not be set, remain 0
+		retReadDT = of_property_read_u32_index(pSlotNode, DT_SYNO_HDD_SMBUS_PORT, 0, &gSynoHostMicropMapping[i-1]);
+	}
+	for (i = 0;i < gSynoInternalHddNumber;i++) {
+		if (0 != i) {
+			strcat(szSmbusHddMapping, ",");
+		}
+		if (SYNO_MAX_SMBUS_HDD_COUNT <= i) {
+			break;
+		}
+		snprintf(szSingleSmbusHddMapping, sizeof(szSingleSmbusHddMapping), "%d", gSynoHostMicropMapping[i]);
+		strcat(szSmbusHddMapping, szSingleSmbusHddMapping);
+	}
+	printk("SYNO Smbus Hdd Mapping: %s\n", szSmbusHddMapping);
 
 	retReadDT = of_property_read_u32_index(of_root, DT_SYNO_HOST_PRESENT_ADAPTER, 0, &result);
 	if (0 == retReadDT) {
@@ -188,9 +227,9 @@ void __init syno_init_smbus_hdd_pwrctl(void)
 	gSynoSmbusSwitchVals[gSynoSmbusSwitchCount] = 0xff;
 	return;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SPINUP_GROUP
 void __init syno_init_spinup_group(void)
 {
 	int group_num = 0, retReadDT = 0, spinupGroupMemberNum = 0, spinupGroupDelay = 0;
@@ -219,9 +258,9 @@ void __init syno_init_spinup_group(void)
 		printk("SYNO Spinup Group Delay: %d\n", giSynoSpinupGroupDelay);
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SPINUP_GROUP */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
 void __init syno_init_support_syno_dpm(void)
 {
 	struct device_node *dpm_node = NULL;
@@ -233,7 +272,54 @@ void __init syno_init_support_syno_dpm(void)
 		of_node_put(dpm_node);
 	}
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
+
+#ifdef CONFIG_SYNO_SAS_HBA_IDX
+void __init syno_init_sas_hba_idx(void)
+{
+	int iCount = 0;
+	const struct fdt_property *FDTTmpProperty = NULL;
+	const void *blob = initial_boot_params;
+	const char *pFDTName = NULL;
+	int iRoot = 0, iNode = 0;
+	int iLen = 0;
+	char szBuf[MAX_NODENAME_LEN] = {0};
+
+	fdt_for_each_subnode(iNode, blob, iRoot) {
+		pFDTName = fdt_get_name(blob, iNode, NULL);
+		if (NULL == pFDTName) {
+			continue;
+		}
+		if (MAX_NODENAME_LEN <= strlen(pFDTName)) {
+			printk("szBuf does not have enough space for pFDTName\n");
+			continue;
+		}
+		snprintf(szBuf, MAX_NODENAME_LEN, "%s", pFDTName);
+		if (0 == strncmp(szBuf, SZ_DTS_NODE_HBA, strlen(SZ_DTS_NODE_HBA))) {
+			if (0 > syno_fdt_get_index(&iCount, szBuf)) {
+				printk("Failed to get index number of %s.\n", szBuf);
+				continue;
+			}
+			iCount --;		// zero-based
+			if (CONFIG_SYNO_SAS_MAX_HBA_SLOT <= iCount) {
+				printk("[Error] iCount should be smaller than %d. Get iCount: %d\n", CONFIG_SYNO_SAS_MAX_HBA_SLOT, iCount);
+				continue;
+			}
+			FDTTmpProperty = fdt_get_property(blob, iNode, DT_PCIE_ROOT, &iLen);
+			if (NULL == FDTTmpProperty || -FDT_ERR_NOTFOUND == iLen) {
+				printk("Fail to get fdt property of %s\n", DT_PCIE_ROOT);
+				continue;
+			}
+			if (iLen > sizeof(gSynoSASHBAAddr[iCount])) {
+				printk("%s of %s is too long for gSynoSASHBAAddr\n", DT_PCIE_ROOT, SZ_DTS_NODE_HBA);
+				continue;
+			}
+			printk("SYNO SAS HBA Address for %d: %s\n", iCount, FDTTmpProperty->data);
+			memcpy(gSynoSASHBAAddr[iCount], FDTTmpProperty->data, iLen);
+		}
+	}
+}
+#endif /* CONFIG_SYNO_SAS_HBA_IDX */
 
 /*
  * of_fdt_limit_memory - limit the number of regions in the /memory node
@@ -1441,18 +1527,24 @@ void __init unflatten_device_tree(void)
 	unittest_unflatten_overlay_base();
 
 	/* Synology global arguments from dts */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_INTERNAL_HD_NUM
 	syno_init_internal_hdd_number();
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_INTERNAL_HD_NUM */
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_SMBUS
 	syno_init_smbus_hdd_pwrctl();
-#endif /* MY_DEF_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
+#ifdef CONFIG_SYNO_SATA_SPINUP_GROUP
 	syno_init_spinup_group();
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_SATA_SPINUP_GROUP */
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
 	syno_init_support_syno_dpm();
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
+#ifdef CONFIG_SYNO_SAS_HBA_IDX
+	syno_init_sas_hba_idx();
+#endif /* CONFIG_SYNO_SAS_HBA_IDX */
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+	syno_microp_series_get();
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 }
 
 /**

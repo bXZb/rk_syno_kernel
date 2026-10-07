@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  * INET		An implementation of the TCP/IP protocol suite for the LINUX
@@ -2176,6 +2173,9 @@ struct net_device {
 
 	/* protected by rtnl_lock */
 	struct bpf_xdp_entity	xdp_state[__MAX_XDP_MODE];
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+	struct rw_semaphore     syno_sem;
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 };
 #define to_net_dev(d) container_of(d, struct net_device, dev)
 
@@ -5028,9 +5028,9 @@ static inline bool netif_reduces_vlan_mtu(struct net_device *dev)
 
 extern struct pernet_operations __net_initdata loopback_net_ops;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 extern int syno_get_dev_vendor_mac(const char *szDev, char *szMac, int bufSize);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
 
 /* Logging, debugging and troubleshooting/diagnostic helpers. */
 

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
 
 	mii.c: MII interface library
@@ -60,9 +57,9 @@ int mii_ethtool_gset(struct mii_if_info *mii, struct ethtool_cmd *ecmd)
 	struct net_device *dev = mii->dev;
 	u16 bmcr, bmsr, ctrl1000 = 0, stat1000 = 0;
 	u32 nego;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NET_LINK_DOWN_STATUS
 	int cur_link = mii_link_ok(mii);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NET_LINK_DOWN_STATUS */
 
 	ecmd->supported =
 	    (SUPPORTED_10baseT_Half | SUPPORTED_10baseT_Full |
@@ -135,13 +132,13 @@ int mii_ethtool_gset(struct mii_if_info *mii, struct ethtool_cmd *ecmd)
 
 	mii->full_duplex = ecmd->duplex;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NET_LINK_DOWN_STATUS
 	if (!cur_link) {
 		ethtool_cmd_speed_set(ecmd, SPEED_UNKNOWN);
 		ecmd->duplex = DUPLEX_UNKNOWN;
 		mii->full_duplex = ecmd->duplex;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NET_LINK_DOWN_STATUS */
 
 	/* ignore maxtxpkt, maxrxpkt for now */
 
@@ -211,7 +208,7 @@ void mii_ethtool_get_link_ksettings(struct mii_if_info *mii,
 				   ADVERTISED_100baseT_Half)) {
 			cmd->base.speed = SPEED_100;
 			cmd->base.duplex = !!(nego & ADVERTISED_100baseT_Full);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NET_LINK_DOWN_STATUS
 		} else if (nego & (ADVERTISED_10baseT_Full |
 				   ADVERTISED_10baseT_Half)){
 			cmd->base.speed = SPEED_10;
@@ -220,12 +217,12 @@ void mii_ethtool_get_link_ksettings(struct mii_if_info *mii,
 			cmd->base.speed = SPEED_UNKNOWN;
 			cmd->base.duplex = DUPLEX_UNKNOWN;
 		}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NET_LINK_DOWN_STATUS */
 		} else {
 			cmd->base.speed = SPEED_10;
 			cmd->base.duplex = !!(nego & ADVERTISED_10baseT_Full);
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NET_LINK_DOWN_STATUS */
 	} else {
 		cmd->base.autoneg = AUTONEG_DISABLE;
 

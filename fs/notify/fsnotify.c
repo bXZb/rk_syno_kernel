@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *  Copyright (C) 2008 Red Hat, Inc., Eric Paris <eparis@redhat.com>
@@ -17,10 +14,10 @@
 #include <linux/fsnotify_backend.h>
 #include "fsnotify.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 #include <linux/nsproxy.h>
 extern struct rw_semaphore namespace_sem;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 /*
  * Clear all of the marks on an inode when it is being evicted from core
@@ -205,9 +202,9 @@ int __fsnotify_parent(struct dentry *dentry, __u32 mask, const void *data,
 	 * Do they care about any event at all?
 	 */
 	if (!inode->i_fsnotify_marks && !inode->i_sb->s_fsnotify_marks &&
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	    (!mnt || !mnt->mnt_fsnotify_syno_marks) &&
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 	    (!mnt || !mnt->mnt_fsnotify_marks) && !parent_watched)
 		return 0;
 
@@ -505,9 +502,9 @@ int fsnotify(__u32 mask, const void *data, int data_type, struct inode *dir,
 	 */
 	if (!sb->s_fsnotify_marks &&
 	    (!mnt || !mnt->mnt_fsnotify_marks) &&
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	    (!mnt || !mnt->mnt_fsnotify_syno_marks) &&
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 	    (!inode || !inode->i_fsnotify_marks) &&
 	    (!parent || !parent->i_fsnotify_marks))
 		return 0;
@@ -515,10 +512,10 @@ int fsnotify(__u32 mask, const void *data, int data_type, struct inode *dir,
 	marks_mask = sb->s_fsnotify_mask;
 	if (mnt)
 		marks_mask |= mnt->mnt_fsnotify_mask;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	if (mnt)
 		marks_mask |= mnt->mnt_fsnotify_syno_mask;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 	if (inode)
 		marks_mask |= inode->i_fsnotify_mask;
 	if (parent)
@@ -540,10 +537,10 @@ int fsnotify(__u32 mask, const void *data, int data_type, struct inode *dir,
 	if (mnt) {
 		iter_info.marks[FSNOTIFY_OBJ_TYPE_VFSMOUNT] =
 			fsnotify_first_mark(&mnt->mnt_fsnotify_marks);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 		iter_info.marks[FSNOTIFY_OBJ_TYPE_SYNO_VFSMOUNT] =
 			fsnotify_first_mark(&mnt->mnt_fsnotify_syno_marks);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 	}
 	if (inode) {
 		iter_info.marks[FSNOTIFY_OBJ_TYPE_INODE] =
@@ -576,7 +573,7 @@ out:
 }
 EXPORT_SYMBOL_GPL(fsnotify);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 /*
  * notify_event
  *
@@ -699,7 +696,7 @@ ERR:
 	return ret;
 }
 EXPORT_SYMBOL(SYNONotify);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 static __init int fsnotify_init(void)
 {

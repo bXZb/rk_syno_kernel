@@ -101,6 +101,10 @@ config SYNO_ADJUST_KSWAPD_NICE
 	bool "increase kswapd priority"
 	default y
 
+config SYNO_AVOID_ZRAM_ZEROED_PAGES
+	bool "Avoid zeroed pages in zram"
+	default y
+
 endmenu #System Features
 
 menu "Boot Arguments"

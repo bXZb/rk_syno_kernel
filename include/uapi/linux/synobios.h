@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // Copyright (c) 2000-2022 Synology Inc. All rights reserved.
 #ifndef _UAPI_LINUX_SYNOBIOS_H
 #define _UAPI_LINUX_SYNOBIOS_H
@@ -314,6 +311,22 @@
 #define HW_DS1825xsp   "DS1825xs+"     //"DS1825xs+"
 #define HW_FS200T      "FS200T"        //"FS200T"
 #define HW_DS225p      "DS225+"        //"DS225+"
+#define HW_RS11626xsp  "RS11626xs+"    //"RS11626xs+"
+#define HW_FS6420      "FS6420"        //"FS6420"
+#define HW_RS2423rppII "RS2423rp+II"   //"RS2423rp+II"
+#define HW_RS1226p     "RS1226+"       //"RS1226+"
+#define HW_RS1226rpp   "RS1226rp+"     //"RS1226rp+"
+#define HW_RS826p      "RS826+"        //"RS826+"
+#define HW_RS826rpp    "RS826rp+"      //"RS826rp+"
+#define HW_RS426p      "RS426+"        //"RS426+"
+#define HW_RS1625xsp   "RS1625xs+"     //"RS1625xs+"
+#define HW_RS1626xsp   "RS1626xs+"     //"RS1626xs+"
+#define HW_FS3420      "FS3420"        //"FS3420"
+#define HW_RS3626xs    "RS3626xs"      //"RS3626xs"
+#define HW_RS4826xsp   "RS4826xs+"     //"RS4826xs+"
+#define HW_RS6426xsp   "RS6426xs+"     //"RS6426xs+"
+#define HW_DVA7400     "DVA7400"       //"DVA7400"
+#define HW_DVA3333     "DVA3333"       //"DVA3333"
 #define HW_UNKNOWN     "DSUnknown"
 
 #define EBOX_INFO_UNIQUE_RX410  "RX410"
@@ -342,6 +355,7 @@
 #define EBOX_INFO_UNIQUE_RX424 "RX424"
 #define EBOX_INFO_UNIQUE_FX2424DN "FX2424DN"
 #define EBOX_INFO_UNIQUE_RX1225RP "RX1225rp"
+#define EBOX_INFO_UNIQUE_RX426 "RX426"
 
 #define SYNO_UNIQUE(x)     (x>>2)
 #define IS_SYNOLOGY_RX4(x) (SYNO_UNIQUE(x) == 0x15 || SYNO_UNIQUE(x) == 0xd) // 0x54 ~ 0x57
@@ -417,6 +431,16 @@ static const struct syno_ebox_unique_id syno_ebox_unique_mapping[] = {
 #define HWMON_SYS_FAN2_RPM "fan2_rpm"
 #define HWMON_SYS_FAN3_RPM "fan3_rpm"
 #define HWMON_SYS_FAN4_RPM "fan4_rpm"
+
+#ifdef CONFIG_SYNO_ADT7475_ATMEGA
+#define HWMON_SYS_FAN5_RPM "fan5_rpm"
+#define HWMON_SYS_FAN6_RPM "fan6_rpm"
+#define HWMON_SYS_FAN7_RPM "fan7_rpm"
+#define HWMON_SYS_FAN8_RPM "fan8_rpm"
+#define HWMON_SYS_FAN9_RPM "fan9_rpm"
+#define HWMON_SYS_FAN10_RPM "fan10_rpm"
+#endif /* CONFIG_SYNO_ADT7475_ATMEGA */
+
 #define HWMON_PSU_STATUS_NAME "PSU_%d_Status"
 #define HWMON_PSU1_STATUS_NAME "PSU_1_Status"
 #define HWMON_PSU2_STATUS_NAME "PSU_2_Status"
@@ -546,7 +570,7 @@ typedef enum {
 } SYNO_LED;
 
 /* TODO: Because user space also need this define, so we define them here.
- * But userspace didn't have a common define like MY_DEF_HERE include
+ * But userspace didn't have a common define like SYNO_SATA_PM_DEVICE_GPIO include
  * kernel space. So we can't define it inside some define */
 #define EBOX_GPIO_KEY           "gpio"
 #define EBOX_I2C_KEY            "i2c"
@@ -580,19 +604,23 @@ typedef enum {
 #define SYNOIO_SUPERIO_WRITE      _IOWR(SYNOBIOS_IOC_MAGIC, 217, SYNO_SUPERIO_PACKAGE)
 #define SYNOIO_IS_FULLY_SUPPORT_EUP _IOWR(SYNOBIOS_IOC_MAGIC, 218, SYNO_EUP_SUPPORT)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HW_VERSION
 extern int syno_is_hw_version(const char *hw_version);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HW_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HW_REVISION
 extern int syno_is_hw_revision(const char *hw_revision);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HW_REVISION */
 
 #define SYNO_MICROP_TTY_NAME    "ttyS1"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SYNOBIOS_EVENT
 extern int (*func_synobios_event_handler)(unsigned long long, ...);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SYNOBIOS_EVENT */
+
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+extern void (*func_synobios_microp_received)(void);
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 
 #define SYNO_EVENT_USB_PROHIBIT           0x1b00
 #define SYNO_EVENT_CONSOLE_PROHIBIT       0x1c00
@@ -608,5 +636,43 @@ extern int (*func_synobios_event_handler)(unsigned long long, ...);
 #define SYNO_EVENT_DISK_PORT_LOST         0x3200
 #define SYNO_EVENT_SCSI_ERROR             0x3300
 #define SYNO_EVENT_EBOX_RESET			  0x3400
+
+#define PCI_VENDOR_SYNOLOGY 0x7053
+
+#define PCI_DEVICE_E10G18T1 0x1001
+#define PCI_DEVICE_E10G18T2 0x1002
+#define PCI_DEVICE_E10G21F2 0x1003
+#define PCI_DEVICE_E25G21F2 0x1004
+#define PCI_DEVICE_E10G30T1 0x1005
+#define PCI_DEVICE_E10G22T1_MINI 0x1006
+#define PCI_DEVICE_E10G30T2_BROADCOM 0x1008
+#define PCI_DEVICE_E10G22T1_MINI_AQC107 0x1009
+#define PCI_DEVICE_E10G30T2_QLOGIC 0x100a
+#define PCI_DEVICE_E10G30F2 0x100b
+#define PCI_DEVICE_E25G30F2 0x100c
+#define PCI_DEVICE_E10G30T1_AQC113 0x100d
+#define PCI_DEVICE_E10G22T1_MINI_AQC113 0x100e
+#define PCI_DEVICE_ONBOARD_AQC113 0x1010
+#define PCI_DEVICE_R8125 0x1011
+#define PCI_DEVICE_E10M20T1 0x2002
+
+#define PCI_VENDOR_BROADCOM 0x14e4
+#define PCI_DEVICE_P2100G 0x2100
+
+#define SZ_SYNOLOGY_M2D17 "M2D17"
+#define SZ_SYNOLOGY_M2D18 "M2D18"
+#define SZ_SYNOLOGY_M2D20 "M2D20"
+#define SZ_SYNOLOGY_E10G18T1 "E10G18-T1"
+#define SZ_SYNOLOGY_E10G18T2 "E10G18-T2"
+#define SZ_SYNOLOGY_E10G21F2 "E10G21-F2"
+#define SZ_SYNOLOGY_E25G21F2 "E25G21-F2"
+#define SZ_SYNOLOGY_E10G30T1 "E10G30-T1"
+#define SZ_SYNOLOGY_E10G30T2 "E10G30-T2"
+#define SZ_SYNOLOGY_E10G30F2 "E10G30-F2"
+#define SZ_SYNOLOGY_E25G30F2 "E25G30-F2"
+#define SZ_SYNOLOGY_E10G22T1_MINI "E10G22-T1-Mini"
+#define SZ_SYNOLOGY_E10M20T1 "E10M20-T1"
+#define SZ_SYNOLOGY_FX2422N "FX2422N"
+
 
 #endif  /* _UAPI_LINUX_SYNOBIOS_H */

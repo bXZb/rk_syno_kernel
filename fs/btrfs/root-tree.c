@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
@@ -216,9 +213,9 @@ int btrfs_find_orphan_roots(struct btrfs_fs_info *fs_info)
 	struct btrfs_root *root;
 	int err = 0;
 	int ret;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT
 	int empty = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT */
 
 	path = btrfs_alloc_path();
 	if (!path)
@@ -297,23 +294,23 @@ int btrfs_find_orphan_roots(struct btrfs_fs_info *fs_info)
 			 */
 			if (drop_key.objectid != 0 || drop_key.type != 0 ||
 			    drop_key.offset != 0) {
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT
+#else /* CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT */
 				set_bit(BTRFS_FS_UNFINISHED_DROPS, &fs_info->flags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT */
 				set_bit(BTRFS_ROOT_UNFINISHED_DROP, &root->state);
 			}
 
 			set_bit(BTRFS_ROOT_DEAD_TREE, &root->state);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT
 			spin_lock(&root->inode_lock);
 			empty = RB_EMPTY_ROOT(&root->inode_tree);
 			spin_unlock(&root->inode_lock);
 			if (empty)
 				btrfs_add_dead_root(root);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT */
 			btrfs_add_dead_root(root);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT */
 		}
 		btrfs_put_root(root);
 	}

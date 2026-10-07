@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _SCSI_SCSI_HOST_H
 #define _SCSI_SCSI_HOST_H
@@ -32,22 +29,22 @@ struct scsi_transport_template;
 #define MODE_INITIATOR 0x01
 #define MODE_TARGET 0x02
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 enum {
 	SYNO_PWR_OP_POWER_OFF 	= 0,
 	SYNO_PWR_OP_POWER_ON 	= (1 << 0),
 	SYNO_PWR_OP_DEEPSLEEP 	= (1 << 1),
 	SYNO_PWR_OP_WAKE	 	= (1 << 2),
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_PORT_MAPPING_V2)
 enum {
 	SYNO_PORT_TYPE_SATA = 1,
 	SYNO_PORT_TYPE_USB = 2,
 	SYNO_PORT_TYPE_SAS = 3,
 };
-#endif /* defined(MY_ABC_HERE) */
+#endif /* defined(CONFIG_SYNO_PORT_MAPPING_V2) */
 
 
 struct scsi_host_template {
@@ -508,31 +505,31 @@ struct scsi_host_template {
 	/* Delay for runtime autosuspend */
 	int rpm_autosuspend_delay;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 	int  syno_port_type;
 	void (*syno_sdev_info_enum)(struct scsi_device *);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_HOST_DISK_LED_CTRL
 	int (*syno_set_sashost_disk_led)(struct scsi_device *, int);
 #endif
 
-#if defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_PCI_EUNIT_SUPPORT) || defined(CONFIG_SYNO_USB_EUNIT_CONTROL)
 	void (*syno_device_list_set)(struct scsi_device *, int, const char*);
-#endif /* MY_DEF_HERE || MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT || CONFIG_SYNO_USB_EUNIT_CONTROL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_UAS_BEEDRIVE_DELAY_REVALIDATE
 	bool syno_uas_delay_revalidate;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_UAS_BEEDRIVE_DELAY_REVALIDATE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_SPINDOWN_DISK_BEFORE_POWERLOSS
 	int (*syno_disk_power_loss_when_reboot)(struct scsi_device *);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_SPINDOWN_DISK_BEFORE_POWERLOSS */
 
-#if defined(MY_DEF_HERE) && defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_BLK_DEV_WAIT_DISK_READY) && defined(CONFIG_SYNO_DISK_POWER_MANAGER)
 	void (*syno_disk_not_ready_count_increase)(void);
 	void (*syno_disk_not_ready_count_decrease)(void);
-#endif /* MY_DEF_HERE && MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BLK_DEV_WAIT_DISK_READY && CONFIG_SYNO_DISK_POWER_MANAGER */
 };
 
 /*
@@ -739,14 +736,14 @@ struct Scsi_Host {
 	 */
 	struct device *dma_dev;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP
 	spinlock_t	eunit_poweron_lock;
 	spinlock_t	*peunit_poweron_lock;
 	int		eunit_lock_configured;
 	unsigned int	uiata_eh_flag;
 	unsigned int	*puiata_eh_flag;
 	int		is_eunit_deepsleep;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP */
 
 	/*
 	 * We should ensure that this is aligned, both for better performance

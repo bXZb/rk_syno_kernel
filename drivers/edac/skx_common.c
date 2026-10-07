@@ -334,8 +334,16 @@ int skx_get_dimm_info(u32 mtr, u32 mcmtr, u32 amap, struct dimm_info *dimm,
 	dimm->dtype = get_width(mtr);
 	dimm->mtype = MEM_DDR4;
 	dimm->edac_mode = EDAC_SECDED; /* likely better than this */
+
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+	if (dimm->smbios_handle == 0) { // If already assign label, don't assign again
+		snprintf(dimm->label, sizeof(dimm->label), "CPU_SrcID#%u_MC#%u_Chan#%u_DIMM#%u",
+			 imc->src_id, imc->lmc, chan, dimmno);
+	}
+#else /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 	snprintf(dimm->label, sizeof(dimm->label), "CPU_SrcID#%u_MC#%u_Chan#%u_DIMM#%u",
 		 imc->src_id, imc->lmc, chan, dimmno);
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 
 	return 1;
 }

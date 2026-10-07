@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2015-2016, Linaro Limited
@@ -358,7 +355,7 @@ static inline bool tee_shm_is_registered(struct tee_shm *shm)
 	return shm && (shm->flags & TEE_SHM_REGISTER);
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 /**
  * tee_shm_register_fd() - Register shared memory from file descriptor
  *
@@ -369,7 +366,7 @@ static inline bool tee_shm_is_registered(struct tee_shm *shm)
  */
 struct tee_shm *tee_shm_register_fd(struct tee_context *ctx, int fd);
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 /**
  * tee_shm_free() - Free shared memory
  * @shm:	Handle to shared memory to free

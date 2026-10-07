@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Synology NAS Board GPIO Setup
  *
@@ -27,15 +24,15 @@
 #include <linux/slab.h>
 #include <linux/syno_gpio.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OF
 #include <linux/synolib.h>
 #include <linux/of.h>
 #include <linux/string.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OF */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_TRIGGER_DISK
 #include <linux/leds.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_TRIGGER_DISK */
 
 SYNO_GPIO syno_gpio = {
 	.fan_ctrl =NULL,
@@ -131,7 +128,7 @@ int SynoAllRedundantPowerDetected(void)
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SPINUP_GROUP
 extern int giSynoSpinupGroupDebug;
 void DBG_SpinupGroupListGpio(void)
 {
@@ -150,9 +147,9 @@ void DBG_SpinupGroupListGpio(void)
 	}
 }
 EXPORT_SYMBOL(DBG_SpinupGroupListGpio);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SPINUP_GROUP */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OF
 /**
  * syno_disk_gpio_pin_get - get the property content of internal slot
  * @diskPort [IN]:          internel slot number
@@ -375,9 +372,9 @@ END:
 	return iRet;
 }
 EXPORT_SYMBOL(syno_led_type_get);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OF */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_TRIGGER_DISK
 /**
  * syno_led_dev_get - get the szLedType led_type of target slot
  * @szSlotName [IN]:    slot name
@@ -428,4 +425,4 @@ END:
 	return led_cdev;
 }
 EXPORT_SYMBOL(syno_led_dev_get);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_TRIGGER_DISK */

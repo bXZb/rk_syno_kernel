@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Realtek Generic Power Controller
@@ -25,14 +22,14 @@
 #include "rtk_sram.h"
 #include "rtk_iso.h"
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 struct rtk_power_desc {
 	struct rtk_sram_desc   sram;
 	struct rtk_iso_desc    iso;
 	int                    no_suppliers;
 	int                    enable_clk_before_sram;
 };
-#else /* !MY_ABC_HERE */
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 struct rtk_power_desc {
 	const char             *name;
 	struct rtk_sram_desc   sram;
@@ -40,17 +37,17 @@ struct rtk_power_desc {
 	int                    no_suppliers;
 	int                    rst_only_reset;
 };
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
-#if defined(MY_ABC_HERE)
-#else /* !MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 #define SET_PWR(_name, _ofs, _iso_bit) \
 	.name = _name, \
 	.sram = { SET_RTK_SRAM_CONF(_ofs, 0xf), }, \
 	.iso = { SET_RTK_ISO_CONF(0xfd0, _iso_bit), }
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 struct rtk_power_data {
 	struct device                *dev;
 	struct generic_pm_domain     genpd;
@@ -64,7 +61,7 @@ struct rtk_power_data {
 	struct reset_controller_dev  rcdev;
 	int                          power_state_should_sync;
 };
-#else /* !MY_ABC_HERE */
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 struct rtk_power_data {
 	struct device                *dev;
 	struct generic_pm_domain     genpd;
@@ -75,9 +72,9 @@ struct rtk_power_data {
 	struct reset_control         *rstn_bist;
 	struct reset_controller_dev  rcdev;
 };
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 static int rtk_power_get_clocks(struct rtk_power_data *pd)
 {
 	struct device *dev = pd->dev;
@@ -143,7 +140,7 @@ static void rtk_power_pre_setup_suppliers(struct rtk_power_data *pd, int already
 
 	rtk_power_enable_clocks(pd);
 }
-#else /* !MY_ABC_HERE */
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 static struct rtk_power_desc desc_ve1_rtd1319 = {
 	SET_PWR("ve1", 0xb00, 0),
 	.rst_only_reset = 1
@@ -162,14 +159,14 @@ static struct rtk_power_desc desc_ve3_rtd1319 = {
 	SET_PWR("ve3", 0x290, 10),
 	.rst_only_reset = 1
 };
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 static void rtk_power_setup_suppliers(struct rtk_power_data *pd, int already_power_on)
 {
 	if (pd->desc->no_suppliers)
 		return;
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	if (!pd->desc->enable_clk_before_sram)
 		rtk_power_enable_clocks(pd);
 
@@ -177,7 +174,7 @@ static void rtk_power_setup_suppliers(struct rtk_power_data *pd, int already_pow
 	if (!already_power_on)
 		reset_control_reset(pd->rstn_auto);
 	reset_control_deassert(pd->rstn_bist);
-#else /* !MY_ABC_HERE */
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	clk_prepare_enable(pd->clk);
 
 	if (pd->desc->rst_only_reset) {
@@ -192,7 +189,7 @@ static void rtk_power_setup_suppliers(struct rtk_power_data *pd, int already_pow
 		reset_control_deassert(pd->rstn);
 		reset_control_deassert(pd->rstn_bist);
 	}
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 }
 
 static void rtk_power_shutdown_suppliers(struct rtk_power_data *pd)
@@ -200,7 +197,7 @@ static void rtk_power_shutdown_suppliers(struct rtk_power_data *pd)
 	if (pd->desc->no_suppliers)
 		return;
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	reset_control_assert(pd->rstn);
 	reset_control_assert(pd->rstn_bist);
 
@@ -212,14 +209,14 @@ static void rtk_power_shutdown_suppliers(struct rtk_power_data *pd)
 		return;
 
 	rtk_power_disable_clocks(pd);
-#else /* !MY_ABC_HERE */
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	if (!pd->desc->rst_only_reset)
 		reset_control_assert(pd->rstn);
 	clk_disable_unprepare(pd->clk);
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 static void rtk_power_post_shutdown_suppliers(struct rtk_power_data *pd)
 {
 	if (pd->desc->no_suppliers)
@@ -234,7 +231,7 @@ static void rtk_power_post_shutdown_suppliers(struct rtk_power_data *pd)
 
 	rtk_power_disable_clocks(pd);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 static int rtk_power_is_on(struct rtk_power_data *pd)
 {
@@ -246,15 +243,15 @@ static int rtk_power_genpd_power_on(struct generic_pm_domain *genpd)
 	struct rtk_power_data *pd = container_of(genpd, struct rtk_power_data, genpd);
 	int ret;
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	dev_dbg(pd->dev, "%s\n", __func__);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 	trace_rtk_pm_event(dev_name(pd->dev), "genpd_power_on");
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	rtk_power_pre_setup_suppliers(pd, 0);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 	ret = rtk_sram_power_on(pd->regmap, &pd->desc->sram);
 
@@ -270,9 +267,9 @@ static int rtk_power_genpd_power_off(struct generic_pm_domain *genpd)
 {
 	struct rtk_power_data *pd = container_of(genpd, struct rtk_power_data, genpd);
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	dev_dbg(pd->dev, "%s\n", __func__);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 	trace_rtk_pm_event(dev_name(pd->dev), "genpd_power_off");
 
@@ -282,15 +279,15 @@ static int rtk_power_genpd_power_off(struct generic_pm_domain *genpd)
 
 	rtk_sram_power_off(pd->regmap, &pd->desc->sram);
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	rtk_power_post_shutdown_suppliers(pd);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 	trace_rtk_pm_event(dev_name(pd->dev), "genpd_power_off_completed");
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	pd->power_state_should_sync = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	return 0;
 }
 
@@ -302,7 +299,7 @@ static int rtk_power_genpd_attach_dev(struct generic_pm_domain *genpd, struct de
 
 	pr_debug("%s: %s %s %s\n", genpd->name, __func__, dev_driver_string(dev), dev_name(dev));
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	/* sync power on device attached */
 	if (pd->power_state_should_sync) {
 		trace_rtk_pm_event(dev_name(pd->dev), "sync_power_state");
@@ -311,7 +308,7 @@ static int rtk_power_genpd_attach_dev(struct generic_pm_domain *genpd, struct de
 		pd->power_state_should_sync = 0;
 		trace_rtk_pm_event(dev_name(pd->dev), "sync_power_state_completed");
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	return 0;
 }
 
@@ -327,23 +324,23 @@ static void rtk_power_genpd_detach_dev(struct generic_pm_domain *genpd, struct d
 static int rtk_power_reset_reset(struct reset_controller_dev *rcdev, unsigned long idx)
 {
 	struct rtk_power_data *pd = container_of(rcdev, struct rtk_power_data, rcdev);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	int ret;
 
 	if (!pd->rstn && !pd->rstn_auto)
 		return -EINVAL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 	trace_rtk_pm_event(dev_name(pd->dev), "reset_reset");
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	ret = reset_control_reset(pd->rstn);
 	if (ret)
 		return ret;
 	return reset_control_reset(pd->rstn_auto);
-#else /* !MY_ABC_HERE */
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	return reset_control_reset(pd->rstn);
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 }
 
 static const struct reset_control_ops rtk_power_reset_ops = {
@@ -353,17 +350,17 @@ static const struct reset_control_ops rtk_power_reset_ops = {
 static int rtk_power_reset_of_xlate(struct reset_controller_dev *rcdev,
 				    const struct of_phandle_args *reset_spec)
 {
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	if (WARN_ON(reset_spec->args_count != 0))
 		return -EINVAL;
 
 	return 0;
-#else /* !MY_ABC_HERE */
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
         if (WARN_ON(reset_spec->args_count != 0))
                 return -EINVAL;
 
         return 0;
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 }
 
 
@@ -387,13 +384,13 @@ static int rtk_power_probe(struct platform_device *pdev)
 	}
 
 	pd->regmap = syscon_node_to_regmap(np->parent);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	if (IS_ERR(pd->regmap)) {
 		ret = PTR_ERR(pd->regmap);
-#else /* !MY_ABC_HERE */
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
         if (IS_ERR(pd->regmap)) {
                 ret = PTR_ERR(pd->regmap);
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 		dev_err(dev, "failed to get syscon regmap from parent: %d\n", ret);
 		return ret;
 	}
@@ -401,7 +398,7 @@ static int rtk_power_probe(struct platform_device *pdev)
 	if (pd->desc->no_suppliers)
 		goto skip_init_suppliers;
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	ret = rtk_power_get_clocks(pd);
 	if (ret)
 		return ret;
@@ -409,7 +406,7 @@ static int rtk_power_probe(struct platform_device *pdev)
 	ret = rtk_power_get_resets(pd);
 	if (ret)
 		return ret;
-#else /* !MY_ABC_HERE */
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	pd->clk = devm_clk_get(dev, NULL);
 	if (IS_ERR(pd->clk)) {
 		ret = PTR_ERR(pd->clk);
@@ -439,13 +436,13 @@ static int rtk_power_probe(struct platform_device *pdev)
 			dev_err(dev, "failed to get rstn_bist: %d\n", ret);
 		return ret;
 	}
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	if (pd->rstn || pd->rstn_auto) {
-#else /* !MY_ABC_HERE */
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	if (pd->rstn) {
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 		pd->rcdev.owner            = THIS_MODULE;
 		pd->rcdev.ops              = &rtk_power_reset_ops;
 		pd->rcdev.nr_resets        = 1,
@@ -462,24 +459,24 @@ static int rtk_power_probe(struct platform_device *pdev)
 
 skip_init_suppliers:
 
-#if defined(MY_ABC_HERE)
-#else /* !MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	trace_rtk_pm_event(dev_name(dev), "init");
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 	power_off = !rtk_power_is_on(pd);
 	if (!power_off)
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 		pd->power_state_should_sync = 1;
-#else /* !MY_ABC_HERE */
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 		rtk_power_setup_suppliers(pd, 1);
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	dev_set_drvdata(dev, pd);
-#else /* !MY_ABC_HERE */
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	trace_rtk_pm_event(dev_name(dev), "init_completed");
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 	pd->genpd.name       = dev_name(dev);
 	pd->genpd.power_on   = rtk_power_genpd_power_on;
@@ -500,7 +497,7 @@ skip_init_suppliers:
 	return ret;
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 /* RTD1295 */
 static struct rtk_power_desc desc_ve1_rtd1295 = {
 	.sram = { SET_RTK_SRAM_CONF_PWR5(0x380, 0x3a8, 0xf), },
@@ -598,10 +595,10 @@ static struct rtk_power_desc desc_hifi1_rtd1619b = {
 	.iso = { SET_RTK_ISO_CONF(0xfd0, 14), },
 	.no_suppliers = 1,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 static const struct of_device_id rtk_power_match[] = {
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
 	{ .compatible = "realtek,rtd1295-ve1-power",    .data = &desc_ve1_rtd1295, },
 	{ .compatible = "realtek,rtd1295-ve2-power",    .data = &desc_ve2_rtd1295, },
 	{ .compatible = "realtek,rtd1295-ve3-power",    .data = &desc_ve3_rtd1295, },
@@ -617,12 +614,12 @@ static const struct of_device_id rtk_power_match[] = {
 	{ .compatible = "realtek,rtd1619b-npu-power",   .data = &desc_npu_rtd1619b, },
 	{ .compatible = "realtek,rtd1619b-hifi0-power", .data = &desc_hifi0_rtd1619b, },
 	{ .compatible = "realtek,rtd1619b-hifi1-power", .data = &desc_hifi1_rtd1619b, },
-#else /* !MY_ABC_HERE */
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	{ .compatible = "realtek,gpu-power", .data = &desc_gpu, },
 	{ .compatible = "realtek,rtd1319-ve1-power", .data = &desc_ve1_rtd1319, },
 	{ .compatible = "realtek,rtd1319-ve2-power", .data = &desc_ve2_rtd1319, },
 	{ .compatible = "realtek,rtd1319-ve3-power", .data = &desc_ve3_rtd1319, },
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	{}
 };
 

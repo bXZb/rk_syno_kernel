@@ -67,8 +67,12 @@ static int dev_mce_log(struct notifier_block *nb, unsigned long val,
 unlock:
 	mutex_unlock(&mce_chrdev_read_mutex);
 
+#ifdef CONFIG_SYNO_MCELOG_RAWDATA_SHOW
+	// Do nothing, don't hide the raw MCE output
+#else /* CONFIG_SYNO_MCELOG_RAWDATA_SHOW */
 	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
 		mce->kflags |= MCE_HANDLED_MCELOG;
+#endif /* CONFIG_SYNO_MCELOG_RAWDATA_SHOW */
 
 	return NOTIFY_OK;
 }

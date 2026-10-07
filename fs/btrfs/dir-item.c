@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
@@ -100,7 +97,7 @@ int btrfs_insert_xattr_item(struct btrfs_trans_handle *trans,
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CASELESS_STAT
 static int btrfs_insert_dir_item_caseless(struct btrfs_trans_handle *trans,
 					  struct btrfs_root *root,
 					  const char *name, int name_len,
@@ -155,7 +152,7 @@ out_release:
 	btrfs_free_path(path);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 
 /*
  * insert a directory item in the tree, doing all the magic for
@@ -228,7 +225,7 @@ out_free:
 		return ret;
 	if (ret2)
 		return ret2;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CASELESS_STAT
 	if (btrfs_super_compat_flags(root->fs_info->super_copy) & BTRFS_FEATURE_COMPAT_SYNO_CASELESS) {
 		ret = btrfs_insert_dir_item_caseless(trans, root,
 						     name, name_len,
@@ -238,11 +235,11 @@ out_free:
 			return ret;
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CASELESS_STAT
 /*
  *  linear lookup for syno btrfs caseless stat
  */
@@ -292,7 +289,7 @@ static struct btrfs_dir_item *btrfs_syno_linear_lookup_dir_item_caseless(
 	}
 	return NULL;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 
 /*
  * lookup a directory item based on name.  'dir' is the objectid
@@ -309,12 +306,12 @@ struct btrfs_dir_item *btrfs_lookup_dir_item(struct btrfs_trans_handle *trans,
 	struct btrfs_key key;
 	int ins_len = mod < 0 ? -1 : 0;
 	int cow = mod != 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CASELESS_STAT
 	u32 hash;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 
 	key.objectid = dir;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CASELESS_STAT
 	if (path->search_caseless_key) {
 		ret = btrfs_upper_name_hash(name, name_len, &hash);
 		if (ret)
@@ -323,17 +320,17 @@ struct btrfs_dir_item *btrfs_lookup_dir_item(struct btrfs_trans_handle *trans,
 		key.type = BTRFS_DIR_ITEM_CASELESS_KEY;
 		goto search;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 
 	key.type = BTRFS_DIR_ITEM_KEY;
 
 	key.offset = btrfs_name_hash(name, name_len);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CASELESS_STAT
 search:
 	if (!path->search_caseless_key && path->caseless_lookup)
 		return btrfs_syno_linear_lookup_dir_item_caseless(root, path, dir, name, name_len);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 
 	ret = btrfs_search_slot(trans, root, &key, path, ins_len, cow);
 	if (ret < 0)
@@ -346,9 +343,9 @@ search:
 
 int btrfs_check_dir_item_collision(struct btrfs_root *root, u64 dir,
 				   const char *name, int name_len
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CASELESS_STAT
 				   , int check_dir_item
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 				   )
 {
 	int ret;
@@ -358,16 +355,16 @@ int btrfs_check_dir_item_collision(struct btrfs_root *root, u64 dir,
 	struct extent_buffer *leaf;
 	int slot;
 	struct btrfs_path *path;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CASELESS_STAT
 	int caseless = 1;
 	u32 hash;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 
 	path = btrfs_alloc_path();
 	if (!path)
 		return -ENOMEM;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CASELESS_STAT
 check_dir_item:
 	key.objectid = dir;
 	if (caseless) {
@@ -385,11 +382,11 @@ check_dir_item:
 		key.type = BTRFS_DIR_ITEM_KEY;
 		key.offset = btrfs_name_hash(name, name_len);
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 	key.objectid = dir;
 	key.type = BTRFS_DIR_ITEM_KEY;
 	key.offset = btrfs_name_hash(name, name_len);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 
 	ret = btrfs_search_slot(NULL, root, &key, path, 0, 0);
 
@@ -426,13 +423,13 @@ check_dir_item:
 		ret = 0;
 	}
 out:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CASELESS_STAT
 	if (!ret && check_dir_item && caseless) {
 		caseless = 0;
 		btrfs_release_path(path);
 		goto check_dir_item;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 	btrfs_free_path(path);
 	return ret;
 }
@@ -566,7 +563,7 @@ struct btrfs_dir_item *btrfs_match_dir_item_name(struct btrfs_fs_info *fs_info,
 			btrfs_dir_data_len(leaf, dir_item);
 		name_ptr = (unsigned long)(dir_item + 1);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CASELESS_STAT
 		if (path->caseless_lookup) {
 			if (0 == memcmp_caseless_extent_buffer(leaf, name,
 							       name_len,
@@ -574,7 +571,7 @@ struct btrfs_dir_item *btrfs_match_dir_item_name(struct btrfs_fs_info *fs_info,
 							       btrfs_dir_name_len(leaf, dir_item)))
 				return dir_item;
 		} else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 		if (btrfs_dir_name_len(leaf, dir_item) == name_len &&
 		    memcmp_extent_buffer(leaf, name, name_ptr, name_len) == 0)
 			return dir_item;
