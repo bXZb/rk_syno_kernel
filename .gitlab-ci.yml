@@ -1,0 +1,276 @@
+stages:
+    - check
+    - build
+    - kernel-swap
+    - test
+
+default:
+    before_script:
+        - bash SynoBuildConf/gitlab-ci config
+
+.docker_runner:
+    image:
+        name: $CI_REGISTRY_IMAGE/kernel-builder
+        entrypoint: [""]
+    tags:
+        - instance-runner
+
+.merge_request:
+    except:
+        - schedules
+        - /^i\/.*$/
+        - /^wp\/.*$/
+
+#check-sparse:
+#    stage: check
+#    extends:
+#        - .docker_runner
+#    script:
+#        - bash SynoBuildConf/gitlab-ci check-sparse
+
+check-syno-macro:
+    stage: check
+    extends:
+        - .docker_runner
+    script:
+        - bash SynoBuildConf/gitlab-ci check-syno-macro
+
+check-syno-script:
+    stage: check
+    extends:
+        - .docker_runner
+    script:
+        - bash SynoBuildConf/gitlab-ci check-syno-script
+
+check-patch:
+    stage: check
+    extends:
+        - .docker_runner
+    script:
+        - bash SynoBuildConf/gitlab-ci check-patch
+    allow_failure: true
+
+check-clang-format-diff:
+    stage: check
+    extends:
+        - .docker_runner
+    script:
+        - bash SynoBuildConf/gitlab-ci check-clang-format-diff
+    allow_failure: true
+
+build-image-tools:
+    stage: build
+    extends:
+        - .docker_runner
+    script:
+        - bash SynoBuildConf/gitlab-ci build-btf-image
+        - bash SynoBuildConf/gitlab-ci build-tools
+
+build-image:rbd-test:
+    stage: build
+    only:
+        - DSM7-0-hci
+    tags:
+        - soit-rbd-quick
+    script:
+        - cp -f "synology/synoconfigs/soit-ci-config" .config
+        - make olddefconfig
+        - bash SynoBuildConf/gitlab-ci build-ci-image
+        - make bindeb-pkg -j $(nproc)
+        - cp ../*.deb .
+    artifacts:
+        paths:
+            - ./*.deb
+        expire_in: 1 week
+
+xfstests-quick:
+    stage: test
+    extends:
+        - .merge_request
+    tags:
+        - kvm
+    script:
+        - bash SynoBuildConf/gitlab-ci build-ci-image
+        - make bindeb-pkg -j $(nproc)
+        - sudo rm -r /root/linux-deb
+        - sudo mkdir -p /root/linux-deb
+        - sudo cp ../*.deb /root/linux-deb
+        - sudo bash /root/kvm-xfstests/script/snap-run-vm.sh
+        - sudo bash /root/kvm-xfstests/script/patch-vm.sh
+        - sudo bash /root/kvm-xfstests/script/test-btrfs-quick.sh
+        - sudo bash /root/kvm-xfstests/script/finish-test.sh
+    artifacts:
+        when: always
+        reports:
+            junit: xfstests-report.xml
+
+xfstests-full:
+    stage: test
+    only:
+        - schedules
+    tags:
+        - kvm
+    script:
+        - bash SynoBuildConf/gitlab-ci build-ci-image
+        - make bindeb-pkg -j $(nproc)
+        - sudo rm -r /root/linux-deb
+        - sudo mkdir -p /root/linux-deb
+        - sudo cp ../*.deb /root/linux-deb
+        - sudo bash /root/kvm-xfstests/script/snap-run-vm.sh
+        - sudo bash /root/kvm-xfstests/script/patch-vm.sh
+        - sudo bash /root/kvm-xfstests/script/test-all.sh
+        - sudo bash /root/kvm-xfstests/script/finish-test.sh
+    timeout: 36 hours
+    artifacts:
+        when: always
+        reports:
+            junit: [xfstests-report-btrfs-all.xml, xfstests-report-ext4-all.xml]
+
+
+.vm-kernel-swap: &vm-kernel-swap
+        - sudo bash /root/ci_script/env_clean.sh
+        - sudo bash /root/ci_script/env_kernel.sh
+        - sudo screen -dm bash -c 'sleep 5; shutdown -r now;'
+
+rbd-kernel-swap-quick:
+    stage: kernel-swap
+    needs: ["build-image:rbd-test"]
+    only:
+        - DSM7-0-hci
+    except:
+        - schedules
+    tags:
+        - soit-rbd-quick
+    script:
+        - *vm-kernel-swap
+    dependencies:
+        - build-image:rbd-test
+
+rbd-kernel-swap-full:
+    stage: kernel-swap
+    needs: ["build-image:rbd-test"]
+    only:
+        variables:
+            - $CI_PIPELINE_SOURCE == "schedule"
+        refs:
+            - DSM7-0-hci
+    tags:
+        - soit-rbd-full
+    script:
+        - *vm-kernel-swap
+    dependencies:
+        - build-image:rbd-test
+
+rbd-xfstests-quick:
+    stage: test
+    needs: ["rbd-kernel-swap-quick"]
+    only:
+        - DSM7-0-hci
+    except:
+        - schedules
+    tags:
+        - soit-rbd-quick
+    script:
+        - ci_branch=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-$CI_COMMIT_BRANCH}
+        - sudo bash /root/ci_script/test_rbd_xfstests_btrfs.sh quick $ci_branch
+        - sudo cp /root/xfstests/results/btrfs_result.xml .
+    dependencies: []
+    artifacts:
+        when: always
+        reports:
+            junit: ["btrfs_result.xml"]
+
+rbd-xfstests-full:
+    stage: test
+    needs: ["rbd-kernel-swap-full"]
+    only:
+        variables:
+            - $CI_PIPELINE_SOURCE == "schedule"
+        refs:
+            - DSM7-0-hci
+    tags:
+        - soit-rbd-full
+    script:
+        - ci_branch=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-$CI_COMMIT_BRANCH}
+        - sudo bash /root/ci_script/test_rbd_xfstests_btrfs.sh full $ci_branch
+        - sudo bash /root/ci_script/test_rbd_xfstests_ext4.sh $ci_branch
+        - sudo cp /root/xfstests/results/btrfs_result.xml .
+        - sudo cp /root/xfstests/results/ext4_result.xml .
+    dependencies: []
+    timeout: 36 hours
+    artifacts:
+        when: always
+        reports:
+            junit: ["btrfs_result.xml", "ext4_result.xml"]
+
+
+rbd-blktests:
+    stage: test
+    needs: ["rbd-kernel-swap-quick"]
+    only:
+        - DSM7-0-hci
+    except:
+        - schedules
+    tags:
+        - soit-rbd-quick
+    script:
+        - ci_branch=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-$CI_COMMIT_BRANCH}
+        - sudo bash /root/ci_script/test_rbd_blktests.sh $ci_branch
+    dependencies: []
+
+rbd-consistency-check:
+    stage: test
+    needs: ["rbd-kernel-swap-quick"]
+    only:
+        - DSM7-0-hci
+    except:
+        - schedules
+    tags:
+        - soit-rbd-quick
+    script:
+        - ci_branch=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-$CI_COMMIT_BRANCH}
+        - sudo bash /root/ci_script/test_rbd_consistency.sh $ci_branch
+    dependencies: []
+
+cephfs-kernel-swap:
+    stage: kernel-swap
+    needs: ["build-image:rbd-test"]
+    only:
+        - DSM7-0-hci
+    tags:
+        - soit-cephfs
+    script:
+        - *vm-kernel-swap
+    dependencies:
+        - build-image:rbd-test
+
+cephfs-xfstests-full:
+    stage: test
+    needs: ["cephfs-kernel-swap"]
+    only:
+        variables:
+            - $CI_PIPELINE_SOURCE == "schedule"
+        refs:
+            - DSM7-0-hci
+    tags:
+        - soit-cephfs
+    script:
+        - ci_branch=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-$CI_COMMIT_BRANCH}
+        - sudo bash /root/ci_script/test_cephfs_xfstests.sh full $ci_branch
+    dependencies: []
+    timeout: 36 hours
+
+cephfs-xfstests-quick:
+    stage: test
+    needs: ["cephfs-kernel-swap"]
+    only:
+        - DSM7-0-hci
+    except:
+        - schedules
+    tags:
+        - soit-cephfs
+    script:
+        - ci_branch=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-$CI_COMMIT_BRANCH}
+        - sudo bash /root/ci_script/test_cephfs_xfstests.sh quick $ci_branch
+    dependencies: []
+
