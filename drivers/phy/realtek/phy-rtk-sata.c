@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Realtek SATA3 AHCI Controller PHY Driver
@@ -574,11 +571,11 @@ static int rtk_sata_phy_init(struct phy *phy)
 		write_mdio_reg(base, PHY_ADDR_ALL, 0x26, 0x040e);
 		write_mdio_reg(base, PHY_ADDR_SATA1, 0x1, 0xe055);
 		write_mdio_reg(base, PHY_ADDR_SATA2, 0x1, 0xe048);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 		write_mdio_reg(base, PHY_ADDR_SATA3, 0x1, 0x1846);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_RTD1619B */
 		write_mdio_reg(base, PHY_ADDR_SATA3, 0x1, 0xe046);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 		write_mdio_reg(base, PHY_ADDR_ALL, 0x5, 0x336a);
 		write_mdio_reg(base, PHY_ADDR_ALL, 0x9, 0x721c);
 		write_mdio_reg(base, PHY_ADDR_ALL, 0xb, 0x9904);
@@ -633,11 +630,11 @@ static int rtk_sata_phy_init(struct phy *phy)
 			reg = read_mdio_reg(base, i, 0x1a);
 			dev_info(priv->dev, "port%d gen%d tx emphasis = 0x%x\n",
 				port->index, i+1, reg);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 			reg = read_mdio_reg(base, i, 0x1);
 			dev_info(priv->dev, "port%d gen%d leq default = 0x%x\n",
 				port->index, i+1, reg);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 		}
 	}
 

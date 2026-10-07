@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *	PF_INET6 socket protocol family
@@ -360,7 +357,7 @@ static int __inet6_bind(struct sock *sk, struct sockaddr *uaddr, int addr_len,
 					sk->sk_bound_dev_if = addr->sin6_scope_id;
 				}
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_IPV6_LINKLOCAL)
 				if (__ipv6_addr_is_link_local(addr_type) && !sk->sk_bound_dev_if) {
 					for_each_netdev(net, dev) {
 						struct inet6_ifaddr *ifp = ipv6_get_ifaddr(net, &addr->sin6_addr, dev, 1);
@@ -376,7 +373,7 @@ static int __inet6_bind(struct sock *sk, struct sockaddr *uaddr, int addr_len,
 						}
 					}
 				}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_IPV6_LINKLOCAL */
 
 				/* Binding to link-local address requires an interface */
 				if (!sk->sk_bound_dev_if) {

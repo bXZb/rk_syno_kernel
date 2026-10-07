@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2014 Christoph Hellwig.
@@ -175,7 +172,7 @@ TRACE_EVENT(nfsd_export_update,
 	)
 );
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 DECLARE_EVENT_CLASS(syno_nfsd_io_class,
 	TP_PROTO(struct svc_rqst *rqstp,
 		 struct svc_fh *fhp,
@@ -222,7 +219,7 @@ DEFINE_EVENT(syno_nfsd_io_class, syno_nfsd_##name,	\
 
 DEFINE_SYNO_NFSD_IO_EVENT(read_io_done);
 DEFINE_SYNO_NFSD_IO_EVENT(write_io_done);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 DECLARE_EVENT_CLASS(nfsd_io_class,
 	TP_PROTO(struct svc_rqst *rqstp,
@@ -800,7 +797,7 @@ TRACE_EVENT(nfsd_cb_done,
 		__entry->status)
 );
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_TRACE
 #include "xdr4.h"
 
 TRACE_EVENT(syno_nfsd4_dispatch,
@@ -830,7 +827,7 @@ TRACE_EVENT(syno_nfsd_dispatch,
 	TP_printk("dispatch %u",
 		__entry->rq_proc)
 );
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_TRACE */
 
 
 #endif /* _NFSD_TRACE_H */

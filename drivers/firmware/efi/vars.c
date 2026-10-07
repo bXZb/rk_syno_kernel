@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Originally from efivars.c
@@ -396,12 +393,12 @@ static void dup_variable_bug(efi_char16_t *str16, efi_guid_t *vendor_guid,
 	kfree(str8);
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_BIOS_WARNING_FLAGS
 //Flag "SetupModified" means the bios settings may have been modified.
 static efi_char16_t setup_modified_name[13] =
 	{'S','e','t','u','p','M','o','d','i','f','i','e','d'};
 
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BIOS_WARNING_FLAGS */
 
 /**
  * efivar_init - build the initial list of EFI variables
@@ -465,11 +462,11 @@ int efivar_init(int (*func)(efi_char16_t *, efi_guid_t, unsigned long, void *),
 						 variable_name_size);
 				status = EFI_NOT_FOUND;
 			} else {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_BIOS_WARNING_FLAGS
 				if (!memcmp(variable_name, setup_modified_name, sizeof(setup_modified_name))) {
 					printk(KERN_WARNING FW_BUG "SetupModified flag is set.\n");
 				}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BIOS_WARNING_FLAGS */
 				err = func(variable_name, vendor_guid,
 					   variable_name_size, data);
 				if (err)

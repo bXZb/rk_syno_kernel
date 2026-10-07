@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
   FUSE: Filesystem in Userspace
   Copyright (C) 2001-2008  Miklos Szeredi <miklos@szeredi.hu>
@@ -709,9 +706,9 @@ void fuse_conn_init(struct fuse_conn *fc, struct fuse_mount *fm,
 	list_add(&fm->fc_entry, &fc->mounts);
 	fm->fc = fc;
 	refcount_set(&fm->count, 1);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_ARCHIVE_VERSION
 	fm->syno_state = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_ARCHIVE_VERSION */
 }
 EXPORT_SYMBOL_GPL(fuse_conn_init);
 
@@ -906,7 +903,7 @@ static struct dentry *fuse_get_parent(struct dentry *child)
 	return parent;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_ARCHIVE_VERSION
 static int __fuse_syno_get_sb_archive_version(
 		struct super_block *sb, u32 *archive_version)
 {
@@ -959,7 +956,7 @@ static int fuse_syno_set_sb_archive_version(
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_ARCHIVE_VERSION */
 
 static const struct export_operations fuse_export_operations = {
 	.fh_to_dentry	= fuse_fh_to_dentry,
@@ -978,10 +975,10 @@ static const struct super_operations fuse_super_operations = {
 	.umount_begin	= fuse_umount_begin,
 	.statfs		= fuse_statfs,
 	.show_options	= fuse_show_options,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_ARCHIVE_VERSION
 	.syno_get_sb_archive_version = fuse_syno_get_sb_archive_version,
 	.syno_set_sb_archive_version = fuse_syno_set_sb_archive_version,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_ARCHIVE_VERSION */
 };
 
 static void sanitize_global_limit(unsigned *limit)

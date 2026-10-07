@@ -469,6 +469,10 @@ struct gpio_chip {
 	int (*of_xlate)(struct gpio_chip *gc,
 			const struct of_phandle_args *gpiospec, u32 *flags);
 #endif /* CONFIG_OF_GPIO */
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+	void (*syno_set_mux)(struct gpio_chip *gc, unsigned int offset, int value);
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
 };
 
 extern const char *gpiochip_is_requested(struct gpio_chip *gc,

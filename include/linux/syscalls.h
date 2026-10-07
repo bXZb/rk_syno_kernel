@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * syscalls.h - Linux syscall interfaces (non-arch-specific)
@@ -72,11 +69,11 @@ struct io_uring_params;
 struct clone_args;
 struct open_how;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_STAT
 struct SYNOSTAT;
 #else
 struct SYNOSTAT {};
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_STAT */
 
 #include <linux/types.h>
 #include <linux/aio_abi.h>
@@ -1042,7 +1039,7 @@ asmlinkage long sys_pidfd_send_signal(int pidfd, int sig,
 				       unsigned int flags);
 asmlinkage long sys_pidfd_getfd(int pidfd, int fd, unsigned int flags);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SYSTEM_CALL
 /* 802 */ asmlinkage long sys_syno_utime(const char __user *filename, struct __kernel_timespec __user *ctime);
 /* 802 */ asmlinkage long sys_syno_utime32(const char __user *filename, struct old_timespec32 __user *ctime);
 /* 803 */ asmlinkage long sys_syno_archive_bit(const char __user *filename, int cmd);
@@ -1063,7 +1060,7 @@ asmlinkage long sys_pidfd_getfd(int pidfd, int fd, unsigned int flags);
 /* 823 */ asmlinkage long sys_syno_notify_add_watch(int synotify_fd, const char  __user *pathname, u64 mask);
 /* 824 */ asmlinkage long sys_syno_notify_remove_watch(int synotify_fd, const char  __user *pathname, u64 mask);
 /* 827 */ asmlinkage long sys_syno_archive_overwrite(unsigned int fd, unsigned int flags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SYSTEM_CALL */
 
 /*
  * Architecture-specific system calls

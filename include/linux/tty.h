@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_TTY_H
 #define _LINUX_TTY_H
@@ -95,6 +92,9 @@ struct tty_bufhead {
 	atomic_t	   mem_used;    /* In-use buffers excluding free list */
 	int		   mem_limit;
 	struct tty_buffer *tail;	/* Active buffer */
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+	struct work_struct	syno_microp_cleanup;
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 };
 /*
  * When a break, frame error, or parity error happens, these codes are
@@ -255,6 +255,10 @@ struct tty_port {
 						   set to size of fifo */
 	struct kref		kref;		/* Ref counter */
 	void 			*client_data;
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+	void			(*syno_microp_notify)(struct tty_port *port);
+	bool			syno_microp_bypass;	/* bypass microP v2 kfifo when true */
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 };
 
 /* tty_port::iflags bits -- use atomic bit ops */
@@ -410,10 +414,11 @@ static inline bool tty_throttled(struct tty_struct *tty)
 
 #ifdef CONFIG_TTY
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_TTY_MICROP_CTRL
 extern int syno_ttys_write(const int index, const char* szBuf);
+extern int syno_ttys_write_raw(const int index, char* szBuf, int size);
 extern void syno_uart_write(struct tty_port *port, char *buf, int size);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_TTY_MICROP_CTRL */
 
 extern void tty_kref_put(struct tty_struct *tty);
 extern struct pid *tty_get_pgrp(struct tty_struct *tty);

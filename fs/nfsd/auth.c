@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (C) 1995, 1996 Olaf Kirch <okir@monad.swb.de> */
 
@@ -45,7 +42,7 @@ int nfsd_setuser(struct svc_rqst *rqstp, struct svc_export *exp)
 	if (flags & NFSEXP_ALLSQUASH) {
 		new->fsuid = exp->ex_anon_uid;
 		new->fsgid = exp->ex_anon_gid;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_SQUASH_TO_ADMIN
 		/*
 		 * When squash root/all to admin, the ex_anon_uid and ex_anon_gid are 1024/100 (admin/users).
 		 * However, the rw permission of shared folder is only for administrators group. So the
@@ -66,18 +63,18 @@ int nfsd_setuser(struct svc_rqst *rqstp, struct svc_export *exp)
 			if (!gi)
 				goto oom;
 		}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFSD_SQUASH_TO_ADMIN */
 		gi = groups_alloc(0);
 		if (!gi)
 			goto oom;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_SQUASH_TO_ADMIN */
 	} else if (flags & NFSEXP_ROOTSQUASH) {
 		if (uid_eq(new->fsuid, GLOBAL_ROOT_UID))
 			new->fsuid = exp->ex_anon_uid;
 		if (gid_eq(new->fsgid, GLOBAL_ROOT_GID))
 			new->fsgid = exp->ex_anon_gid;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_SQUASH_TO_ADMIN
 		if (uid_eq(new->fsuid, KUIDT_INIT(1024))) {
 			gi = groups_alloc(rqgi->ngroups + 1);
 			if (!gi)
@@ -88,11 +85,11 @@ int nfsd_setuser(struct svc_rqst *rqstp, struct svc_export *exp)
 			if (!gi)
 				goto oom;
 		}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFSD_SQUASH_TO_ADMIN */
 		gi = groups_alloc(rqgi->ngroups);
 		if (!gi)
 			goto oom;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_SQUASH_TO_ADMIN */
 
 		for (i = 0; i < rqgi->ngroups; i++) {
 			if (gid_eq(GLOBAL_ROOT_GID, rqgi->gid[i]))

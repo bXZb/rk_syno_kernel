@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /**
  * trace.h - DesignWare USB3 DRD Controller Trace Support
@@ -11,11 +8,11 @@
  */
 
 #undef TRACE_SYSTEM
-#if defined(MY_ABC_HERE) && defined(DRIVERS_USB_DWC3_RTK_TRACE)
+#if defined(CONFIG_SYNO_RTD1619B) && defined(DRIVERS_USB_DWC3_RTK_TRACE)
 #define TRACE_SYSTEM dwc3_rtk
-#else /* define(MY_ABC_HERE) && defined(DRIVERS_USB_DWC3_RTK_TRACE) */
+#else /* define(CONFIG_SYNO_RTD1619B) && defined(DRIVERS_USB_DWC3_RTK_TRACE) */
 #define TRACE_SYSTEM dwc3
-#endif /* define(MY_ABC_HERE) && defined(DRIVERS_USB_DWC3_RTK_TRACE) */
+#endif /* define(CONFIG_SYNO_RTD1619B) && defined(DRIVERS_USB_DWC3_RTK_TRACE) */
 
 #if !defined(__DWC3_TRACE_H) || defined(TRACE_HEADER_MULTI_READ)
 #define __DWC3_TRACE_H

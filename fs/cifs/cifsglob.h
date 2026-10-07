@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  *   fs/cifs/cifsglob.h
  *
@@ -676,11 +673,11 @@ struct TCP_Server_Info {
 	char server_RFC1001_name[RFC1001_NAME_LEN_WITH_NULL];
 	struct smb_version_operations	*ops;
 	struct smb_version_values	*vals;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_SMB_OPS
 	struct smb_version_operations	operations;
 	/* values: for synoops; vals is changeable when vers=syno. it is for fit server max protocol */
 	struct smb_version_values	*values;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_SMB_OPS */
 	enum statusEnum tcpStatus; /* what we think the status is */
 	char *hostname; /* hostname portion of UNC string */
 	struct socket *ssocket;
@@ -1958,9 +1955,9 @@ extern bool lookupCacheEnabled;
 extern unsigned int global_secflags;	/* if on, session setup sent
 				with more secure ntlmssp2 challenge/resp */
 extern unsigned int sign_CIFS_PDUs;  /* enable smb packet signing */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_MOUNT_CASELESS
 GLOBAL_EXTERN unsigned int SynoPosixSemanticsEnabled;/*enable POSIX SEMANTICS*/
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_MOUNT_CASELESS */
 extern bool enable_gcm_256; /* allow optional negotiate of strongest signing (aes-gcm-256) */
 extern bool require_gcm_256; /* require use of strongest signing (aes-gcm-256) */
 extern bool linuxExtEnabled;/*enable Linux/Unix CIFS extensions*/
@@ -1969,9 +1966,9 @@ extern unsigned int cifs_min_rcv;    /* min size of big ntwrk buf pool */
 extern unsigned int cifs_min_small;  /* min size of small buf pool */
 extern unsigned int cifs_max_pending; /* MAX requests at once to server*/
 extern bool disable_legacy_dialects;  /* forbid vers=1.0 and vers=2.0 mounts */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_RECONNECT
 GLOBAL_EXTERN unsigned short need_nego_timeout;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_RECONNECT */
 
 GLOBAL_EXTERN struct rb_root uidtree;
 GLOBAL_EXTERN struct rb_root gidtree;
@@ -1998,11 +1995,11 @@ extern mempool_t *cifs_mid_poolp;
 #define SMB1_VERSION_STRING	"1.0"
 extern struct smb_version_operations smb1_operations;
 extern struct smb_version_values smb1_values;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_SMB_OPS
 #define SYNO_VERSION_STRING	"syno"
 extern struct smb_version_operations synocifs_operations;
 extern struct smb_version_values synocifs_values;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_SMB_OPS */
 #define SMB20_VERSION_STRING	"2.0"
 extern struct smb_version_operations smb20_operations;
 extern struct smb_version_values smb20_values;

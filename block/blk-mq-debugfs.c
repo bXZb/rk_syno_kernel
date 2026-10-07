@@ -856,10 +856,13 @@ void blk_mq_debugfs_register(struct request_queue *q)
 	}
 }
 
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+#else /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 void blk_mq_debugfs_unregister(struct request_queue *q)
 {
 	q->sched_debugfs_dir = NULL;
 }
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 
 static void blk_mq_debugfs_register_ctx(struct blk_mq_hw_ctx *hctx,
 					struct blk_mq_ctx *ctx)
@@ -891,6 +894,10 @@ void blk_mq_debugfs_register_hctx(struct request_queue *q,
 
 void blk_mq_debugfs_unregister_hctx(struct blk_mq_hw_ctx *hctx)
 {
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+	if (!hctx || !hctx->queue->debugfs_dir)
+		return;
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 	debugfs_remove_recursive(hctx->debugfs_dir);
 	hctx->sched_debugfs_dir = NULL;
 	hctx->debugfs_dir = NULL;
@@ -963,16 +970,29 @@ void blk_mq_debugfs_register_rqos(struct rq_qos *rqos)
 	debugfs_create_files(rqos->debugfs_dir, rqos, rqos->ops->debugfs_attrs);
 }
 
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+#else /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 void blk_mq_debugfs_unregister_queue_rqos(struct request_queue *q)
 {
 	debugfs_remove_recursive(q->rqos_debugfs_dir);
 	q->rqos_debugfs_dir = NULL;
 }
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 
 void blk_mq_debugfs_register_sched_hctx(struct request_queue *q,
 					struct blk_mq_hw_ctx *hctx)
 {
 	struct elevator_type *e = q->elevator->type;
+
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+	/*
+	 * If the parent debugfs directory has not been created yet, return;
+	 * We will be called again later on with appropriate parent debugfs
+	 * directory from blk_register_queue()
+	 */
+	if (!hctx->debugfs_dir)
+		return;
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 
 	if (!e->hctx_debugfs_attrs)
 		return;
@@ -985,6 +1005,15 @@ void blk_mq_debugfs_register_sched_hctx(struct request_queue *q,
 
 void blk_mq_debugfs_unregister_sched_hctx(struct blk_mq_hw_ctx *hctx)
 {
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+	struct dentry *sched_debugfs_dir;
+
+	// make sure only one thread can remove the debugfs dir
+	sched_debugfs_dir = xchg(&hctx->sched_debugfs_dir, NULL);
+	if (sched_debugfs_dir)
+		debugfs_remove_recursive(sched_debugfs_dir);
+#else /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 	debugfs_remove_recursive(hctx->sched_debugfs_dir);
 	hctx->sched_debugfs_dir = NULL;
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 }

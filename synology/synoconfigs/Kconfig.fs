@@ -690,6 +690,11 @@ config SYNO_BTRFS_FILE_EXTENT_SYNO_FLAG
 	default n
 	depends on BTRFS_FS && SYNO_BTRFS_REMOVE_FLAG_TREE_CHECK
 
+config SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+	bool "Synology btrfs deduped zero accounting"
+	default n
+	depends on BTRFS_FS && SYNO_BTRFS_SYNO_QUOTA && SYNO_BTRFS_FILE_EXTENT_SYNO_FLAG
+
 config SYNO_BTRFS_DEDUPE
 	bool "Synology btrfs dedupe"
 	default n
@@ -925,6 +930,31 @@ config SYNO_BTRFS_DELAYED_INODE_THROTTLE
 	default y
 	depends on BTRFS_FS
 
+config SYNO_BTRFS_DEFRAG_COMPRESS
+	bool "Btrfs defrag with compression enhance"
+	default y
+	depends on SYNO_BTRFS_RECLAIM_SPACE
+
+config SYNO_BTRFS_READA_FORWARD_ALL_LEAVES_MODE
+	bool "add readahead forward all leaves mode for search"
+	default y
+	depends on BTRFS_FS
+
+config SYNO_BTRFS_SEND_CROSS_EXTENT_READ_AHEAD
+	bool "btrfs send cross extent read ahead mechanism"
+	default y
+	depends on BTRFS_FS
+
+config SYNO_BTRFS_DECOUPLE_NODATACOW_AND_NODATASUM
+	bool "decouple nodatacow and nodatasum"
+	default y
+	depends on BTRFS_FS
+
+config SYNO_BTRFS_CSUM_OVERLAP_WORKAROUND
+	bool "skip log tree csum overlap checking"
+	default y
+	depends on BTRFS_FS
+
 endmenu #BTRFS
 
 menu "ECRYPT"
@@ -1013,6 +1043,11 @@ config SYNO_ECRYPTFS_REDUCE_MEMCPY
 	bool "Reduce one memcpy on ecryptfs for performance."
 	default y
 	depends on ECRYPT_FS && BTRFS_FS && SYNO_FS_AGGREGATE_RECVFILE
+
+config SYNO_ECRYPTFS_SKIP_KERNEL_WRITE_CHECK
+	bool "Skip security check during kernel_write."
+	default y
+	depends on ECRYPT_FS
 
 config SYNO_ECRYPTFS_DISABLE_READAHEAD
 	bool "disable readahead with bdi"
@@ -1125,6 +1160,11 @@ config SYNO_NFSD_TRACE
 
 config SYNO_NFSD_POOL_HINT
 	bool "Hint RPC service to use the thread pool on the same node with the export path."
+	default y
+	depends on NFSD
+
+config SYNO_KERBEROS_FIX_UPCALL_TIMEOUT
+	bool "Fix nfs kerberos mount failed due to upcall timeout"
 	default y
 	depends on NFSD
 

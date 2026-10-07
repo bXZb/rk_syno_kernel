@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  Block device elevator/IO-scheduler.
@@ -627,11 +624,11 @@ static struct elevator_type *elevator_get_default(struct request_queue *q)
 	if (q->nr_hw_queues != 1)
 		return NULL;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_IOSCHED_DEFAULT_BFQ
 	return elevator_get(q, "bfq", false);
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_IOSCHED_DEFAULT_BFQ */
 	return elevator_get(q, "mq-deadline", false);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_IOSCHED_DEFAULT_BFQ */
 }
 
 /*
@@ -758,6 +755,21 @@ static int __elevator_change(struct request_queue *q, const char *name)
 
 	return elevator_switch(q, e);
 }
+
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME
+int elevator_change(struct request_queue *q, const char *name)
+{
+	int ret;
+
+	/* Protect q->elevator from elevator_init() */
+	mutex_lock(&q->sysfs_lock);
+	ret = __elevator_change(q, name);
+	mutex_unlock(&q->sysfs_lock);
+
+	return ret;
+}
+EXPORT_SYMBOL(elevator_change);
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME */
 
 ssize_t elv_iosched_store(struct request_queue *q, const char *name,
 			  size_t count)

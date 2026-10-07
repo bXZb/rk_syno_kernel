@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * sensor.c - Realtek generic thermal sensor driver
@@ -22,9 +19,9 @@
 #include "../thermal_core.h"
 #include "sensor.h"
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 static struct thermal_sensor_device* g_syno_tdev = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 
 static inline int thermal_sensor_hw_init(struct thermal_sensor_device *tdev)
 {
@@ -122,9 +119,9 @@ static int thermal_sensor_device_add(struct device *dev,
 		thermal_sensor_hw_exit(tdev);
 		return PTR_ERR(tdev->tz);
 	}
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 	g_syno_tdev = tdev;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 
 	return 0;
 }
@@ -155,7 +152,7 @@ static int thermal_sensor_get_temp(void *data, int *temp)
 	return ret;
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 int syno_rtd_get_temperature(void)
 {
 	int ret = -1;
@@ -174,7 +171,7 @@ out:
 	return ret;
 }
 EXPORT_SYMBOL(syno_rtd_get_temperature);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 
 static int thermal_sensor_get_trend(void *data, int i,
 				    enum thermal_trend *trend)

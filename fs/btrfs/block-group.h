@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 
 #ifndef BTRFS_BLOCK_GROUP_H
@@ -191,7 +188,7 @@ struct btrfs_block_group {
 	/* Record locked full stripes for RAID5/6 block group */
 	struct btrfs_full_stripe_locks_tree full_stripe_locks_root;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	struct {
 		struct btrfs_space_info *space_info;
 		/* protect with space_info->syno_allocator.lock */
@@ -207,7 +204,7 @@ struct btrfs_block_group {
 		bool initialized;
 		atomic_t refs;
 	} syno_allocator;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 };
 
 static inline u64 btrfs_block_group_end(struct btrfs_block_group *block_group)
@@ -324,11 +321,11 @@ int btrfs_rmap_block(struct btrfs_fs_info *fs_info, u64 chunk_start,
 		     u64 physical, u64 **logical, int *naddrs, int *stripe_len);
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA
 int btrfs_reserve_log_tree_bg(struct btrfs_root *root,
 			      u64 *rsv_start, u64 *rsv_size);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA */
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE
 int btrfs_clear_block_group_cache_tree(struct btrfs_fs_info *fs_info);
 int btrfs_create_block_group_cache_tree(struct btrfs_fs_info *fs_info);
 int btrfs_check_syno_block_group_cache_tree(struct btrfs_fs_info *fs_info);
@@ -338,7 +335,7 @@ static inline bool btrfs_syno_block_group_cache_tree_enabled(struct btrfs_fs_inf
 		return false;
 	return true;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE */
 
 bool btrfs_inc_block_group_swap_extents(struct btrfs_block_group *bg);
 void btrfs_dec_block_group_swap_extents(struct btrfs_block_group *bg, int amount);

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Persistent Storage - platform driver interface parts.
@@ -394,9 +391,9 @@ static void pstore_dump(struct kmsg_dumper *dumper,
 	unsigned int	part = 1;
 	unsigned long	flags = 0;
 	int		ret;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PSTORE
 	struct timespec64 boot_time;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PSTORE */
 
 	why = kmsg_dump_reason_str(reason);
 
@@ -412,9 +409,9 @@ static void pstore_dump(struct kmsg_dumper *dumper,
 
 	oopscount++;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PSTORE
 	getboottime64(&boot_time);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PSTORE */
 
 	while (total < kmsg_bytes) {
 		char *dst;
@@ -440,13 +437,13 @@ static void pstore_dump(struct kmsg_dumper *dumper,
 		}
 
 		/* Write dump header. */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PSTORE
 		header_size = snprintf(dst, dst_size, "%s#%d Part%u, btime %d\n", why,
 				 oopscount, part, (int)boot_time.tv_sec);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_PSTORE */
 		header_size = snprintf(dst, dst_size, "%s#%d Part%u\n", why,
 				 oopscount, part);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PSTORE */
 		dst_size -= header_size;
 
 		/* Write dump contents. */

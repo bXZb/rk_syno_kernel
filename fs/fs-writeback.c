@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * fs/fs-writeback.c
@@ -1214,10 +1211,10 @@ static void requeue_io(struct inode *inode, struct bdi_writeback *wb)
 	inode_io_list_move_locked(inode, wb, &wb->b_more_io);
 }
 
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK
+#else /* CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK */
 static
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK */
 void inode_sync_complete(struct inode *inode)
 {
 	inode->i_state &= ~I_SYNC;
@@ -1227,9 +1224,9 @@ void inode_sync_complete(struct inode *inode)
 	smp_mb();
 	wake_up_bit(&inode->i_state, __I_SYNC);
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK
 EXPORT_SYMBOL(inode_sync_complete);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK */
 
 static bool inode_dirtied_after(struct inode *inode, unsigned long t)
 {
@@ -2212,7 +2209,7 @@ int dirtytime_interval_handler(struct ctl_table *table, int write,
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_HIBERNATION_DEBUG
 static noinline void block_dump___mark_inode_dirty(struct inode *inode)
 {
 	if (inode->i_ino || strcmp(inode->i_sb->s_id, "bdev")) {
@@ -2235,7 +2232,7 @@ static noinline void block_dump___mark_inode_dirty(struct inode *inode)
 		}
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_HIBERNATION_DEBUG */
 
 /**
  * __mark_inode_dirty -	internal function
@@ -2296,10 +2293,10 @@ void __mark_inode_dirty(struct inode *inode, int flags)
 	    (dirtytime && (inode->i_state & I_DIRTY_INODE)))
 		return;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_HIBERNATION_DEBUG
 	if (unlikely(block_dump))
 		block_dump___mark_inode_dirty(inode);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_HIBERNATION_DEBUG */
 
 	spin_lock(&inode->i_lock);
 	if (dirtytime && (inode->i_state & I_DIRTY_INODE))

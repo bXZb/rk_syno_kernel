@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Internal header file _only_ for device mapper core
  *
@@ -18,6 +15,9 @@
 #include <linux/blk-mq.h>
 
 #include <trace/events/block.h>
+#ifdef CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD
+#include <linux/synolib.h>
+#endif /* CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD */
 
 #include "dm.h"
 
@@ -93,10 +93,10 @@ struct mapped_device {
 	 */
 	struct bio_set io_bs;
 	struct bio_set bs;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 	/* used for noclone bio */
 	mempool_t syno_noclone_pool;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 	/*
 	 * Processing queue (flush)
@@ -127,9 +127,19 @@ struct mapped_device {
 	bool init_tio_pdu:1;
 
 	struct srcu_struct io_barrier;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_FAST_WAKEUP
 	struct syno_md_fast_wakeup_info syno_fast_wakeup_info;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FAST_WAKEUP */
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+	int syno_disk_id;
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
+#ifdef CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD
+	SYNO_MPATH_TARGET_SYSFS *targetSysfs;
+#endif /* CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD */
+#ifdef CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+	struct workqueue_struct *coherent_wq;
+	spinlock_t coherent_wq_lock;
+#endif /* CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE */
 };
 
 void disable_discard(struct mapped_device *md);

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  * Copyright © 1999-2010 David Woodhouse <dwmw2@infradead.org> et al.
@@ -709,12 +706,12 @@ static inline int mtd_is_bitflip_or_eccerr(int err) {
 
 unsigned mtd_mmap_capabilities(struct mtd_info *mtd);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MTD_INFO
 /* written in synopart.c */
 int SYNOMTDModifyPartInfo(struct mtd_info *mtd, unsigned long offset, unsigned long length);
 
 /* written in redboot.c */
 int SYNOMTDModifyFisInfo(struct mtd_info *mtd, struct SYNO_MTD_FIS_INFO SynoMtdFisInfo);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MTD_INFO */
 
 #endif /* __MTD_MTD_H__ */

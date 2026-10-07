@@ -62,6 +62,10 @@ config SYNO_RYZEN5K
        bool "AMD RYZEN Embedded 5000"
        depends on X86_64
 
+config SYNO_EPYC7003
+       bool "AMD EPYC Embedded 7003"
+       depends on X86_64
+
 config SYNO_EPYC7003NTB
        bool "AMD EPYC Embedded 7003 with NTB"
        depends on X86_64
@@ -74,12 +78,16 @@ config SYNO_R1000
 	bool "AMD Ryzen Embedded R1000"
 	depends on X86_64
 
+config SYNO_RAPTORLAKEU
+       bool "INTEL RAPTORLAKE-U"
+       depends on X86_64
+
 endchoice
 
 config SYNO_SAS
 	bool "Synology SAS Support"
 	default y
-	depends on SYNO_BROADWELL || SYNO_PURLEY || SYNO_RYZEN5K
+	depends on SYNO_BROADWELL || SYNO_PURLEY || SYNO_RYZEN5K || SYNO_EPYC7003
 
 config SYNO_AMD_MCE_THRESHOLD_CLEAR
 	bool "Clear MCE overflow bit"

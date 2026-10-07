@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * libata-pmp.c - libata port multiplier support
@@ -15,18 +12,18 @@
 #include <linux/slab.h>
 #include "libata.h"
 #include "libata-transport.h"
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 extern int syno_usb_eunit_deep_sleep_indicator(const char *usb_port, const int control);
 extern struct syno_control_operations * syno_control_operation_get(const int slot_type, const int slot_index);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
 extern bool g_support_syno_dpm;
 extern int syno_dpm_req_pwr_with_fixed_delayed_by_uuid(
 	const char *uuid, const char *caller_name);
 extern int syno_dpm_req_deep_sleep_by_uuid(
 	const char *uuid, const int timeout, const char *caller_name);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
 
 const struct ata_port_operations sata_pmp_port_ops = {
 	.inherits		= &sata_port_ops,
@@ -36,7 +33,7 @@ const struct ata_port_operations sata_pmp_port_ops = {
 	.error_handler		= sata_pmp_error_handler,
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 static u8 syno_i2c_pkg_data_2_tf_offset_mapping[] = {
 	/* data[0] ~ data[3] */
 	offsetof(struct ata_taskfile, lbal),
@@ -145,7 +142,7 @@ static unsigned int sata_pmp_i2c_write_core(struct ata_link *link, SYNO_PM_I2C_P
 	}
 	return err_mask;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
 /**
  *	sata_pmp_read - read PMP register
@@ -172,12 +169,12 @@ static unsigned int sata_pmp_read(struct ata_link *link, int reg, u32 *r_val)
 	tf.command = ATA_CMD_PMP_READ;
 	tf.protocol = ATA_PROT_NODATA;
 	tf.flags |= ATA_TFLAG_ISADDR | ATA_TFLAG_DEVICE | ATA_TFLAG_LBA48;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	tf.feature = reg & 0xff;
 	tf.hob_feature = (reg >> 8) & 0xff;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 	tf.feature = reg;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 	tf.device = link->pmp;
 
 	err_mask = ata_exec_internal(pmp_dev, &tf, NULL, DMA_NONE, NULL, 0,
@@ -213,12 +210,12 @@ static unsigned int sata_pmp_write(struct ata_link *link, int reg, u32 val)
 	tf.command = ATA_CMD_PMP_WRITE;
 	tf.protocol = ATA_PROT_NODATA;
 	tf.flags |= ATA_TFLAG_ISADDR | ATA_TFLAG_DEVICE | ATA_TFLAG_LBA48;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	tf.feature = reg & 0xff;
 	tf.hob_feature = (reg >> 8) & 0xff;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 	tf.feature = reg;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 	tf.device = link->pmp;
 	tf.nsect = val & 0xff;
 	tf.lbal = (val >> 8) & 0xff;
@@ -229,7 +226,7 @@ static unsigned int sata_pmp_write(struct ata_link *link, int reg, u32 val)
 				 SATA_PMP_RW_TIMEOUT);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 
 unsigned int syno_sata_pmp_read_i2c_acmd(struct ata_link* link, SYNO_PM_I2C_PKG *pPM_pkg)
 {
@@ -383,7 +380,7 @@ syno_pm_device_config(struct ata_port *ap)
 		syno_pm_device_config_set(ap, 4, 0x48, 0x62D8);
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SIGNAL_ADJUSTMENT
 	/* Set MV9705 register for Denlow DS3615xs */
 	if (IS_SYNOLOGY_DX1215(ap->PMSynoUnique)) { // this modification applied to DX1215 with all models
 		syno_pm_device_config_set(ap, 0, 0x91, 0xE7F);
@@ -492,7 +489,7 @@ syno_pm_device_config(struct ata_port *ap)
 			syno_pm_device_config_set(ap, 2, 0x91, 0xFFF);
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SIGNAL_ADJUSTMENT */
 }
 
 void
@@ -915,12 +912,12 @@ static int syno_sata_jmb575_pwrbtn(struct ata_port *ap, u8 blDisable)
 		goto END;
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	if (IS_SYNOLOGY_USB_ACM_EUNIT(ap->PMSynoUnique)) {
 		iRet = 0;
 		goto END;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	if (syno_pmp_get_ebox_node_by_unique_id(ap->PMSynoUnique, ap->PMSynoIsRP, &pEBoxNode)) {
 		printk("Get EBox node fail");
@@ -1369,7 +1366,7 @@ END:
 	return iRet;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 int syno_pmp_get_emid(struct ata_port *ap)
 {
 	struct device_node *pDeviceNode = NULL;
@@ -1404,7 +1401,7 @@ int syno_pmp_get_emid(struct ata_port *ap)
 
 	return emid;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
 unsigned int
 syno_sata_pmp_read_emid(struct ata_port *ap)
@@ -1434,7 +1431,7 @@ syno_sata_pmp_read_emid(struct ata_port *ap)
 							GPI_9705_EMID_BIT2(pm_pkg.var)|
 							GPI_9705_EMID_BIT3(pm_pkg.var);
 	} else if (syno_pm_is_synology_jmb575(ap)) {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 		if (IS_SYNOLOGY_USB_ACM_EUNIT(ap->PMSynoUnique)) {
 			if(0 <= (emid = syno_pmp_get_emid(ap))) {
 				ap->PMSynoEMID = emid;
@@ -1442,7 +1439,7 @@ syno_sata_pmp_read_emid(struct ata_port *ap)
 			}
 			goto END;
 		}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 		if(syno_sata_jmb575_custom_cmd(ap, SYNO_JMB575_GET_EMID, &emid)) {
 			ata_dev_printk(ap->link.device, KERN_WARNING, "JMB575: Get EMID faild\n");
 			goto END;
@@ -1550,12 +1547,12 @@ syno_sata_pmp_check_powerbtn(struct ata_port *ap)
 	vendor = sata_pmp_gscr_vendor(ap->link.device->gscr);
 	devid = sata_pmp_gscr_devid(ap->link.device->gscr);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	if (IS_SYNOLOGY_USB_ACM_EUNIT(ap->PMSynoUnique)) {
 		iRes = 0;
 		goto END;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	if (syno_pm_is_9705(vendor, devid)) {
 		syno_pm_raidledstate_pkg_init(sata_pmp_gscr_vendor(ap->link.device->gscr),
@@ -1686,12 +1683,12 @@ syno_pm_is_poweron(struct ata_port *ap)
 			goto END;
 		}
 	}else if (syno_pm_is_jmb575(vendor, devid)) {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 		if (IS_SYNOLOGY_USB_ACM_EUNIT(ap->PMSynoUnique)) {
 			iRes = 1;
 			goto END;
 		}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 		if (syno_pmp_get_ebox_node_by_unique_id(ap->PMSynoUnique, ap->PMSynoIsRP, &pEBoxNode)) {
 			printk("Get EBox node fail");
 			goto END;
@@ -1716,11 +1713,11 @@ syno_pm_is_poweron(struct ata_port *ap)
 		if (!(i2cPkg.resultData[0] & i2cInfo.mask)) {
 			goto END;
 		}
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 	} else if (syno_is_synology_pci_eunit(ap)) {
 		iRes = 1;
 		goto END;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
 	}
 
 	iRes = 1;
@@ -1761,7 +1758,7 @@ syno_9705_workaround(struct ata_port *ap)
 	}
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 static int syno_ap_to_deepsleep_indicator_set(struct ata_port *ap, int blCLR)
 {
 	int blSet = blCLR ? 0 : 1;
@@ -1805,7 +1802,7 @@ END:
 	}
 	return iRet;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
 
 int syno_libata_pmp_deepsleep_indicator_set(struct ata_port *ap, const int blCLR)
 {
@@ -1820,10 +1817,10 @@ int syno_libata_pmp_deepsleep_indicator_set(struct ata_port *ap, const int blCLR
 	struct device_node *pPwrNode;
 	SYNO_JMB575_I2C_DEV_INFO i2cInfo;
 	SYNO_PM_I2C_PKG i2cPkg;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	int eunit_index = 0;
 	struct syno_control_operations *ctrl_op = NULL;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	if (!ap) {
 		goto END;
@@ -1852,14 +1849,14 @@ int syno_libata_pmp_deepsleep_indicator_set(struct ata_port *ap, const int blCLR
 			}
 		}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	} else if (0 < (eunit_index = syno_external_libata_index_get(ap)) &&
 			   NULL != (ctrl_op = syno_control_operation_get(EUNIT_DEVICE, eunit_index))) {
 		if (0 > ctrl_op->deep_sleep_indicator_ctrl(EUNIT_DEVICE, eunit_index, blCLR)) {
 			printk(KERN_DEBUG "Failed to control deep sleep indicator\n");
 			goto END;
 		}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 	} else if (syno_pm_is_jmb575(vendor, devid)) {
 
 		if (syno_pmp_get_ebox_node_by_unique_id(ap->PMSynoUnique, ap->PMSynoIsRP, &pEBoxNode)) {
@@ -1892,11 +1889,11 @@ int syno_libata_pmp_deepsleep_indicator_set(struct ata_port *ap, const int blCLR
 		if (syno_sata_pmp_write_i2c(ap, &i2cPkg)) {
 			goto END;
 		}
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 	} else if (syno_is_synology_pci_eunit(ap)) {
 		iRet = syno_ap_to_deepsleep_indicator_set(ap, blCLR);
 		goto END;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
 	}
 
 	iRet = 0;
@@ -1911,10 +1908,10 @@ static int syno_sata_pmp_read_unique(struct ata_port *ap)
 	unsigned short devid = 0;
 	SYNO_PM_PKG pm_pkg;
 	unsigned int var = 0;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	int eunit_index = 0;
 	struct syno_control_operations *ctrl_op = NULL;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	if (!ap) {
 		goto END;
@@ -1923,20 +1920,20 @@ static int syno_sata_pmp_read_unique(struct ata_port *ap)
 	vendor = sata_pmp_gscr_vendor(ap->link.device->gscr);
 	devid = sata_pmp_gscr_devid(ap->link.device->gscr);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 	if (syno_is_synology_pci_eunit(ap)) {
 		iRet = 0;
 		goto END;
 	}
-#endif /* MY_DEF_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	if (0 < (eunit_index = syno_external_libata_index_get(ap)) &&
 		NULL != (ctrl_op = syno_control_operation_get(EUNIT_DEVICE, eunit_index))) {
 		if (0 == strcmp(DT_USB_TO_TTY, ctrl_op->control_method)) {
 			ap->PMSynoUnique = SYNOLOGY_USB_ACM_EUNIT_PM_ID;
 		}
 	} else
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 	if (syno_pm_is_9705(vendor, devid)) {
 		syno_pm_unique_pkg_init(vendor,	devid, &pm_pkg);
 
@@ -1980,10 +1977,10 @@ static int syno_libata_pm_power_ctl_core(struct ata_port *ap, u8 pwrOp)
 	u8 blPowerOn = (pwrOp & (SYNO_PWR_OP_POWER_ON | SYNO_PWR_OP_WAKE))? 1 : 0;
 	int i = 0;
 	int regManual = 0;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	int eunit_index = 0;
 	struct syno_control_operations *ctrl_op = NULL;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	if (NULL == ap) {
 		goto END;
@@ -1992,11 +1989,11 @@ static int syno_libata_pm_power_ctl_core(struct ata_port *ap, u8 pwrOp)
 	vendor = sata_pmp_gscr_vendor(ap->link.device->gscr);
 	devid = sata_pmp_gscr_devid(ap->link.device->gscr);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	if (0 < (eunit_index = syno_external_libata_index_get(ap))) {
 		ctrl_op = syno_control_operation_get(EUNIT_DEVICE, eunit_index);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	for (iRetry = 0; blPowerOn ^ syno_pm_is_poweron(ap)
 					 && iRetry < SYNO_PMP_PWR_TRIES; ++iRetry) {
@@ -2020,11 +2017,11 @@ static int syno_libata_pm_power_ctl_core(struct ata_port *ap, u8 pwrOp)
 			syno_libata_pmp_deepsleep_indicator_set(ap, 1);
 		}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_FAST_PROBE
 		if (blPowerOn && 0 == ap->PMSynoEMID) {
 			ap->pflags |= ATA_PFLAG_SYNO_BOOT_PROBE;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_FAST_PROBE */
 
 		if (syno_pm_is_9705(vendor, devid)) {
 			syno_pm_poweron_pkg_init(sata_pmp_gscr_vendor(ap->link.device->gscr),
@@ -2066,17 +2063,17 @@ static int syno_libata_pm_power_ctl_core(struct ata_port *ap, u8 pwrOp)
 				printk("ata%d re-check pm unique read fail\n", ap->print_id);
 				goto END;
 			}
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 		} else if (ctrl_op) {
 			if (ctrl_op->power_control) {
 				ctrl_op->power_control(EUNIT_DEVICE, eunit_index);
 			}
 			break;
-#endif /* MY_DEF_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 		} else if (syno_is_synology_pci_eunit(ap)) {
 			break;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
 		} else if (syno_pm_is_jmb575(vendor, devid)) {
 
 			if (SYNO_PWR_OP_POWER_ON != pwrOp && SYNO_PWR_OP_POWER_OFF != pwrOp) {
@@ -2123,37 +2120,57 @@ static int syno_libata_pm_power_ctl_core(struct ata_port *ap, u8 pwrOp)
 		}
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
 	if (g_support_syno_dpm) {
 		int func_ret = -1;
 		char uuid[SYNO_DPM_UUID_LEN_MAX] = {0};
 		struct ata_link *link = NULL;
 
-		/*
-		 * A pmp should in the same machine, pick the uuid from any of its link.
-		 */
-		ata_for_each_link(link, ap, EDGE) {
-			if (strlen(link->dpm_uuid) != 0) {
-				snprintf(uuid, sizeof(uuid), "%s", link->dpm_uuid);
-				break;
-			}
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
+		// assume usb eunit always support dpm
+		if (!ctrl_op) {
+			printk(KERN_DEBUG "No valid control operation, skip DPM control\n");
+			goto NO_DPM;
 		}
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
-		if (pwrOp == SYNO_PWR_OP_WAKE) {
-			func_ret = syno_dpm_req_pwr_with_fixed_delayed_by_uuid(uuid, __func__);
-		} else if (pwrOp == SYNO_PWR_OP_DEEPSLEEP) {
-			/* 
-			 * USB ACM update cache every 4 seconds SYNO_EUNIT_PERIODIC_CACHE_UPDATE_INTERVAL
-			 * so we recheck power off for about 3 times 
-			 */
-			func_ret = syno_dpm_req_deep_sleep_by_uuid(uuid, 15, __func__);
-		} else {
-			func_ret = 0;
-		}
-		if (func_ret < 0) {
-			printk(KERN_DEBUG "Failed to %s [%s]\n",
-				pwrOp == SYNO_PWR_OP_WAKE ? "wake" : "deep sleep", uuid);
-			goto END;
+		if (SYNO_PWR_OP_DEEPSLEEP == pwrOp || SYNO_PWR_OP_WAKE == pwrOp) {
+			/*
+			* A pmp should in the same machine, pick the uuid from any of its link.
+			*/
+			ata_for_each_link(link, ap, EDGE) {
+				if (strlen(link->dpm_uuid) != 0) {
+					snprintf(uuid, sizeof(uuid), "%s", link->dpm_uuid);
+					break;
+				}
+			}
+
+			// If we can't get the uuid, skip DPM control
+			if (strlen(uuid) == 0) {
+				goto NO_DPM;
+			}
+
+			if (pwrOp == SYNO_PWR_OP_WAKE) {
+				for (i = 0; i < 10; i++) {
+					func_ret = syno_dpm_req_pwr_with_fixed_delayed_by_uuid(uuid, __func__);
+					if (func_ret >= 0) {
+						break;
+					}
+					mdelay(1000);
+				}
+			} else if (pwrOp == SYNO_PWR_OP_DEEPSLEEP) {
+				/*
+				* USB ACM update cache every 4 seconds SYNO_EUNIT_PERIODIC_CACHE_UPDATE_INTERVAL
+				* so we recheck power off for about 3 times
+				*/
+				func_ret = syno_dpm_req_deep_sleep_by_uuid(uuid, 15, __func__);
+			}
+
+			if (func_ret < 0) {
+				printk(KERN_INFO "Failed to %s [%s]\n",
+					pwrOp == SYNO_PWR_OP_WAKE ? "wake" : "deep sleep", uuid);
+				goto END;
+			}
 		}
 
 		syno_libata_pmp_deepsleep_indicator_set(ap, blPowerOn);
@@ -2161,7 +2178,8 @@ static int syno_libata_pm_power_ctl_core(struct ata_port *ap, u8 pwrOp)
 		iRet = 0;
 		goto END;
 	}
-#endif /* MY_DEF_HERE */
+NO_DPM:
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
 
 	if (syno_pm_is_jmb575(vendor, devid) && (SYNO_PWR_OP_DEEPSLEEP == pwrOp || SYNO_PWR_OP_WAKE == pwrOp || SYNO_PWR_OP_POWER_ON == pwrOp)) {
 
@@ -2206,14 +2224,14 @@ static int syno_libata_pm_power_ctl_core(struct ata_port *ap, u8 pwrOp)
 		}
 		
 	}
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 	if (syno_is_synology_pci_eunit(ap) && (SYNO_PWR_OP_DEEPSLEEP == pwrOp || SYNO_PWR_OP_WAKE == pwrOp || SYNO_PWR_OP_POWER_ON == pwrOp)) {
 		if (!syno_pci_eunit_slot_power_ctl(ap, blPowerOn)) {
 			goto END;
 		}
 		syno_libata_pmp_deepsleep_indicator_set(ap, blPowerOn);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
 
 	iRet = 0;
 END:
@@ -2229,9 +2247,9 @@ int syno_pm_show_sn(struct ata_device *dev)
 	struct device_node *pSnNode = NULL;
 	SYNO_JMB575_I2C_DEV_INFO snInfo;
 	SYNO_PM_I2C_PKG i2cPkg;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OF
 	int slotIdx = -1;
-#endif /* MY_ABC_HERE*/
+#endif /* CONFIG_SYNO_OF*/
 	
 	char szSn[MAX_EBOX_SN_LEN + 1] = {'\0'};
 	
@@ -2284,7 +2302,7 @@ int syno_pm_show_sn(struct ata_device *dev)
 		szSn[i] = i2cPkg.resultData[0];
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OF
 	slotIdx = syno_external_libata_index_get(ap);
 	if (-1 != slotIdx) {
 		ata_dev_info(dev, "External Slot %d Eunit SN: %s\n", syno_external_libata_index_get(ap), szSn);
@@ -2384,7 +2402,7 @@ END:
 	spin_unlock_irqrestore(ap->lock, flags);
 	return iRet;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
 /**
  *	sata_pmp_qc_defer_cmd_switch - qc_defer for command switching PMP
@@ -2515,11 +2533,11 @@ int sata_pmp_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
  */
 static int sata_pmp_read_gscr(struct ata_device *dev, u32 *gscr)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	static const int gscr_to_read[] = { 0, 1, 2, 32, 33, 64, 96 , SATA_PMP_GSCR_SYNO, SATA_PMP_GSCR_LOGY};
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 	static const int gscr_to_read[] = { 0, 1, 2, 32, 33, 64, 96 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(gscr_to_read); i++) {
@@ -2530,11 +2548,11 @@ static int sata_pmp_read_gscr(struct ata_device *dev, u32 *gscr)
 		if (err_mask) {
 			ata_dev_err(dev, "failed to read PMP GSCR[%d] (Emask=0x%x)\n",
 				    reg, err_mask);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 			if (SATA_PMP_GSCR_SYNO == reg || SATA_PMP_GSCR_LOGY == reg) {
 				continue;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 			return -EIO;
 		}
 	}
@@ -2567,11 +2585,11 @@ static int sata_pmp_configure(struct ata_device *dev, int print_info)
 	const char *reason;
 	int nr_ports, rc;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	nr_ports = syno_pmp_ports_num(ap);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 	nr_ports = sata_pmp_gscr_ports(gscr);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
 	if (nr_ports <= 0 || nr_ports > SATA_PMP_MAX_PORTS) {
 		rc = -EINVAL;
@@ -2820,27 +2838,27 @@ int sata_pmp_attach(struct ata_device *dev)
 	if (rc)
 		goto fail;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	/* Get information for all PM we supported */
 	syno_pm_gpio_config(ap);
 	syno_prepare_custom_info(ap);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
+#ifdef CONFIG_SYNO_SATA_EUNIT_FAST_PROBE
 	if (0 == ap->PMSynoEMID && !(ap->pflags & ATA_PFLAG_SYNO_DS_WAKING)) {
 		ap->pflags |= ATA_PFLAG_SYNO_BOOT_PROBE;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_FAST_PROBE */
 
 	/* config PMP */
 	rc = sata_pmp_configure(dev, 1);
 	if (rc)
 		goto fail;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	rc = sata_pmp_init_links(ap, syno_pmp_ports_num(ap));
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 	rc = sata_pmp_init_links(ap, sata_pmp_gscr_ports(dev->gscr));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 	if (rc) {
 		ata_dev_info(dev, "failed to initialize PMP links\n");
 		goto fail;
@@ -2849,18 +2867,18 @@ int sata_pmp_attach(struct ata_device *dev)
 	/* attach it */
 	spin_lock_irqsave(ap->lock, flags);
 	WARN_ON(ap->nr_pmp_links);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	ap->nr_pmp_links = syno_pmp_ports_num(ap);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 	ap->nr_pmp_links = sata_pmp_gscr_ports(dev->gscr);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 	spin_unlock_irqrestore(ap->lock, flags);
 
 	sata_pmp_quirks(ap);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	syno_pm_device_config(ap);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
 	if (ap->ops->pmp_attach)
 		ap->ops->pmp_attach(ap);
@@ -2868,9 +2886,9 @@ int sata_pmp_attach(struct ata_device *dev)
 	ata_for_each_link(tlink, ap, EDGE)
 		sata_link_init_spd(tlink);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_HOTPLUG_TASK
 	ap->pflags |= ATA_PFLAG_PMP_CONNECT;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_HOTPLUG_TASK */
 
 	return 0;
 
@@ -2889,11 +2907,11 @@ int sata_pmp_attach(struct ata_device *dev)
  *	LOCKING:
  *	Kernel thread context (may sleep).
  */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_RECOVER_MECHANISM
 void sata_pmp_detach(struct ata_device *dev)
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 static void sata_pmp_detach(struct ata_device *dev)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 {
 	struct ata_link *link = dev->link;
 	struct ata_port *ap = link->ap;
@@ -2905,7 +2923,7 @@ static void sata_pmp_detach(struct ata_device *dev)
 	WARN_ON(!ata_is_host_link(link) || dev->devno ||
 		link->pmp != SATA_PMP_CTRL_PORT);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_RECOVER_MECHANISM
 	if ((dev->link->uiSflags || dev->link->ap->uiSflags) && ata_dev_enabled(dev)) {
 		ata_dev_printk(dev, KERN_WARNING,
 				"still have recovery flags link 0x%x ap 0x%x, don't detach this pmp dev\n", dev->link->uiSflags, dev->link->ap->uiSflags);
@@ -2921,19 +2939,19 @@ static void sata_pmp_detach(struct ata_device *dev)
 		DBGMESG("ata%u: do pmp detach, clear all link uiSflags\n", dev->link->ap->print_id);
 		tlink->uiSflags = 0;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_PMP_ENHANCE
 	ata_for_each_link(tlink, ap, EDGE) {
 		unsigned int *classes = tlink->eh_context.classes;
 		struct ata_device *tdev = tlink->device;
 		classes[tdev->devno] = ATA_DEV_UNKNOWN;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_PMP_ENHANCE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	ap->PMSynoUnique = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
 	if (ap->ops->pmp_detach)
 		ap->ops->pmp_detach(ap);
@@ -2946,10 +2964,10 @@ static void sata_pmp_detach(struct ata_device *dev)
 	link->pmp = 0;
 	spin_unlock_irqrestore(ap->lock, flags);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_HOTPLUG_TASK
 	ap->pflags |= ATA_PFLAG_PMP_DISCONNECT;
 	ata_dev_printk(dev, KERN_WARNING, "flag ATA_PFLAG_PMP_DISCONNECT on (pflags=0x%x)\n", dev->link->ap->pflags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_HOTPLUG_TASK */
 }
 
 /**
@@ -2971,21 +2989,21 @@ static int sata_pmp_same_pmp(struct ata_device *dev, const u32 *new_gscr)
 	const u32 *old_gscr = dev->gscr;
 	u16 old_vendor, new_vendor, old_devid, new_devid;
 	int old_nr_ports, new_nr_ports;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	struct ata_port *ap = dev->link->ap;
 	u32 old_syno_unique = ap->PMSynoUnique;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
 	old_vendor = sata_pmp_gscr_vendor(old_gscr);
 	new_vendor = sata_pmp_gscr_vendor(new_gscr);
 	old_devid = sata_pmp_gscr_devid(old_gscr);
 	new_devid = sata_pmp_gscr_devid(new_gscr);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	new_nr_ports = old_nr_ports = syno_pmp_ports_num(ap);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 	old_nr_ports = sata_pmp_gscr_ports(old_gscr);
 	new_nr_ports = sata_pmp_gscr_ports(new_gscr);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
 	if (old_vendor != new_vendor) {
 		ata_dev_info(dev,
@@ -3008,7 +3026,7 @@ static int sata_pmp_same_pmp(struct ata_device *dev, const u32 *new_gscr)
 		return 0;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	/* power on and re-custom */
 	syno_pm_gpio_config(ap);
 	syno_prepare_custom_info(ap);
@@ -3018,7 +3036,7 @@ static int sata_pmp_same_pmp(struct ata_device *dev, const u32 *new_gscr)
 		return 0;
 	}
 	syno_pm_device_config(ap);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
 	return 1;
 }
@@ -3150,18 +3168,18 @@ static int sata_pmp_eh_recover_pmp(struct ata_port *ap,
 	int tries = ATA_EH_PMP_TRIES;
 	int detach = 0, rc = 0;
 	int reval_failed = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_RECOVER_MECHANISM
 	unsigned int uiSflags = 0x0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 
 	DPRINTK("ENTER\n");
 
 	if (dev->flags & ATA_DFLAG_DETACH) {
 		detach = 1;
 		rc = -ENODEV;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_HOTPLUG_TASK
 		ata_dev_printk(dev, KERN_WARNING, "ATA_DFLAG_DETACH (flags=0x%lx)\n", dev->flags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_HOTPLUG_TASK */
 		goto fail;
 	}
 
@@ -3231,12 +3249,12 @@ static int sata_pmp_eh_recover_pmp(struct ata_port *ap,
 
  fail:
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_RECOVER_MECHANISM
 	/* set link error flags to ata port for ata port error handling. */
 	if ((uiSflags = uiCheckPortLinksFlags(ap))) {
 		ap->uiSflags = uiSflags;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 
 	sata_pmp_detach(dev);
 	if (detach)
@@ -3339,9 +3357,9 @@ static int sata_pmp_eh_recover(struct ata_port *ap)
 	unsigned int err_mask;
 	u32 gscr_error, sntf;
 	int cnt, rc;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_RECOVER_MECHANISM
 	unsigned int uiSflags = 0x0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 
 	pmp_tries = ATA_EH_PMP_TRIES;
 	ata_for_each_link(link, ap, EDGE)
@@ -3465,7 +3483,7 @@ static int sata_pmp_eh_recover(struct ata_port *ap)
 		ata_port_info(ap,
 			"PMP SError.N set for some ports, repeating recovery\n");
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_FAST_PROBE
 		/*
 		 * Enter this statement, indicating that the power on sequence of the
 		 * disks under PMP is not suitable for FAST PROBE, so disable it.
@@ -3473,16 +3491,16 @@ static int sata_pmp_eh_recover(struct ata_port *ap)
 		if (ap->pflags & ATA_PFLAG_SYNO_BOOT_PROBE) {
 			ap->pflags &= ~ATA_PFLAG_SYNO_BOOT_PROBE;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_FAST_PROBE */
 
 		goto retry;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_RECOVER_MECHANISM
 	/* set link error flags to ata port for ata port error handling. */
 	uiSflags = uiCheckPortLinksFlags(ap);
 	ap->uiSflags = uiSflags;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 
 	return 0;
 
@@ -3510,12 +3528,12 @@ static int sata_pmp_eh_recover(struct ata_port *ap)
 
 	ata_port_err(ap, "failed to recover PMP after %d tries, giving up\n",
 		     ATA_EH_PMP_TRIES);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_RECOVER_MECHANISM
 	/* set link error flags to ata port for ata port error handling. */
 	if ((uiSflags = uiCheckPortLinksFlags(ap))) {
 		ap->uiSflags = uiSflags;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 	sata_pmp_detach(pmp_dev);
 	ata_dev_disable(pmp_dev);
 

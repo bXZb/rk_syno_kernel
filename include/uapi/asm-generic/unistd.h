@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 #include <asm/bitsperlong.h>
 
@@ -867,7 +864,7 @@ __SYSCALL(__NR_process_madvise, sys_process_madvise)
 #define __NR_syscalls 441
 
 /*
- * start - MY_ABC_HERE
+ * start - CONFIG_SYNO_SYSTEM_CALL
  * Synology defined system calls are listed here.
  */
 #define __NR_syno_utime 802
@@ -882,11 +879,11 @@ __SYSCALL(__NR_syno_archive_bit, sys_syno_archive_bit)
 #define syno_recv_file(arg1, arg2, arg3, arg4, arg5)    syscall(__NR_syno_recv_file, arg1, arg2, arg3, arg4, arg5)
 __SYSCALL(__NR_syno_recv_file, sys_syno_recv_file)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MTD_ALLOC
 #define __NR_syno_mtd_alloc 805
 #define syno_mtd_alloc(arg1)                            syscall(__NR_syno_mtd_alloc, arg1)
 __SYSCALL(__NR_syno_mtd_alloc, sys_syno_mtd_alloc)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MTD_ALLOC */
 
 #define __NR_syno_caseless_stat 806
 #define syno_caseless_stat(arg1, arg2)                  syscall(__NR_syno_caseless_stat, arg1, arg2)
@@ -951,7 +948,7 @@ __SYSCALL(__NR_syno_archive_overwrite, sys_syno_archive_overwrite)
 #undef __NR_syscalls
 #define __NR_syscalls 828
 /*
- * end - MY_ABC_HERE
+ * end - CONFIG_SYNO_SYSTEM_CALL
  */
 
 /*

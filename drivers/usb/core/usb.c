@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * drivers/usb/core/usb.c
@@ -42,9 +39,9 @@
 #include <linux/workqueue.h>
 #include <linux/debugfs.h>
 #include <linux/usb/of.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_ENABLE_USBFS_ENTRY
 #include <linux/proc_fs.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_ENABLE_USBFS_ENTRY */
 
 #include <asm/io.h>
 #include <linux/scatterlist.h>
@@ -426,10 +423,10 @@ static void usb_release_dev(struct device *dev)
 	usb_put_hcd(hcd);
 	kfree(udev->product);
 	kfree(udev->manufacturer);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_SERIAL_FIX
 	if (udev->syno_old_serial != udev->serial)
 		kfree(udev->syno_old_serial);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_SERIAL_FIX */
 	kfree(udev->serial);
 	kfree(udev);
 }
@@ -993,32 +990,32 @@ static struct notifier_block usb_bus_nb = {
 };
 
 static struct dentry *usb_devices_root;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_ENABLE_USBFS_ENTRY
 static struct proc_dir_entry *usbdir = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_ENABLE_USBFS_ENTRY */
 
 static void usb_debugfs_init(void)
 {
 	usb_devices_root = debugfs_create_file("devices", 0444, usb_debug_root,
 					       NULL, &usbfs_devices_fops);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_ENABLE_USBFS_ENTRY
 	/* create mount point for /proc/bus/usb */
 	usbdir = proc_mkdir("bus/usb", NULL);
 	if (!usbdir) {
 		printk(KERN_ERR "Fail to create /proc/bus/usb\n");
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_ENABLE_USBFS_ENTRY */
 
 }
 
 static void usb_debugfs_cleanup(void)
 {
 	debugfs_remove(usb_devices_root);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_ENABLE_USBFS_ENTRY
 	if (usbdir)
 		remove_proc_entry("bus/usb", NULL);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_ENABLE_USBFS_ENTRY */
 }
 
 /*

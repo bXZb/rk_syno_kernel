@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright(c) 2017 Intel Corporation. All rights reserved.
@@ -82,7 +79,7 @@ void __init pti_check_boottime_disable(void)
 {
 	char arg[5];
 	int ret;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SPECULATION_DEFAULT_OFF
 	/* Assume mode is off unless overridden. */
 	pti_mode = PTI_FORCE_OFF;
 
@@ -96,10 +93,10 @@ void __init pti_check_boottime_disable(void)
 			goto enable;
 		}
 	}
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_SPECULATION_DEFAULT_OFF */
 	/* Assume mode is auto unless overridden. */
 	pti_mode = PTI_AUTO;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SPECULATION_DEFAULT_OFF */
 
 	if (hypervisor_is_type(X86_HYPER_XEN_PV)) {
 		pti_mode = PTI_FORCE_OFF;
@@ -125,16 +122,16 @@ void __init pti_check_boottime_disable(void)
 		}
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SPECULATION_DEFAULT_OFF
 	return;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_SPECULATION_DEFAULT_OFF */
 	if (cmdline_find_option_bool(boot_command_line, "nopti") ||
 	    cpu_mitigations_off()) {
 		pti_mode = PTI_FORCE_OFF;
 		pti_print_if_insecure("disabled on command line.");
 		return;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SPECULATION_DEFAULT_OFF */
 
 autosel:
 	if (!boot_cpu_has_bug(X86_BUG_CPU_MELTDOWN))

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Copyright 2012 Texas Instruments
  *
@@ -56,9 +53,9 @@ struct lp3943_led_node {
 	u8 prescale;
 	enum lp3943_led_channel *channel;
 	int num_channels;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 	char *default_trigger;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 };
 
 /*

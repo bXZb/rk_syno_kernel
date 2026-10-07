@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 1999 Eric Youngdale
@@ -43,32 +40,32 @@
 #include "scsi_priv.h"
 #include "scsi_logging.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_ERROR_REPORT
 #include "libsyno_report.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_ERROR_REPORT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP
 #include <scsi/scsi_transport.h>
 #include "scsi_transport_api.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP */
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT)
 #include <linux/ata.h>
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT */
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_PROMOTE_INFO_LOG_LEVEL
 #ifdef KERN_INFO
 #undef KERN_INFO
 #define KERN_INFO KERN_NOTICE
 #endif
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_PROMOTE_INFO_LOG_LEVEL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT
 #define SYNO_SMART_CMD_TIMEOUT 30 * HZ
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT */
 
 /*
  * Size of integrity metadata is usually small, 1 inline sg should
@@ -292,7 +289,7 @@ int __scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
 	rq->cmd_len = COMMAND_SIZE(cmd[0]);
 	memcpy(rq->cmd, cmd, rq->cmd_len);
 	rq->retries = retries;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT
 	req->timeout = ((sdev->scmd_timeout_sec*HZ) > timeout ? (sdev->scmd_timeout_sec*HZ) : timeout);
 	// Set smart command timeout at least 30s
 	if ((ATA_CMD_SMART == rq->cmd[0] ||
@@ -300,9 +297,9 @@ int __scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
 			SYNO_SMART_CMD_TIMEOUT > req->timeout) {
 		req->timeout = SYNO_SMART_CMD_TIMEOUT;
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT */
 	req->timeout = timeout;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT */
 	req->cmd_flags |= flags;
 	req->rq_flags |= rq_flags | RQF_QUIET;
 
@@ -426,8 +423,11 @@ static inline bool scsi_device_is_busy(struct scsi_device *sdev)
 {
 	if (atomic_read(&sdev->device_busy) >= sdev->queue_depth)
 		return true;
+#ifdef CONFIG_SYNO_MULTIPATH_DEVICE_BLOCKED_DEADLOCK_FIX
+#else /* CONFIG_SYNO_MULTIPATH_DEVICE_BLOCKED_DEADLOCK_FIX */
 	if (atomic_read(&sdev->device_blocked) > 0)
 		return true;
+#endif /* CONFIG_SYNO_MULTIPATH_DEVICE_BLOCKED_DEADLOCK_FIX */
 	return false;
 }
 
@@ -599,14 +599,14 @@ static void scsi_run_queue_async(struct scsi_device *sdev)
 	}
 }
 
-#ifdef MY_DEF_HERE
-static void SynoSpinupDone(struct request *req, blk_status_t status)
+#ifdef CONFIG_SYNO_SAS_SPINUP_DELAY
+static void SynoSpinupDone(struct request *req, blk_status_t error)
 {
 	struct scsi_device *sdev = req->q->queuedata;
 
 	blk_put_request(req);
 
-	SynoSpinupEnd(sdev);
+	SynoSpinupEnd(sdev, req, error);
 }
 
 extern struct workqueue_struct *spinup_workqueue;
@@ -657,7 +657,7 @@ static void SynoSpinupDisk(struct scsi_device *device)
 		SynoQueueSpinupReq(device);
 	}
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SPINUP_DELAY */
 
 /* Returns false when no more bytes to process, true if there are more */
 static bool scsi_end_request(struct request *req, blk_status_t error,
@@ -773,7 +773,7 @@ static bool scsi_cmd_runtime_exceeced(struct scsi_cmnd *cmd)
 	return false;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_ERROR_REPORT
 static inline bool
 SynoCmdNeedReport(unsigned char op)
 {
@@ -819,13 +819,13 @@ SynoScsiErrorCheck(struct scsi_cmnd *scsi_cmd,
 END:
 	return;
 }
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SCSI_DISK_ERROR_REPORT */
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 extern unsigned char
 syno_is_sector_need_auto_remap(struct gendisk *disk, sector_t lba);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_AUTO_REMAP_REPORT
 extern void syno_req_set_bio_auto_remap_flag(struct request *req, sector_t lba);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_AUTO_REMAP_REPORT */
 
 static void
 syno_scsi_do_remap_done(struct request *req, blk_status_t status)
@@ -1024,18 +1024,18 @@ syno_scsi_writes_sector(struct scsi_cmnd *scsi_cmd)
 	if (!blIsWrite && !syno_is_sector_need_auto_remap(gd, badLba))
 		goto ERR;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_AUTO_REMAP_REPORT
 	// only report auto-remap in read
 	if (!blIsWrite)
 		syno_req_set_bio_auto_remap_flag(scsi_cmd->request, badLba);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_AUTO_REMAP_REPORT */
 
 	syno_scsi_do_remap(scsi_cmd, badLba);
 	iRet = 0;
 ERR:
 	return iRet;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 
 /* Helper for scsi_io_completion() when special action required. */
 static void scsi_io_completion_action(struct scsi_cmnd *cmd, int result)
@@ -1127,7 +1127,7 @@ static void scsi_io_completion_action(struct scsi_cmnd *cmd, int result)
 			 */
 			if (sshdr.asc == 0x04) {
 				switch (sshdr.ascq) {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SPINUP_DELAY
 				case 0x02: /* INITIALIZING COMMAND REQUIRED */
 					action = ACTION_FAIL;
 					if ((cmd->cmnd[0] != TEST_UNIT_READY) && (cmd->cmnd[0] != REQUEST_SENSE)) {
@@ -1141,7 +1141,7 @@ static void scsi_io_completion_action(struct scsi_cmnd *cmd, int result)
 						}
 					}
 					break;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SPINUP_DELAY */
 				case 0x01: /* becoming ready */
 				case 0x04: /* format in progress */
 				case 0x05: /* rebuild in progress */
@@ -1168,7 +1168,7 @@ static void scsi_io_completion_action(struct scsi_cmnd *cmd, int result)
 			/* See SSC3rXX or current. */
 			action = ACTION_FAIL;
 			break;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 		case MEDIUM_ERROR:
 			switch (sshdr.asc) {
 			case 0x11:
@@ -1189,7 +1189,7 @@ static void scsi_io_completion_action(struct scsi_cmnd *cmd, int result)
 				break;
 			}
 			break;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 		case DATA_PROTECT:
 			action = ACTION_FAIL;
 			if ((sshdr.asc == 0x0C && sshdr.ascq == 0x12) ||
@@ -1203,9 +1203,9 @@ static void scsi_io_completion_action(struct scsi_cmnd *cmd, int result)
 			action = ACTION_FAIL;
 			break;
 		}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_ERROR_REPORT
 		SynoScsiErrorCheck(cmd, &sshdr);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_ERROR_REPORT */
 	} else
 		action = ACTION_FAIL;
 
@@ -1678,6 +1678,8 @@ static inline int scsi_dev_queue_ready(struct request_queue *q,
 	unsigned int busy;
 
 	busy = atomic_inc_return(&sdev->device_busy) - 1;
+#ifdef CONFIG_SYNO_MULTIPATH_DEVICE_BLOCKED_DEADLOCK_FIX
+#else /* CONFIG_SYNO_MULTIPATH_DEVICE_BLOCKED_DEADLOCK_FIX */
 	if (atomic_read(&sdev->device_blocked)) {
 		if (busy)
 			goto out_dec;
@@ -1690,6 +1692,7 @@ static inline int scsi_dev_queue_ready(struct request_queue *q,
 		SCSI_LOG_MLQUEUE(3, sdev_printk(KERN_INFO, sdev,
 				   "unblocking device at zero depth\n"));
 	}
+#endif /* CONFIG_SYNO_MULTIPATH_DEVICE_BLOCKED_DEADLOCK_FIX */
 
 	if (busy >= sdev->queue_depth)
 		goto out_dec;
@@ -1874,8 +1877,11 @@ static void scsi_softirq_done(struct request *rq)
 	}
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP
 extern int g_is_sas_model;
+#ifdef CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+extern struct gendisk* SynoScsiDeviceToGendisk(struct scsi_device *psdev);
+#endif /* CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE */
 static int scsi_white_list_cmd_in_hibernation(struct scsi_cmnd *cmd)
 {
 	int ret = 0;
@@ -1900,18 +1906,92 @@ static int scsi_white_list_cmd_in_hibernation(struct scsi_cmnd *cmd)
 
 	return ret;
 }
-#endif /* MY_DEF_HERE */
 
-#ifdef MY_ABC_HERE
+void SynoScsiSasSataStandbyFlagSet(struct scsi_device *sdev)
+{
+	if (!sdev) {
+		return;
+	}
+	set_bit(0, &sdev->sas_sata_standby_flag);
+}
+EXPORT_SYMBOL(SynoScsiSasSataStandbyFlagSet);
+
+void SynoScsiSasSataStandbyFlagClear(struct scsi_device *sdev)
+{
+	if (!sdev) {
+		return;
+	}
+	clear_bit(0, &sdev->sas_sata_standby_flag);
+}
+EXPORT_SYMBOL(SynoScsiSasSataStandbyFlagClear);
+
+#ifdef CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+static void SynoScsiAltSasSataStandbyFlagControl(struct scsi_device *sdev, int control)
+{
+	struct gendisk *disk = NULL, *dm_disk = NULL;
+	struct syno_mulitpath_coherent_work *coherent_work = NULL;
+	bool valid_mp_slave_device = false;
+
+	if (!sdev) {
+		return;
+	}
+
+	if (NULL != (disk = SynoScsiDeviceToGendisk(sdev))) {
+		if (disk->mpath_info) {
+			spin_lock(&disk->mpath_info->mpath_info_lock);
+			if ((dm_disk = disk->mpath_info->dm_disk) &&
+				dm_disk->syno_ops && dm_disk->syno_ops->multipath_dm_coherent_work_send) {
+				valid_mp_slave_device = true;
+			}
+			spin_unlock(&disk->mpath_info->mpath_info_lock);
+			if (valid_mp_slave_device) {
+				if (NULL !=
+					(coherent_work = kzalloc(sizeof(struct syno_mulitpath_coherent_work), GFP_ATOMIC))) {
+					coherent_work->dm_disk = dm_disk;
+					coherent_work->initiating_disk = disk;
+					if (control) {
+						coherent_work->action = MPATH_COHERENT_ACTION_DISK_STANDBY_SET;
+					} else {
+						coherent_work->action = MPATH_COHERENT_ACTION_DISK_STANDBY_CLEAR;
+					}
+					if (-1 == dm_disk->syno_ops->multipath_dm_coherent_work_send(coherent_work)) {
+						kfree(coherent_work);
+					}
+				}
+			}
+		}
+	}
+}
+void SynoScsiAltSasSataStandbyFlagSet(struct scsi_device *sdev)
+{
+	if (!sdev) {
+		return;
+	}
+	SynoScsiAltSasSataStandbyFlagControl(sdev, 1);
+}
+EXPORT_SYMBOL(SynoScsiAltSasSataStandbyFlagSet);
+
+void SynoScsiAltSasSataStandbyFlagClear(struct scsi_device *sdev)
+{
+	if (!sdev) {
+		return;
+	}
+	SynoScsiAltSasSataStandbyFlagControl(sdev, 0);
+}
+EXPORT_SYMBOL(SynoScsiAltSasSataStandbyFlagClear);
+#endif /* CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE */
+#endif /* CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP */
+
+#ifdef CONFIG_SYNO_DISK_HIBERNATION
 static int cmd_in_ignore_list(struct scsi_cmnd *cmd)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	/* Ignore EUnit control command */
 	if (cmd->device->spindown && ATA_16 == cmd->cmnd[0] &&
 		(ATA_CMD_PMP_WRITE == cmd->cmnd[14] || ATA_CMD_PMP_READ == cmd->cmnd[14])) {
 		return 1;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
 	/* this is for SATA disk only, in SATA disk, we don't know which command to wake up disk
 	 * so we need spindown to help us to remember whichever disk is sleeping
@@ -1969,7 +2049,7 @@ static int cmd_in_ignore_list(struct scsi_cmnd *cmd)
 
 	return 1;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DISK_HIBERNATION */
 
 /**
  * scsi_dispatch_command - Dispatch a command to the low-level driver.
@@ -1982,10 +2062,10 @@ static int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
 {
 	struct Scsi_Host *host = cmd->device->host;
 	int rtn = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP
 	unsigned long ulflags;
 	struct Scsi_Host *pMaster_host = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP */
 
 	atomic_inc(&cmd->device->iorequest_cnt);
 
@@ -2012,19 +2092,24 @@ static int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
 		return SCSI_MLQUEUE_DEVICE_BUSY;
 	}
 
-#ifdef MY_DEF_HERE
-	if (g_is_sas_model && (SYNO_PORT_TYPE_SAS == cmd->device->host->hostt->syno_port_type)) {
+#ifdef CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP
+	if (g_is_sas_model && (SYNO_PORT_TYPE_SAS == cmd->device->host->hostt->syno_port_type) &&
+		(cmd->device->spinup_queue)) {
 		if ((START_STOP == cmd->cmnd[0] && (0 == (cmd->cmnd[4] & 0x01)))/*sas standby cmd*/ ||
 		   ((ATA_16 == cmd->cmnd[0]) && (0xe0 == cmd->cmnd[14]))/*ata passthrough standby immediate*/) {
-			set_bit(0, &cmd->device->sas_sata_standby_flag);
+			SynoScsiSasSataStandbyFlagSet(cmd->device);
+#ifdef CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+			SynoScsiAltSasSataStandbyFlagSet(cmd->device);
+#endif /* CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE */
+			atomic_set(&cmd->device->spinup_retry_times, 5);
 		}
 
-		if (test_bit(0, &cmd->device->sas_sata_standby_flag) && !scsi_white_list_cmd_in_hibernation(cmd)) {
+		if ((test_bit(0, &cmd->device->sas_sata_standby_flag)) && (!scsi_white_list_cmd_in_hibernation(cmd))) {
 			SynoSpinupDisk(cmd->device);
 			return SCSI_MLQUEUE_DEVICE_BUSY;
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP */
 
 	/* Store the LUN value in cmnd, if needed. */
 	if (cmd->device->lun_in_cdb)
@@ -2052,7 +2137,7 @@ static int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
 
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP
 	/*
 	 * Power on eunit from deep sleep will fail after another ata command is dispatched,
 	 * so NO ata commands sent to the same eunit can be further dispatched until error handler is done.
@@ -2071,7 +2156,7 @@ static int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
 		}
 		(*(host->puiata_eh_flag)) --;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP */
 
 #ifdef CONFIG_SYNO_SAS_SPINUP_DELAY_DEBUG
 	/* print out START_STOP commands */
@@ -2084,19 +2169,19 @@ static int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
 	}
 #endif /* CONFIG_SYNO_SAS_SPINUP_DELAY_DEBUG */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DISK_HIBERNATION
 	if(cmd_in_ignore_list(cmd)){
 		goto IGNORE;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DISK_HIBERNATION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DEVICE_IDLE_TIME
 	cmd->device->last_accessed = jiffies;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DEVICE_IDLE_TIME */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DISK_HIBERNATION
 IGNORE:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DISK_HIBERNATION */
 	trace_scsi_dispatch_cmd_start(cmd);
 	rtn = host->hostt->queuecommand(host, cmd);
 	if (rtn) {
@@ -3776,3 +3861,23 @@ int scsi_vpd_tpg_id(struct scsi_device *sdev, int *rel_id)
 	return group_id;
 }
 EXPORT_SYMBOL(scsi_vpd_tpg_id);
+
+#if defined(CONFIG_SYNO_MULTIPATH_BLOCK_UNBLOCK_OPERATIONS)
+int syno_scsi_device_block(struct scsi_device *sdev)
+{
+	// in atomic context
+	if (in_atomic())
+		return scsi_internal_device_block_nowait(sdev);
+	return scsi_internal_device_block(sdev);
+}
+EXPORT_SYMBOL(syno_scsi_device_block);
+
+int syno_scsi_device_unblock(struct scsi_device *sdev, enum scsi_device_state new_state)
+{
+	// in atomic context
+	if (in_atomic())
+		return scsi_internal_device_unblock_nowait(sdev, new_state);
+	return scsi_internal_device_unblock(sdev, new_state);
+}
+EXPORT_SYMBOL(syno_scsi_device_unblock);
+#endif /* CONFIG_SYNO_MULTIPATH_BLOCK_UNBLOCK_OPERATIONS */

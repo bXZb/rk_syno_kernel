@@ -23,6 +23,9 @@
 #include <linux/pm_runtime.h>
 #include <linux/interrupt.h>
 #include <linux/slab.h>
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+#include <linux/synolib.h>
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 
 #include "../pci.h"
 #include "pciehp.h"
@@ -595,6 +598,9 @@ static irqreturn_t pciehp_isr(int irq, void *dev_id)
 	struct pci_dev *pdev = ctrl_dev(ctrl);
 	struct device *parent = pdev->dev.parent;
 	u16 status, events = 0;
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+	struct pci_dev *root_port_pdev = syno_root_port_get(pdev);
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 
 	/*
 	 * Interrupts only occur in D3hot or shallower and only if enabled
@@ -686,6 +692,13 @@ read_status:
 		ctrl_dbg(ctrl, "ignoring hotplug event %#06x\n", events);
 		return IRQ_HANDLED;
 	}
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+	if (root_port_pdev) {
+		if (1 == atomic_read(&root_port_pdev->syno_skip_irq)) {
+			return IRQ_HANDLED;
+		}
+	}
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 
 	/* Save pending events for consumption by IRQ thread. */
 	atomic_or(events, &ctrl->pending_events);

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
@@ -160,7 +157,7 @@ struct btrfs_workqueue *btrfs_alloc_workqueue(struct btrfs_fs_info *fs_info,
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_KWORK_STAT
 struct btrfs_workqueue *btrfs_alloc_workqueue_with_sysfs(
 	struct btrfs_fs_info *fs_info,
 	const char *name,
@@ -177,7 +174,7 @@ struct btrfs_workqueue *btrfs_alloc_workqueue_with_sysfs(
 	snprintf(name_sid, sizeof(name_sid), "%s-%s", trimmed_name, fs_info->sb->s_id);
 	return btrfs_alloc_workqueue(fs_info, name_sid, flags | WQ_SYSFS, limit_active, thresh);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_KWORK_STAT */
 
 /*
  * Hook for threshold which will be called in btrfs_queue_work.

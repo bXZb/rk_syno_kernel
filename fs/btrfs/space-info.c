@@ -1,11 +1,8 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_DATA_FLUSH
 #include <linux/fs.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_DATA_FLUSH */
 
 #include "misc.h"
 #include "ctree.h"
@@ -213,7 +210,7 @@ static int create_space_info(struct btrfs_fs_info *info, u64 flags)
 	INIT_LIST_HEAD(&space_info->ro_bgs);
 	INIT_LIST_HEAD(&space_info->tickets);
 	INIT_LIST_HEAD(&space_info->priority_tickets);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	spin_lock_init(&space_info->syno_allocator.lock);
 	init_rwsem(&space_info->syno_allocator.allocation_sem);
 	space_info->syno_allocator.free_space_bytes = RB_ROOT_CACHED;
@@ -224,12 +221,12 @@ static int create_space_info(struct btrfs_fs_info *info, u64 flags)
 	space_info->syno_allocator.force_cluster_disable = true;
 	space_info->syno_allocator.cache_bg = NULL;
 	space_info->syno_allocator.cache_offset = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA
 	space_info->syno_allocator.log_bg_offset = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA */
 	atomic64_set(&space_info->syno_allocator.fallback_relink_count, 0);
 	atomic64_set(&space_info->syno_allocator.fallback_full_scan_count, 0);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 
 	ret = btrfs_sysfs_add_space_info_type(info, space_info);
 	if (ret)
@@ -1013,7 +1010,7 @@ static void btrfs_async_reclaim_metadata_space(struct work_struct *work)
 	} while (flush_state <= COMMIT_TRANS);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_METADATA_RECLAIM
 static inline bool need_do_async_syno_reclaim(struct btrfs_fs_info *fs_info,
 					struct btrfs_space_info *space_info)
 {
@@ -1075,7 +1072,7 @@ loop:
 out:
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_METADATA_RECLAIM */
 
 /*
  * FLUSH_DELALLOC_WAIT:
@@ -1199,7 +1196,7 @@ static void btrfs_async_reclaim_data_space(struct work_struct *work)
 	}
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ORDERED_EXTENT_THROTTLE
 /*
  * Estimate write bandwidth at 200ms intervals.
  */
@@ -1226,9 +1223,9 @@ static void syno_ordered_extent_bw_update(struct btrfs_fs_info *fs_info)
 out:
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ORDERED_EXTENT_THROTTLE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_DATA_FLUSH
 static void btrfs_syno_async_data_flush(struct work_struct *work)
 {
 	struct btrfs_fs_info *fs_info;
@@ -1303,21 +1300,21 @@ select_inode:
 	if (!list_empty(&space_info->tickets) ||
 		!list_empty(&space_info->priority_tickets)) {
 		spin_unlock(&space_info->lock);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ORDERED_EXTENT_THROTTLE
 		syno_ordered_extent_bw_update(fs_info);
 		if (atomic64_read(&fs_info->syno_ordered_extent_nr) < (fs_info->syno_ordered_extent_processed_bw << 1))
 			goto again;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ORDERED_EXTENT_THROTTLE */
 		goto sleep;
 	}
 	spin_unlock(&space_info->lock);
 
 	if (need_do_async_syno_reclaim(fs_info, space_info)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ORDERED_EXTENT_THROTTLE
 		syno_ordered_extent_bw_update(fs_info);
 		if (atomic64_read(&fs_info->syno_ordered_extent_nr) < (fs_info->syno_ordered_extent_processed_bw << 1))
 			goto again;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ORDERED_EXTENT_THROTTLE */
 		goto sleep;
 	}
 
@@ -1328,9 +1325,9 @@ sleep:
 	schedule_timeout_interruptible(msecs_to_jiffies(1000));
 	goto again;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_DATA_FLUSH */
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK) || defined(CONFIG_SYNO_BTRFS_ASYNC_METADATA_FLUSH_AND_THROTTLE)
 void syno_perf_indicator_dirty_limit_update(struct btrfs_fs_info *fs_info)
 {
 	unsigned long now;
@@ -1360,9 +1357,9 @@ out_unlock:
 out:
 	return;
 }
-#endif /* defined(MY_ABC_HERE) || defined(MY_ABC_HERE) */
+#endif /* defined(CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK) || defined(CONFIG_SYNO_BTRFS_ASYNC_METADATA_FLUSH_AND_THROTTLE) */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_METADATA_FLUSH_AND_THROTTLE
 static bool btrfs_check_need_async_meta_flush(struct btrfs_fs_info *fs_info, bool worker)
 {
 	bool ret = false;
@@ -1445,21 +1442,21 @@ void btrfs_syno_btree_balance_dirty(struct btrfs_fs_info *fs_info, bool throttle
 out:
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_METADATA_FLUSH_AND_THROTTLE */
 
 void btrfs_init_async_reclaim_work(struct btrfs_fs_info *fs_info)
 {
 	INIT_WORK(&fs_info->async_reclaim_work, btrfs_async_reclaim_metadata_space);
 	INIT_WORK(&fs_info->async_data_reclaim_work, btrfs_async_reclaim_data_space);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_METADATA_RECLAIM
 	INIT_WORK(&fs_info->syno_async_metadata_reclaim_work, btrfs_syno_async_reclaim_metadata_space);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_METADATA_RECLAIM */
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_DATA_FLUSH
 	INIT_WORK(&fs_info->syno_async_data_flush_work, btrfs_syno_async_data_flush);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_DATA_FLUSH */
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_METADATA_FLUSH_AND_THROTTLE
 	INIT_WORK(&fs_info->syno_async_metadata_flush_work, btrfs_syno_async_metadata_flush);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_METADATA_FLUSH_AND_THROTTLE */
 }
 
 static const enum btrfs_flush_state priority_flush_states[] = {
@@ -1667,9 +1664,9 @@ static int __reserve_bytes(struct btrfs_fs_info *fs_info,
 	ASSERT(!current->journal_info || flush != BTRFS_RESERVE_FLUSH_ALL);
 
 	if (flush == BTRFS_RESERVE_FLUSH_DATA
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL
 		|| flush == BTRFS_RESERVE_FLUSH_SYNO_NO_FLUSH
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL */
 		)
 		async_work = &fs_info->async_data_reclaim_work;
 	else
@@ -1690,10 +1687,10 @@ static int __reserve_bytes(struct btrfs_fs_info *fs_info,
 	else
 		pending_tickets = !list_empty(&space_info->priority_tickets);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL
 	if (flush == BTRFS_RESERVE_FLUSH_SYNO_NO_FLUSH)
 		pending_tickets = false;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL */
 
 	/*
 	 * Carry on if we have enough space (short-circuit) OR call
@@ -1715,9 +1712,9 @@ static int __reserve_bytes(struct btrfs_fs_info *fs_info,
 	 * the list and we will do our own flushing further down.
 	 */
 	if (ret && flush != BTRFS_RESERVE_NO_FLUSH
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL
 		&& flush != BTRFS_RESERVE_FLUSH_SYNO_NO_FLUSH
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL */
 		) {
 		ticket.bytes = orig_bytes;
 		ticket.error = 0;
@@ -1740,19 +1737,19 @@ static int __reserve_bytes(struct btrfs_fs_info *fs_info,
 			list_add_tail(&ticket.list,
 				      &space_info->priority_tickets);
 		}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_METADATA_RECLAIM
 		if (space_info->flags & BTRFS_BLOCK_GROUP_METADATA &&
 		    !test_bit(BTRFS_FS_LOG_RECOVERING, &fs_info->flags) &&
 		    need_do_async_reclaim(fs_info, space_info, used)) {
 			if (!work_busy(&fs_info->syno_async_metadata_reclaim_work))
 				queue_work(system_unbound_wq, &fs_info->syno_async_metadata_reclaim_work);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_DATA_FLUSH
 			if (!work_busy(&fs_info->syno_async_data_flush_work) &&
 				!list_empty(&fs_info->syno_dirty_lru_inodes))
 				queue_work(system_unbound_wq, &fs_info->syno_async_data_flush_work);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_DATA_FLUSH */
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_METADATA_RECLAIM */
 	} else if (!ret && space_info->flags & BTRFS_BLOCK_GROUP_METADATA) {
 		used += orig_bytes;
 		/*
@@ -1768,22 +1765,22 @@ static int __reserve_bytes(struct btrfs_fs_info *fs_info,
 				queue_work(system_unbound_wq,
 					  &fs_info->async_reclaim_work);
 			}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_METADATA_RECLAIM
 			if (!work_busy(&fs_info->syno_async_metadata_reclaim_work))
 				queue_work(system_unbound_wq, &fs_info->syno_async_metadata_reclaim_work);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_DATA_FLUSH
 			if (!work_busy(&fs_info->syno_async_data_flush_work) &&
 				!list_empty(&fs_info->syno_dirty_lru_inodes))
 				queue_work(system_unbound_wq, &fs_info->syno_async_data_flush_work);
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_DATA_FLUSH */
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_METADATA_RECLAIM */
 		}
 	}
 	spin_unlock(&space_info->lock);
 	if (!ret || flush == BTRFS_RESERVE_NO_FLUSH
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL
 		|| flush == BTRFS_RESERVE_FLUSH_SYNO_NO_FLUSH
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL */
 		)
 		return ret;
 
@@ -1848,9 +1845,9 @@ int btrfs_reserve_data_bytes(struct btrfs_fs_info *fs_info, u64 bytes,
 	int ret;
 
 	ASSERT(flush == BTRFS_RESERVE_FLUSH_DATA ||
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL
 	       flush == BTRFS_RESERVE_FLUSH_SYNO_NO_FLUSH ||
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL */
 	       flush == BTRFS_RESERVE_FLUSH_FREE_SPACE_INODE);
 	ASSERT(!current->journal_info || flush != BTRFS_RESERVE_FLUSH_DATA);
 

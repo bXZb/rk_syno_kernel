@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * kernel/sched/loadavg.c
@@ -60,16 +57,16 @@
 
 /* Variables and functions for calc_load */
 atomic_long_t calc_load_tasks;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 atomic_long_t calc_io_load_tasks;
 atomic_long_t calc_cpu_load_tasks;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 unsigned long calc_load_update;
 unsigned long avenrun[3];
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 unsigned long avenrun_io[3];
 unsigned long avenrun_cpu[3];
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 EXPORT_SYMBOL(avenrun); /* should be removed */
 
 /**
@@ -87,7 +84,7 @@ void get_avenrun(unsigned long *loads, unsigned long offset, int shift)
 	loads[2] = (avenrun[2] + offset) << shift;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 void get_avenrun_split(unsigned long *io_loads, unsigned long *cpu_loads,
 		       unsigned long offset, int shift)
 {
@@ -122,7 +119,7 @@ void calc_load_fold_active(struct rq *this_rq, long adjust, long delta[])
 		this_rq->calc_load_active = nr_active;
 	}
 }
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LOAD_AVERAGE */
 long calc_load_fold_active(struct rq *this_rq, long adjust)
 {
 	long nr_active, delta = 0;
@@ -137,7 +134,7 @@ long calc_load_fold_active(struct rq *this_rq, long adjust)
 
 	return delta;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 /**
  * fixed_power_int - compute: x^n, in O(log n) time
@@ -252,10 +249,10 @@ calc_load_n(unsigned long load, unsigned long exp,
  * When making the ILB scale, we should try to pull this in as well.
  */
 static atomic_long_t calc_load_nohz[2];
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 static atomic_long_t calc_io_load_nohz[2];
 static atomic_long_t calc_cpu_load_nohz[2];
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 static int calc_load_idx;
 
 static inline int calc_load_write_idx(void)
@@ -283,7 +280,7 @@ static inline int calc_load_read_idx(void)
 	return calc_load_idx & 1;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 static void calc_load_nohz_fold(struct rq *rq)
 {
 	long delta[3] = {0};
@@ -297,7 +294,7 @@ static void calc_load_nohz_fold(struct rq *rq)
 		atomic_long_add(delta[2], &calc_cpu_load_nohz[idx]);
 	}
 }
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LOAD_AVERAGE */
 static void calc_load_nohz_fold(struct rq *rq)
 {
 	long delta;
@@ -309,7 +306,7 @@ static void calc_load_nohz_fold(struct rq *rq)
 		atomic_long_add(delta, &calc_load_nohz[idx]);
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 void calc_load_nohz_start(void)
 {
@@ -349,7 +346,7 @@ void calc_load_nohz_stop(void)
 		this_rq->calc_load_update += LOAD_FREQ;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 static void calc_load_nohz_read(long delta[])
 {
 	int idx = calc_load_read_idx();
@@ -363,7 +360,7 @@ static void calc_load_nohz_read(long delta[])
 	if (atomic_long_read(&calc_cpu_load_nohz[idx]))
 		delta[2] = atomic_long_xchg(&calc_cpu_load_nohz[idx], 0);
 }
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LOAD_AVERAGE */
 static long calc_load_nohz_read(void)
 {
 	int idx = calc_load_read_idx();
@@ -374,7 +371,7 @@ static long calc_load_nohz_read(void)
 
 	return delta;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 /*
  * NO_HZ can leave us missing all per-CPU ticks calling
@@ -389,9 +386,9 @@ static void calc_global_nohz(void)
 {
 	unsigned long sample_window;
 	long delta, active, n;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 	long io_active, cpu_active;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 	sample_window = READ_ONCE(calc_load_update);
 	if (!time_before(jiffies, sample_window + 10)) {
@@ -408,7 +405,7 @@ static void calc_global_nohz(void)
 		avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
 		avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 		io_active = atomic_long_read(&calc_io_load_tasks);
 		io_active = io_active > 0 ? io_active * FIXED_1 : 0;
 
@@ -422,7 +419,7 @@ static void calc_global_nohz(void)
 		avenrun_cpu[0] = calc_load_n(avenrun_cpu[0], EXP_1, cpu_active, n);
 		avenrun_cpu[1] = calc_load_n(avenrun_cpu[1], EXP_5, cpu_active, n);
 		avenrun_cpu[2] = calc_load_n(avenrun_cpu[2], EXP_15, cpu_active, n);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 		WRITE_ONCE(calc_load_update, sample_window + n * LOAD_FREQ);
 	}
@@ -439,11 +436,11 @@ static void calc_global_nohz(void)
 }
 #else /* !CONFIG_NO_HZ_COMMON */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 static inline void calc_load_nohz_read(long delta[]) { }
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LOAD_AVERAGE */
 static inline long calc_load_nohz_read(void) { return 0; }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 static inline void calc_global_nohz(void) { }
 
 #endif /* CONFIG_NO_HZ_COMMON */
@@ -457,12 +454,12 @@ static inline void calc_global_nohz(void) { }
 void calc_global_load(void)
 {
 	unsigned long sample_window;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 	long active, io_active, cpu_active;
 	long delta[3] = {0};
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LOAD_AVERAGE */
 	long active, delta;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 	sample_window = READ_ONCE(calc_load_update);
 	if (time_before(jiffies, sample_window + 10))
@@ -471,7 +468,7 @@ void calc_global_load(void)
 	/*
 	 * Fold the 'old' NO_HZ-delta to include all NO_HZ CPUs.
 	 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 	calc_load_nohz_read(delta);
 	if (delta[0])
 		atomic_long_add(delta[0], &calc_load_tasks);
@@ -479,11 +476,11 @@ void calc_global_load(void)
 		atomic_long_add(delta[1], &calc_io_load_tasks);
 	if (delta[2])
 		atomic_long_add(delta[2], &calc_cpu_load_tasks);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LOAD_AVERAGE */
 	delta = calc_load_nohz_read();
 	if (delta)
 		atomic_long_add(delta, &calc_load_tasks);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 	active = atomic_long_read(&calc_load_tasks);
 	active = active > 0 ? active * FIXED_1 : 0;
@@ -492,7 +489,7 @@ void calc_global_load(void)
 	avenrun[1] = calc_load(avenrun[1], EXP_5, active);
 	avenrun[2] = calc_load(avenrun[2], EXP_15, active);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 	io_active = atomic_long_read(&calc_io_load_tasks);
 	io_active = io_active > 0 ? io_active * FIXED_1 : 0;
 
@@ -506,7 +503,7 @@ void calc_global_load(void)
 	avenrun_cpu[0] = calc_load(avenrun_cpu[0], EXP_1, cpu_active);
 	avenrun_cpu[1] = calc_load(avenrun_cpu[1], EXP_5, cpu_active);
 	avenrun_cpu[2] = calc_load(avenrun_cpu[2], EXP_15, cpu_active);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 	WRITE_ONCE(calc_load_update, sample_window + LOAD_FREQ);
 
@@ -523,16 +520,16 @@ void calc_global_load(void)
  */
 void calc_global_load_tick(struct rq *this_rq)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 	long delta[3] = {0};
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LOAD_AVERAGE */
 	long delta;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 	if (time_before(jiffies, this_rq->calc_load_update))
 		return;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LOAD_AVERAGE
 	calc_load_fold_active(this_rq, 0, delta);
 	if (delta[0])
 		atomic_long_add(delta[0], &calc_load_tasks);
@@ -540,11 +537,11 @@ void calc_global_load_tick(struct rq *this_rq)
 		atomic_long_add(delta[1], &calc_io_load_tasks);
 	if (delta[2])
 		atomic_long_add(delta[2], &calc_cpu_load_tasks);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LOAD_AVERAGE */
 	delta  = calc_load_fold_active(this_rq, 0);
 	if (delta)
 		atomic_long_add(delta, &calc_load_tasks);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LOAD_AVERAGE */
 
 	this_rq->calc_load_update += LOAD_FREQ;
 }

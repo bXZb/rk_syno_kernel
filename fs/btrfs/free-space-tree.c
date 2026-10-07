@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2015 Facebook.  All rights reserved.
@@ -19,10 +16,10 @@ static int __add_block_group_free_space(struct btrfs_trans_handle *trans,
 					struct btrfs_block_group *block_group,
 					struct btrfs_path *path);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE
 static int clear_free_space_tree(struct btrfs_trans_handle *trans,
 				 struct btrfs_root *root);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE */
 
 void set_free_space_tree_thresholds(struct btrfs_block_group *cache)
 {
@@ -86,10 +83,10 @@ out:
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_BTRFS_FREE_SPACE_ANALYZE
+#else /* CONFIG_SYNO_BTRFS_FREE_SPACE_ANALYZE */
 EXPORT_FOR_TESTS
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_SPACE_ANALYZE */
 struct btrfs_free_space_info *search_free_space_info(
 		struct btrfs_trans_handle *trans,
 		struct btrfs_block_group *block_group,
@@ -1165,10 +1162,10 @@ int btrfs_create_free_space_tree(struct btrfs_fs_info *fs_info)
 	set_bit(BTRFS_FS_CREATING_FREE_SPACE_TREE, &fs_info->flags);
 	set_bit(BTRFS_FS_FREE_SPACE_TREE_UNTRUSTED, &fs_info->flags);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE
 	clear_bit(BTRFS_FS_ABORT_FREE_SPACE_TREE, &fs_info->flags);
 	atomic64_set(&fs_info->free_space_tree_processed_block_group_cnt, 0);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE */
 
 	free_space_root = btrfs_create_tree(trans,
 					    BTRFS_FREE_SPACE_TREE_OBJECTID);
@@ -1176,9 +1173,9 @@ int btrfs_create_free_space_tree(struct btrfs_fs_info *fs_info)
 		ret = PTR_ERR(free_space_root);
 		goto abort;
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_REFILL_GLOBAL_RSV
 	free_space_root->block_rsv = &fs_info->global_block_rsv;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_REFILL_GLOBAL_RSV */
 	fs_info->free_space_root = free_space_root;
 
 	node = rb_first(&fs_info->block_group_cache_tree);
@@ -1188,17 +1185,17 @@ int btrfs_create_free_space_tree(struct btrfs_fs_info *fs_info)
 		ret = populate_free_space_tree(trans, block_group);
 		if (ret)
 			goto abort;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE
 		if (test_bit(BTRFS_FS_ABORT_FREE_SPACE_TREE, &fs_info->flags))
 			break;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE */
 		node = rb_next(node);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE
 		atomic64_inc(&fs_info->free_space_tree_processed_block_group_cnt);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE */
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE
 	if (!test_bit(BTRFS_FS_ABORT_FREE_SPACE_TREE, &fs_info->flags)) {
 		btrfs_set_fs_compat_ro(fs_info, FREE_SPACE_TREE);
 		btrfs_set_fs_compat_ro(fs_info, FREE_SPACE_TREE_VALID);
@@ -1229,7 +1226,7 @@ int btrfs_create_free_space_tree(struct btrfs_fs_info *fs_info)
 #else
 	btrfs_set_fs_compat_ro(fs_info, FREE_SPACE_TREE);
 	btrfs_set_fs_compat_ro(fs_info, FREE_SPACE_TREE_VALID);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE */
 
 	clear_bit(BTRFS_FS_CREATING_FREE_SPACE_TREE, &fs_info->flags);
 	ret = btrfs_commit_transaction(trans);
@@ -1242,9 +1239,9 @@ int btrfs_create_free_space_tree(struct btrfs_fs_info *fs_info)
 	return ret;
 
 abort:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE
 	clear_bit(BTRFS_FS_ABORT_FREE_SPACE_TREE, &fs_info->flags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE */
 	clear_bit(BTRFS_FS_CREATING_FREE_SPACE_TREE, &fs_info->flags);
 	clear_bit(BTRFS_FS_FREE_SPACE_TREE_UNTRUSTED, &fs_info->flags);
 	btrfs_abort_transaction(trans, ret);
@@ -1304,15 +1301,15 @@ int btrfs_clear_free_space_tree(struct btrfs_fs_info *fs_info)
 	if (IS_ERR(trans))
 		return PTR_ERR(trans);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	down_write(&fs_info->commit_root_sem);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 	btrfs_clear_fs_compat_ro(fs_info, FREE_SPACE_TREE);
 	btrfs_clear_fs_compat_ro(fs_info, FREE_SPACE_TREE_VALID);
 	fs_info->free_space_root = NULL;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	up_write(&fs_info->commit_root_sem);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 
 	ret = clear_free_space_tree(trans, free_space_root);
 	if (ret)

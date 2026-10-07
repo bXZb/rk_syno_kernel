@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2007-2010 Advanced Micro Devices, Inc.
@@ -2741,7 +2738,7 @@ static int amd_iommu_def_domain_type(struct device *dev)
 {
 	struct iommu_dev_data *dev_data;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_IOMMU_AMD_USB_QUIRK
 	if (dev_is_pci(dev)) {
 		struct pci_dev *pdev = to_pci_dev(dev);
 
@@ -2750,7 +2747,7 @@ static int amd_iommu_def_domain_type(struct device *dev)
 			return IOMMU_DOMAIN_DMA;
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_IOMMU_AMD_USB_QUIRK */
 	
 	dev_data = dev_iommu_priv_get(dev);
 	if (!dev_data)

@@ -14,6 +14,9 @@
 #include "blk.h"
 #include "blk-mq.h"
 #include "blk-mq-tag.h"
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+#include "blk-mq-debugfs.h"
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 
 static void blk_mq_sysfs_release(struct kobject *kobj)
 {
@@ -232,6 +235,9 @@ static void blk_mq_unregister_hctx(struct blk_mq_hw_ctx *hctx)
 	if (!hctx->nr_ctx)
 		return;
 
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+	blk_mq_debugfs_unregister_hctx(hctx);
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 	hctx_for_each_ctx(hctx, ctx, i)
 		kobject_del(&ctx->kobj);
 

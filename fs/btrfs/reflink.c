@@ -1,25 +1,22 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 
 #include <linux/blkdev.h>
 #include <linux/iversion.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 #include <linux/fsnotify.h>
 #include <linux/security.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 #include "compression.h"
 #include "ctree.h"
 #include "delalloc-space.h"
 #include "reflink.h"
 #include "transaction.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #include "qgroup.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 #define BTRFS_MAX_DEDUPE_LEN	SZ_16M
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 struct btrfs_syno_clone_range_v2 {
 	u64 src_off;
 	u64 src_len;
@@ -28,7 +25,7 @@ struct btrfs_syno_clone_range_v2 {
 	u64 ref_limit;
 	u32 flag;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 
 static int clone_finish_inode_update(struct btrfs_trans_handle *trans,
 				     struct inode *inode,
@@ -297,17 +294,21 @@ copy_inline_extent:
 			    btrfs_item_ptr_offset(path->nodes[0],
 						  path->slots[0]),
 			    size);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	down_read(&root->rescan_lock);
 	btrfs_update_inode_bytes(BTRFS_I(dst), datal, drop_args.bytes_found);
 	btrfs_qgroup_syno_accounting(BTRFS_I(dst), datal,
 					drop_args.bytes_found, UPDATE_QUOTA);
 	btrfs_usrquota_syno_accounting(BTRFS_I(dst), datal,
 					drop_args.bytes_found, UPDATE_QUOTA);
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+	btrfs_qgroup_deduped_zero_update(BTRFS_I(dst),
+					0, drop_args.deduped_zero_found);
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
 	up_read(&root->rescan_lock);
 #else
 	btrfs_update_inode_bytes(BTRFS_I(dst), datal, drop_args.bytes_found);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 	set_bit(BTRFS_INODE_NEEDS_FULL_SYNC, &BTRFS_I(dst)->runtime_flags);
 	ret = btrfs_inode_set_file_extent_range(BTRFS_I(dst), 0, aligned_end);
 out:
@@ -349,7 +350,7 @@ copy_to_page:
 	goto out;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 int btrfs_get_extent_refs_count(struct btrfs_fs_info *fs_info, u64 bytenr,
 		                      u64 num_bytes, u64 *refs)
 {
@@ -424,7 +425,11 @@ static int btrfs_clone_auto_rewrite(struct inode *inode, u64 off, u64 len, bool 
 	while (idx < total_cluster) {
 		num_pages = min(total_cluster - idx, max_cluster);
 		ret_pages = cluster_pages_for_defrag(inode, pages,
-				        start_idx + idx, num_pages);
+				        start_idx + idx, num_pages
+#ifdef CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS
+						, false
+#endif /* CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS */
+						);
 		if (ret_pages <= 0) {
 			if (ret_pages == 0)
 				ret_pages = -ENOMEM;
@@ -442,7 +447,7 @@ err:
 	kfree(pages);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 
 /**
  * btrfs_clone() - clone a range from inode file to another
@@ -458,9 +463,9 @@ err:
 static int btrfs_clone(struct inode *src, struct inode *inode,
 		       const u64 off, const u64 olen, const u64 olen_aligned,
 		       const u64 destoff, int no_time_update
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 		       , struct btrfs_syno_clone_range_v2 *v2_args
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 		       )
 {
 	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
@@ -474,14 +479,14 @@ static int btrfs_clone(struct inode *src, struct inode *inode,
 	int ret;
 	const u64 len = olen_aligned;
 	u64 last_dest_end = destoff;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 	int need_rewrite_dst = 0;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	struct ulist *disko_ulist;
 	bool set_clone_range; // Shall we set BTRFS_EXTENT_FLAG_HAS_CLONE_RANGE?
 	bool check_backref;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	ret = -ENOMEM;
 	buf = kvmalloc(fs_info->nodesize, GFP_KERNEL);
@@ -494,7 +499,7 @@ static int btrfs_clone(struct inode *src, struct inode *inode,
 		return ret;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	disko_ulist = ulist_alloc(GFP_KERNEL);
 	if (!disko_ulist) {
 		btrfs_free_path(path);
@@ -516,7 +521,7 @@ static int btrfs_clone(struct inode *src, struct inode *inode,
 	ret = btrfs_usrquota_syno_reserve(BTRFS_I(inode), olen_aligned);
 	if (ret < 0)
 		goto free_qgroup;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	path->reada = READA_FORWARD;
 	/* Clone data */
@@ -533,9 +538,9 @@ static int btrfs_clone(struct inode *src, struct inode *inode,
 		struct btrfs_key new_key;
 		u64 disko = 0, diskl = 0;
 		u64 datao = 0, datal = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 		u64 ram_bytes = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 		u8 comp;
 		u64 drop_start;
 
@@ -588,9 +593,9 @@ process_slot:
 			diskl = btrfs_file_extent_disk_num_bytes(leaf, extent);
 			datao = btrfs_file_extent_offset(leaf, extent);
 			datal = btrfs_file_extent_num_bytes(leaf, extent);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			ram_bytes = btrfs_file_extent_ram_bytes(leaf, extent);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 		} else if (type == BTRFS_FILE_EXTENT_INLINE) {
 			/* Take upper bound, may be compressed */
 			datal = btrfs_file_extent_ram_bytes(leaf, extent);
@@ -622,7 +627,7 @@ process_slot:
 		else
 			new_key.offset = destoff;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 		if (type == BTRFS_FILE_EXTENT_REG && disko != 0 &&
 			v2_args && v2_args->ref_limit) {
 			u64 refs = 0;
@@ -644,7 +649,7 @@ process_slot:
 				}
 			}
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 		/*
 		 * Deal with a hole that doesn't have an extent item that
 		 * represents it (NO_HOLES feature enabled).
@@ -682,7 +687,7 @@ process_slot:
 			clone_info.file_offset = new_key.offset;
 			clone_info.extent_buf = buf;
 			clone_info.is_new_extent = false;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			clone_info.ram_bytes = ram_bytes;
 			clone_info.clone_range = set_clone_range;
 			clone_info.clone_account_quota = false;
@@ -699,23 +704,23 @@ process_slot:
 					ulist_remove_first(disko_ulist);
 				}
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 			ret = btrfs_replace_file_extents(inode, path, drop_start,
 					new_key.offset + datal - 1, &clone_info,
 					&trans
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_NON_BLOCKING_PUNCH_HOLE
 					, NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_NON_BLOCKING_PUNCH_HOLE */
 					);
 			if (ret)
 				goto out;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_CLONERANGE_NBYTES_WRONG
 			btrfs_drop_extent_cache(BTRFS_I(inode), drop_start, new_key.offset + datal - 1, 0);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_FIX_CLONERANGE_NBYTES_WRONG */
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 			if (need_rewrite_dst)
 				v2_args->dest_len = datal;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 		} else if (type == BTRFS_FILE_EXTENT_INLINE) {
 			/*
 			 * Inline extents always have to start at file offset 0
@@ -728,14 +733,14 @@ process_slot:
 			ASSERT(key.offset == 0);
 			ASSERT(datal <= fs_info->sectorsize);
 			if (key.offset != 0 || datal > fs_info->sectorsize)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			{
 				up_read(&fs_info->inflight_reserve_lock);
 				return -EUCLEAN;
 			}
 #else
 				return -EUCLEAN;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 			ret = clone_copy_inline_extent(inode, path, &new_key,
 						       drop_start, datal, size,
@@ -765,12 +770,12 @@ process_slot:
 						destoff, olen, no_time_update);
 		if (ret)
 			goto out;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 		if (need_rewrite_dst) {
 			ret = -EMLINK;
 			goto out;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 		if (new_key.offset + datal >= destoff + len)
 			break;
 
@@ -816,9 +821,9 @@ process_slot:
 
 		ret = btrfs_replace_file_extents(inode, path, last_dest_end,
 				destoff + len - 1, NULL, &trans
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_NON_BLOCKING_PUNCH_HOLE
 				, NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_NON_BLOCKING_PUNCH_HOLE */
 				);
 		if (ret)
 			goto out;
@@ -828,14 +833,14 @@ process_slot:
 	}
 
 out:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	btrfs_usrquota_syno_free(BTRFS_I(inode), olen_aligned);
 free_qgroup:
 	btrfs_qgroup_syno_free(BTRFS_I(inode)->root, olen_aligned);
 free_path:
 	up_read(&fs_info->inflight_reserve_lock);
 	ulist_free(disko_ulist);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 	btrfs_free_path(path);
 	kvfree(buf);
 	clear_bit(BTRFS_INODE_NO_DELALLOC_FLUSH, &BTRFS_I(inode)->runtime_flags);
@@ -875,9 +880,9 @@ static int btrfs_extent_same_range(struct inode *src, u64 loff, u64 len,
 	 */
 	btrfs_double_extent_lock(src, loff, dst, dst_loff, len);
 	ret = btrfs_clone(src, dst, loff, len, ALIGN(len, bs), dst_loff, 1
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 				    , NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 				    );
 	btrfs_double_extent_unlock(src, loff, dst, dst_loff, len);
 
@@ -925,7 +930,7 @@ out:
 
 	return ret;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RECLAIM_SPACE
 int get_extent_item_list(struct inode *inode, u64 offset, u64 len,
 				struct ulist *extent_item_list)
 {
@@ -1056,8 +1061,8 @@ int extent_same_release_size_accounting(struct ulist *dst_extent_item,
 
 	return 0;
 }
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_BTRFS_RECLAIM_SPACE */
+#ifdef CONFIG_SYNO_BTRFS_DEDUPE
 /* ported from 4.4.x */
 static struct page *extent_same_get_page(struct inode *inode, pgoff_t index)
 {
@@ -1611,11 +1616,11 @@ again:
 		*diff_offset = dst_off + len;
 
 	if (len && len >= min_len)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 		ret = btrfs_clone(src, dst, src_off, olen, len, dst_off, 1, NULL);
 #else
 		ret = btrfs_clone(src, dst, src_off, olen, len, dst_off, 1);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 
 	btrfs_double_extent_unlock(src, src_off, dst, dst_off, lock_len);
 
@@ -1764,6 +1769,9 @@ static int btrfs_syno_extent_same(struct inode *src, struct inode *dst,
 		goto out;
 
 	ret = btrfs_file_extent_deduped_set_range(dst, same->dst_offset, same->length, true);
+	if (ret == -ENOENT) {
+		ret = 0;
+	}
 
 out:
 	ulist_free(extent_item_list);
@@ -1951,6 +1959,19 @@ int insert_dedupe_file_extent(struct btrfs_trans_handle *trans, struct inode *in
 					bytes_to_add, drop_args.bytes_found, UPDATE_QUOTA);
 	btrfs_usrquota_syno_accounting(BTRFS_I(inode),
 					bytes_to_add, drop_args.bytes_found, UPDATE_QUOTA);
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+	{
+		/*
+		 * This is insert_dedupe_file_extent: the new extent always
+		 * has BTRFS_FILE_EXTENT_DEDUPED set (see
+		 * btrfs_set_file_extent_syno_flag above), so disk_bytenr==0
+		 * is sufficient to identify a deduped-zero.
+		 */
+		u64 dz_add = (disk_bytenr == 0) ? len : 0;
+		btrfs_qgroup_deduped_zero_update(BTRFS_I(inode),
+						dz_add, drop_args.deduped_zero_found);
+	}
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
 	up_read(&root->rescan_lock);
 
 	ret = btrfs_inode_set_file_extent_range(BTRFS_I(inode), offset, len);
@@ -2085,9 +2106,9 @@ int inline_dedupe_search(struct inode *inode, u64 start, u64 len,
 out:
 	return ret;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DEDUPE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SUPPORT_FULLY_CLONE_BETWEEN_CSUM_AND_NOCSUM_DIR
 static void syno_inode_clone_change_flags(struct inode *src,
 					  struct inode *inode,
 					  u64 destoff,
@@ -2134,13 +2155,13 @@ out_unlock:
 	up_write(&BTRFS_I(inode)->dio_sem);
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SUPPORT_FULLY_CLONE_BETWEEN_CSUM_AND_NOCSUM_DIR */
 
 static noinline int btrfs_clone_files(struct file *file, struct file *file_src,
 					u64 off, u64 olen, u64 destoff
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 					, struct btrfs_syno_clone_range_v2 *v2_args
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 					)
 {
 	struct inode *inode = file_inode(file);
@@ -2150,10 +2171,10 @@ static noinline int btrfs_clone_files(struct file *file, struct file *file_src,
 	int wb_ret;
 	u64 len = olen;
 	u64 bs = fs_info->sb->s_blocksize;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 	u64 orig_destoff = 0;
 	u64 orig_len = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 
 	/*
 	 * VFS's generic_remap_file_range_prep() protects us from cloning the
@@ -2185,24 +2206,24 @@ static noinline int btrfs_clone_files(struct file *file, struct file *file_src,
 			return ret;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 	orig_destoff = destoff;
 	orig_len = len;
 clone_again:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 	/*
 	 * Lock destination range to serialize with concurrent readpages() and
 	 * source range to serialize with relocation.
 	 */
 	btrfs_double_extent_lock(src, off, inode, destoff, len);
 	ret = btrfs_clone(src, inode, off, olen, len, destoff, 0
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 					    , v2_args
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 					    );
 	btrfs_double_extent_unlock(src, off, inode, destoff, len);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 	if (ret == -EMLINK && v2_args) {
 		if (v2_args->flag & BTRFS_CLONE_RANGE_V2_AUTO_REWRITE_SRC) {
 			if (btrfs_root_readonly(BTRFS_I(src)->root))
@@ -2245,7 +2266,7 @@ fail_out:
 	truncate_inode_pages_range(&inode->i_data,
 				round_down(orig_destoff, PAGE_SIZE),
 				round_up(orig_destoff + orig_len, PAGE_SIZE) - 1);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 	/*
 	 * We may have copied an inline extent into a page of the destination
 	 * range, so wait for writeback to complete before truncating pages
@@ -2260,12 +2281,12 @@ fail_out:
 	truncate_inode_pages_range(&inode->i_data,
 				round_down(destoff, PAGE_SIZE),
 				round_up(destoff + len, PAGE_SIZE) - 1);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR
 static inline
 int btrfs_clone_check_compr(const struct inode *inode_in,
 			    const struct inode *inode_out,
@@ -2283,7 +2304,7 @@ int btrfs_clone_check_compr(const struct inode *inode_in,
 
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 
 static int btrfs_remap_file_range_prep(struct file *file_in, loff_t pos_in,
 				       struct file *file_out, loff_t pos_out,
@@ -2306,16 +2327,16 @@ static int btrfs_remap_file_range_prep(struct file *file_in, loff_t pos_in,
 		    inode_in->i_sb != inode_out->i_sb)
 			return -EXDEV;
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SUPPORT_FULLY_CLONE_BETWEEN_CSUM_AND_NOCSUM_DIR
 	syno_inode_clone_change_flags(inode_in, inode_out,
 				      pos_out, remap_flags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SUPPORT_FULLY_CLONE_BETWEEN_CSUM_AND_NOCSUM_DIR */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR
 	ret = btrfs_clone_check_compr(inode_in, inode_out, remap_flags);
 	if (ret)
 		return ret;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 
 	/* Don't make the dst file partly checksummed */
 	if ((BTRFS_I(inode_in)->flags & BTRFS_INODE_NODATASUM) !=
@@ -2385,7 +2406,7 @@ static int btrfs_remap_file_range_prep(struct file *file_in, loff_t pos_in,
 					    len, remap_flags);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 static int clone_range_v2_verify_area(struct file *file, loff_t pos, loff_t len,
 			     bool write)
 {
@@ -2421,9 +2442,9 @@ int btrfs_ioctl_syno_clone_range_v2(struct file *dst_file,
 	bool same_inode;
 	u64 len;
 	int ret;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR
 	unsigned int flags = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 
 	memset(&args, 0, sizeof(args));
 	if (copy_from_user(&args.src_off, &argp->src_offset, sizeof(args.src_off)) ||
@@ -2471,7 +2492,7 @@ int btrfs_ioctl_syno_clone_range_v2(struct file *dst_file,
 	if (ret)
 		goto out;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR
 	/*
 	 * There's workarounds for DSM #81059 and DSM#150209. We allow to clone
 	 * between compression and no compression dirs in TWO conditions:
@@ -2481,7 +2502,7 @@ int btrfs_ioctl_syno_clone_range_v2(struct file *dst_file,
 	if ((args.flag & BTRFS_CLONE_RANGE_V2_SKIP_CHECK_COMPR_DIR) ||
 	    (!args.src_off && !args.dest_off && !len))
 		flags = REMAP_FILE_SKIP_CHECK_COMPR_DIR;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 
 	src_inode = file_inode(src_file.file);
 	same_inode = dst_inode == src_inode;
@@ -2492,11 +2513,11 @@ int btrfs_ioctl_syno_clone_range_v2(struct file *dst_file,
 
 	ret = btrfs_remap_file_range_prep(src_file.file, args.src_off,
 	                                  dst_file, args.dest_off, &len
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR
 					  , flags
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 					  , 0
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 					  );
 	if (ret < 0 || len == 0)
 		goto out_unlock;
@@ -2525,7 +2546,7 @@ out:
 	fdput(src_file);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 
 loff_t btrfs_remap_file_range(struct file *src_file, loff_t off,
 		struct file *dst_file, loff_t destoff, loff_t len,
@@ -2553,9 +2574,9 @@ loff_t btrfs_remap_file_range(struct file *src_file, loff_t off,
 		ret = btrfs_extent_same(src_inode, off, len, dst_inode, destoff);
 	else
 		ret = btrfs_clone_files(dst_file, src_file, off, len, destoff
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLONE_RANGE_V2
 					    , NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLONE_RANGE_V2 */
 					    );
 
 out_unlock:

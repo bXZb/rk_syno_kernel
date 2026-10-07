@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2011, 2012 STRATO.  All rights reserved.
@@ -78,9 +75,9 @@ struct scrub_page {
 		unsigned int	mirror_num:8;
 		unsigned int	have_csum:1;
 		unsigned int	io_error:1;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		unsigned int	tried_out:1;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	};
 	u8			csum[BTRFS_CSUM_SIZE];
 
@@ -122,19 +119,19 @@ struct scrub_block {
 		/* It is for the data with checksum */
 		unsigned int	data_corrected:1;
 	};
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	int page_tried_out;
 	u8 nr_retry;
 	u8 prev_bad_csum[BTRFS_CSUM_SIZE];
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	struct btrfs_work	work;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 #define SCRUB_RETRY_LIMIT SYNO_DATA_CORRECTION_MAX_RETRY_TIMES
 #define BTRFS_SCRUB_RETRY_ABORTED ((u8)-1)
 #define BTRFS_SCRUB_SHOULD_ABORT_RETRY ((u8)-2)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 /* Used for the chunks with parity stripe such RAID5/6 */
 struct scrub_parity {
@@ -652,9 +649,9 @@ nomem:
 
 static int scrub_print_warning_inode(u64 inum, u64 offset, u64 root,
 				     void *warn_ctx
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SEARCH_BY_EXTENT_TYPE
 				     , int extent_type
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SEARCH_BY_EXTENT_TYPE */
 				     )
 {
 	u64 isize;
@@ -670,10 +667,10 @@ static int scrub_print_warning_inode(u64 inum, u64 offset, u64 root,
 	struct btrfs_root *local_root;
 	struct btrfs_key key;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	add_cksumfailed_file(root, inum, fs_info);
 	SynoAutoErrorFsBtrfsReport(fs_info->fs_devices->fsid);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	local_root = btrfs_get_fs_root(fs_info, root, true);
 	if (IS_ERR(local_root)) {
 		ret = PTR_ERR(local_root);
@@ -750,9 +747,9 @@ err:
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 // Now we enter here only when we failed to do the repair to avoid unnecessary backref walking.
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 static void scrub_print_warning(const char *errstr, struct scrub_block *sblock)
 {
 	struct btrfs_device *dev;
@@ -863,11 +860,11 @@ static int scrub_handle_errored_block(struct scrub_block *sblock_to_check)
 	int success;
 	bool full_stripe_locked;
 	unsigned int nofs_flag;
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	static DEFINE_RATELIMIT_STATE(rs, DEFAULT_RATELIMIT_INTERVAL,
 				      DEFAULT_RATELIMIT_BURST);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	BUG_ON(sblock_to_check->page_count < 1);
 	fs_info = sctx->fs_info;
@@ -973,8 +970,8 @@ static int scrub_handle_errored_block(struct scrub_block *sblock_to_check)
 	BUG_ON(failed_mirror_index >= BTRFS_MAX_MIRRORS);
 	sblock_bad = sblocks_for_recheck + failed_mirror_index;
 
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	/* build and submit the bios for the failed mirror, check checksums */
 	scrub_recheck_block(fs_info, sblock_bad, 1);
 
@@ -997,18 +994,18 @@ static int scrub_handle_errored_block(struct scrub_block *sblock_to_check)
 			scrub_write_block_to_dev_replace(sblock_bad);
 		goto out;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	if (!sblock_to_check->no_io_error_seen) {
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	if (!sblock_bad->no_io_error_seen) {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		spin_lock(&sctx->stat_lock);
 		sctx->stat.read_errors++;
 		spin_unlock(&sctx->stat_lock);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		btrfs_data_correction_print_in_rcu(fs_info,
 			fs_info->correction_suppress_log,
 			"i/o error found by scrub at logical %llu on dev %s, "
@@ -1016,22 +1013,22 @@ static int scrub_handle_errored_block(struct scrub_block *sblock_to_check)
 			logical, rcu_str_deref(dev->name),
 			failed_mirror_index, is_metadata);
 		btrfs_dev_stat_inc(dev, BTRFS_DEV_STAT_READ_ERRS);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		if (__ratelimit(&rs))
 			scrub_print_warning("i/o error", sblock_to_check);
 		btrfs_dev_stat_inc_and_print(dev, BTRFS_DEV_STAT_READ_ERRS);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	} else if (sblock_to_check->checksum_error) {
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	} else if (sblock_bad->checksum_error) {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		spin_lock(&sctx->stat_lock);
 		sctx->stat.csum_errors++;
 		spin_unlock(&sctx->stat_lock);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		btrfs_data_correction_print_in_rcu(fs_info,
 			fs_info->correction_suppress_log,
 			"checksum error found by scrub at logical %llu on dev %s, "
@@ -1039,23 +1036,23 @@ static int scrub_handle_errored_block(struct scrub_block *sblock_to_check)
 			logical, rcu_str_deref(dev->name),
 			failed_mirror_index, is_metadata);
 		btrfs_dev_stat_inc(dev, BTRFS_DEV_STAT_CORRUPTION_ERRS);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		if (__ratelimit(&rs))
 			scrub_print_warning("checksum error", sblock_to_check);
 		btrfs_dev_stat_inc_and_print(dev,
 					     BTRFS_DEV_STAT_CORRUPTION_ERRS);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	} else if (sblock_to_check->header_error) {
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	} else if (sblock_bad->header_error) {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		spin_lock(&sctx->stat_lock);
 		sctx->stat.verify_errors++;
 		spin_unlock(&sctx->stat_lock);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		btrfs_data_correction_print_in_rcu(fs_info,
 			fs_info->correction_suppress_log,
 			"checksum/header error found by scrub at logical %llu on dev %s, "
@@ -1069,7 +1066,7 @@ static int scrub_handle_errored_block(struct scrub_block *sblock_to_check)
 		else
 			btrfs_dev_stat_inc(dev,
 				BTRFS_DEV_STAT_CORRUPTION_ERRS);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		if (__ratelimit(&rs))
 			scrub_print_warning("checksum/header error",
 					    sblock_to_check);
@@ -1079,7 +1076,7 @@ static int scrub_handle_errored_block(struct scrub_block *sblock_to_check)
 		else
 			btrfs_dev_stat_inc_and_print(dev,
 				BTRFS_DEV_STAT_CORRUPTION_ERRS);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	}
 
 	if (sctx->readonly) {
@@ -1087,9 +1084,9 @@ static int scrub_handle_errored_block(struct scrub_block *sblock_to_check)
 		goto out;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	correction_get_locked_record(fs_info, sblock_to_check->pagev[0]->logical);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	/*
 	 * now build and submit the bios for the other mirrors, check
 	 * checksums.
@@ -1108,11 +1105,11 @@ static int scrub_handle_errored_block(struct scrub_block *sblock_to_check)
 	for (mirror_index = 0; ;mirror_index++) {
 		struct scrub_block *sblock_other;
 
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		if (mirror_index == failed_mirror_index)
 			continue;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 		/* raid56's mirror can be more than BTRFS_MAX_MIRRORS */
 		if (!scrub_is_page_on_raid56(sblock_bad->pagev[0])) {
@@ -1137,10 +1134,10 @@ static int scrub_handle_errored_block(struct scrub_block *sblock_to_check)
 			sblock_other->pagev[0]->mirror_num = 1 + mirror_index;
 		}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		if (mirror_index == failed_mirror_index)
 			goto recheck_retry;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 		/* build and submit the bios, check checksums */
 		scrub_recheck_block(fs_info, sblock_other, 0);
@@ -1159,7 +1156,7 @@ static int scrub_handle_errored_block(struct scrub_block *sblock_to_check)
 			}
 		}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 recheck_retry:
 		if (scrub_is_page_on_raid56(sblock_other->pagev[0]))
 			continue;
@@ -1191,7 +1188,7 @@ recheck_retry:
 			goto recheck_retry;
 		else
 			sblock_other->nr_retry = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	}
 
 	if (sblock_bad->no_io_error_seen && !sctx->is_dev_replace)
@@ -1222,9 +1219,9 @@ recheck_retry:
 	 * area are unreadable.
 	 */
 	success = 1;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	goto did_not_correct_error;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	for (page_num = 0; page_num < sblock_bad->page_count;
 	     page_num++) {
 		struct scrub_page *page_bad = sblock_bad->pagev[page_num];
@@ -1312,7 +1309,7 @@ corrected_error:
 			sctx->stat.corrected_errors++;
 			sblock_to_check->data_corrected = 1;
 			spin_unlock(&sctx->stat_lock);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 			correction_put_locked_record(fs_info,
 				sblock_to_check->pagev[0]->logical);
 			btrfs_data_correction_print_in_rcu(fs_info,
@@ -1320,29 +1317,29 @@ corrected_error:
 				"BTRFS: read error corrected (scrub) "
 				"at logical %llu on dev %s, metadata = %d\n",
 				logical, rcu_str_deref(dev->name), is_metadata);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 			btrfs_err_rl_in_rcu(fs_info,
 				"fixed up error at logical %llu on dev %s",
 				logical, rcu_str_deref(dev->name));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		}
 	} else {
 did_not_correct_error:
 		spin_lock(&sctx->stat_lock);
 		sctx->stat.uncorrectable_errors++;
 		spin_unlock(&sctx->stat_lock);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		correction_put_locked_record(fs_info, sblock_to_check->pagev[0]->logical);
 		printk_in_rcu(KERN_ERR
 "failed to repair csum (scrub) at logical %llu on dev %s, mirror = %u, metadata = %d\n",
 			      logical, rcu_str_deref(dev->name),
 			      failed_mirror_index, is_metadata);
 		scrub_print_warning(NULL, sblock_to_check);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		btrfs_err_rl_in_rcu(fs_info,
 			"unable to fixup (regular) error at logical %llu on dev %s",
 			logical, rcu_str_deref(dev->name));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	}
 
 out:
@@ -1621,9 +1618,9 @@ static void scrub_recheck_block(struct btrfs_fs_info *fs_info,
 {
 	int page_num;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	if (sblock->nr_retry < BTRFS_SCRUB_SHOULD_ABORT_RETRY)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		sblock->no_io_error_seen = 1;
 
 	/* short cut for raid56 */
@@ -1634,11 +1631,11 @@ static void scrub_recheck_block(struct btrfs_fs_info *fs_info,
 		struct bio *bio;
 		struct scrub_page *page = sblock->pagev[page_num];
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		if (page->tried_out &&
 		    sblock->nr_retry < BTRFS_SCRUB_SHOULD_ABORT_RETRY)
 			continue;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 		if (page->dev->bdev == NULL) {
 			page->io_error = 1;
@@ -1653,39 +1650,39 @@ static void scrub_recheck_block(struct btrfs_fs_info *fs_info,
 		bio_add_page(bio, page->page, PAGE_SIZE, 0);
 		bio->bi_iter.bi_sector = page->physical >> 9;
 		bio->bi_opf = REQ_OP_READ;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		if (sblock->nr_retry == BTRFS_SCRUB_SHOULD_ABORT_RETRY)
 			bio_set_flag(bio, BIO_CORRECTION_ABORT);
 		else if (sblock->nr_retry)
 			bio_set_flag(bio, BIO_CORRECTION_RETRY);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 		if (btrfsic_submit_bio_wait(bio)) {
 			page->io_error = 1;
 			sblock->no_io_error_seen = 0;
 		}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		if (bio_flagged(bio, BIO_CORRECTION_ERR) &&
 		    !page->tried_out) {
 			page->tried_out = 1;
 			sblock->page_tried_out++;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		bio_put(bio);
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	if (sblock->nr_retry == BTRFS_SCRUB_SHOULD_ABORT_RETRY)
 		sblock->nr_retry = BTRFS_SCRUB_RETRY_ABORTED;
 	else if (sblock->page_tried_out == sblock->page_count)
 		sblock->nr_retry = BTRFS_SCRUB_SHOULD_ABORT_RETRY;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	if (sblock->no_io_error_seen
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	    && sblock->nr_retry <= BTRFS_SCRUB_SHOULD_ABORT_RETRY
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	    )
 		scrub_recheck_block_checksum(sblock);
 }
@@ -1702,9 +1699,9 @@ static inline int scrub_check_fsid(u8 fsid[],
 
 static void scrub_recheck_block_checksum(struct scrub_block *sblock)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	if (sblock->nr_retry < BTRFS_SCRUB_SHOULD_ABORT_RETRY)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	{
 		sblock->header_error = 0;
 		sblock->checksum_error = 0;
@@ -1717,7 +1714,7 @@ static void scrub_recheck_block_checksum(struct scrub_block *sblock)
 		scrub_checksum_tree_block(sblock);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 static void scrub_release_retry_on_good_copy(struct scrub_block *sblock)
 {
 	int page_num;
@@ -1747,7 +1744,7 @@ static void scrub_release_retry_on_good_copy(struct scrub_block *sblock)
 	}
 	sblock->nr_retry = 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 static int scrub_repair_block_from_good_copy(struct scrub_block *sblock_bad,
 					     struct scrub_block *sblock_good)
@@ -1764,10 +1761,10 @@ static int scrub_repair_block_from_good_copy(struct scrub_block *sblock_bad,
 		if (ret_sub)
 			ret = ret_sub;
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	if (sblock_bad != sblock_good && sblock_good->nr_retry)
 		scrub_release_retry_on_good_copy(sblock_good);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	return ret;
 }
@@ -1797,11 +1794,11 @@ static int scrub_repair_page_from_good_copy(struct scrub_block *sblock_bad,
 		bio_set_dev(bio, page_bad->dev->bdev);
 		bio->bi_iter.bi_sector = page_bad->physical >> 9;
 		bio->bi_opf = REQ_OP_WRITE;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		// So that MD can drop states about this block.
 		if (sblock_bad->nr_retry)
 			bio_set_flag(bio, BIO_CORRECTION_ABORT);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 		ret = bio_add_page(bio, page_good->page, PAGE_SIZE, 0);
 		if (PAGE_SIZE != ret) {
@@ -2035,7 +2032,7 @@ static int scrub_checksum_data(struct scrub_block *sblock)
 
 	if (memcmp(csum, spage->csum, sctx->csum_size)) {
 		sblock->checksum_error = 1;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		if (sblock->nr_retry) {
 			if (sblock->nr_retry != 1 &&
 			    !memcmp(csum, sblock->prev_bad_csum,
@@ -2045,7 +2042,7 @@ static int scrub_checksum_data(struct scrub_block *sblock)
 				memcpy(sblock->prev_bad_csum, csum,
 				       sctx->csum_size);
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	}
 
 	return sblock->checksum_error;
@@ -2103,7 +2100,7 @@ static int scrub_checksum_tree_block(struct scrub_block *sblock)
 	crypto_shash_final(shash, calculated_csum);
 	if (memcmp(calculated_csum, on_disk_csum, sctx->csum_size)) {
 		sblock->checksum_error = 1;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		if (sblock->nr_retry) {
 			if (sblock->nr_retry != 1 &&
 			    !memcmp(calculated_csum, sblock->prev_bad_csum,
@@ -2113,7 +2110,7 @@ static int scrub_checksum_tree_block(struct scrub_block *sblock)
 				memcpy(sblock->prev_bad_csum, calculated_csum,
 				       sctx->csum_size);
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	}
 
 	return sblock->header_error || sblock->checksum_error;
@@ -3240,10 +3237,10 @@ static noinline_for_stack int scrub_stripe(struct scrub_ctx *sctx,
 	struct btrfs_root *root = fs_info->extent_root;
 	struct btrfs_root *csum_root = fs_info->csum_root;
 	struct btrfs_extent_item *extent;
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	struct blk_plug plug;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	u64 flags;
 	int ret;
 	int slot;
@@ -3362,10 +3359,10 @@ static noinline_for_stack int scrub_stripe(struct scrub_ctx *sctx,
 	 * collect all data csums for the stripe to avoid seeking during
 	 * the scrub. This might currently (crc32) end up to be about 1MB
 	 */
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	blk_start_plug(&plug);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	/*
 	 * now find all extents for each stripe and scrub them
@@ -3444,14 +3441,14 @@ static noinline_for_stack int scrub_stripe(struct scrub_ctx *sctx,
 		while (1) {
 			u64 bytes;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SCRUB_CANCEL
 			if (atomic_read(&fs_info->scrub_cancel_req) ||
 			    atomic_read(&sctx->cancel_req)) {
 				btrfs_release_path(path);
 				ret = -ECANCELED;
 				goto out;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SCRUB_CANCEL */
 
 			l = path->nodes[0];
 			slot = path->slots[0];
@@ -3627,10 +3624,10 @@ out:
 	scrub_wr_submit(sctx);
 	mutex_unlock(&sctx->wr_lock);
 
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	blk_finish_plug(&plug);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	btrfs_free_path(path);
 	btrfs_free_path(ppath);
 	return ret < 0 ? ret : 0;

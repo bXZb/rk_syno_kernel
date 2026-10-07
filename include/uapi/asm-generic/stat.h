@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 #ifndef __ASM_GENERIC_STAT_H
 #define __ASM_GENERIC_STAT_H
@@ -47,7 +44,7 @@ struct stat {
 	unsigned int	__unused5;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_STAT
 #ifdef __KERNEL__
 #include <linux/time.h>
 #endif
@@ -69,7 +66,7 @@ struct SYNOSTAT {
 	struct stat st;
 	struct SYNOSTAT_EXTRA ext;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_STAT */
 
 /* This matches struct stat64 in glibc2.1. Only used for 32 bit. */
 #if __BITS_PER_LONG != 64 || defined(__ARCH_WANT_STAT64)

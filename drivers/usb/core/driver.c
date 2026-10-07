@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * drivers/usb/driver.c - most of the driver model stuff for usb
@@ -37,9 +34,9 @@
 
 #include "usb.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_FORBID
 #include <linux/synobios.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_FORBID */
 
 /*
  * Adds a new dynamic USBdevice ID to this driver,
@@ -305,7 +302,7 @@ static int usb_probe_device(struct device *dev)
 	return error;
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 int RTK_usb_probe_device(struct device *dev)
 {
@@ -313,12 +310,12 @@ int RTK_usb_probe_device(struct device *dev)
 	ret = usb_probe_device(dev);
 	return ret;
 }
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 EXPORT_SYMBOL(RTK_usb_probe_device);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 /* called from driver core with dev locked */
 static int usb_unbind_device(struct device *dev)
 {
@@ -334,7 +331,7 @@ static int usb_unbind_device(struct device *dev)
 	return 0;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 /* called from driver core with dev locked */
 static void syno_usb_shutdown_device(struct device *dev)
 {
@@ -349,9 +346,9 @@ static void syno_usb_shutdown_device(struct device *dev)
 		dev_warn(dev, "Fail to unbind device driver, ret %d\n", retval);
 	}
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 int RTK_usb_unbind_device(struct device *dev)
 {
@@ -359,12 +356,12 @@ int RTK_usb_unbind_device(struct device *dev)
 	ret = usb_unbind_device(dev);
 	return ret;
 }
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 EXPORT_SYMBOL(RTK_usb_unbind_device);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 /* called from driver core with dev locked */
 static int usb_probe_interface(struct device *dev)
 {
@@ -908,23 +905,25 @@ bool usb_driver_applicable(struct usb_device *udev,
 
 static int usb_device_match(struct device *dev, struct device_driver *drv)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_FORBID
 	extern int gSynoForbidUsb;
 	u16 vendor_id = 0, product_id = 0;
 	static unsigned long last_jiffies = INITIAL_JIFFIES;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_FORBID */
 
 	/* devices and interfaces are handled separately */
 	if (is_usb_device(dev)) {
 		struct usb_device *udev;
 		struct usb_device_driver *udrv;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_FORBID
 		if (gSynoForbidUsb) {
 			udev = to_usb_device(dev);
 			vendor_id = le16_to_cpu(udev->descriptor.idVendor);
 			product_id = le16_to_cpu(udev->descriptor.idProduct);
-			if (udev->parent && USB_CLASS_HUB != udev->descriptor.bDeviceClass && !IS_SYNO_FLASH(vendor_id, product_id)) {
+			
+			if (udev->parent && USB_CLASS_HUB != udev->descriptor.bDeviceClass && 
+			    !IS_SYNO_FLASH(vendor_id, product_id) && !is_synology_acm_device(udev->product)) {
 				dev_err(&udev->dev, "USB device idVendor=%04x idProduct=%04x manufacturer=%s product=%s is prohibited!\n",
 						vendor_id, product_id, udev->manufacturer, udev->product);
 				if (time_after(jiffies, last_jiffies + msecs_to_jiffies(3000))) {
@@ -938,7 +937,7 @@ static int usb_device_match(struct device *dev, struct device_driver *drv)
 				return 0;
 			}
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_FORBID */
 
 		/* interface drivers never match devices */
 		if (!is_usb_device_driver(drv))
@@ -1068,9 +1067,9 @@ int usb_register_device_driver(struct usb_device_driver *new_udriver,
 	new_udriver->drvwrap.driver.remove = usb_unbind_device;
 	new_udriver->drvwrap.driver.owner = owner;
 	new_udriver->drvwrap.driver.dev_groups = new_udriver->dev_groups;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	new_udriver->drvwrap.driver.shutdown = syno_usb_shutdown_device;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	retval = driver_register(&new_udriver->drvwrap.driver);
 

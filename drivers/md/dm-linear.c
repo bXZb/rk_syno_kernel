@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Copyright (C) 2001-2003 Sistina Software (UK) Limited.
  *
@@ -63,9 +60,9 @@ static int linear_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 	ti->num_flush_bios = 1;
 	ti->num_discard_bios = 1;
 	ti->num_secure_erase_bios = 1;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 	ti->num_unused_hint_bios = 1;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 	ti->num_write_same_bios = 1;
 	ti->num_write_zeroes_bios = 1;
 	ti->private = lc;
@@ -230,12 +227,12 @@ static int linear_dax_zero_page_range(struct dm_target *ti, pgoff_t pgoff,
 #define linear_dax_zero_page_range NULL
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 static int linear_support_noclone(struct dm_target *ti)
 {
 	return 1;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 static struct target_type linear_target = {
 	.name   = "linear",
@@ -258,10 +255,10 @@ static struct target_type linear_target = {
 	.dax_copy_from_iter = linear_dax_copy_from_iter,
 	.dax_copy_to_iter = linear_dax_copy_to_iter,
 	.dax_zero_page_range = linear_dax_zero_page_range,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 	.noclone_map = linear_map,
 	.support_noclone = linear_support_noclone,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 };
 
 int __init dm_linear_init(void)

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Kernel-based Virtual Machine driver for Linux
@@ -120,11 +117,11 @@ EXPORT_SYMBOL_GPL(kvm_x86_ops);
 static bool __read_mostly ignore_msrs = 0;
 module_param(ignore_msrs, bool, S_IRUGO | S_IWUSR);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_KVM_IGNORE_MSRS
 static bool __read_mostly report_ignored_msrs = false;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_KVM_IGNORE_MSRS */
 static bool __read_mostly report_ignored_msrs = true;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_KVM_IGNORE_MSRS */
 module_param(report_ignored_msrs, bool, S_IRUGO | S_IWUSR);
 
 unsigned int min_timer_period_us = 200;

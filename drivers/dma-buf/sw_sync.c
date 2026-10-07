@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Sync File validation framework
@@ -13,11 +10,11 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <linux/sync_file.h>
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #include <linux/miscdevice.h>
 #include <linux/init.h>
 #include <linux/module.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 
 #include "sync_debug.h"
 
@@ -419,7 +416,7 @@ const struct file_operations sw_sync_debugfs_fops = {
 	.compat_ioctl	= compat_ptr_ioctl,
 };
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 static struct miscdevice sw_sync_dev = {
     .minor  = MISC_DYNAMIC_MINOR,
     .name   = "sw_sync",
@@ -438,4 +435,4 @@ static void __exit sw_sync_device_remove(void)
 
 module_init(sw_sync_device_init);
 module_exit(sw_sync_device_remove);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */

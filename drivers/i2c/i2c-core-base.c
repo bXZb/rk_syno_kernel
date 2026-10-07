@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Linux I2C core
@@ -43,9 +40,10 @@
 #include <linux/property.h>
 #include <linux/rwsem.h>
 #include <linux/slab.h>
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_OF_PROBE
 #include <linux/syno_fdt.h>
-#endif /* MY_DEF_HERE */
+#include <linux/synolib.h>
+#endif /* CONFIG_SYNO_I2C_OF_PROBE */
 
 #include "i2c-core.h"
 
@@ -71,6 +69,10 @@ static int i2c_detect(struct i2c_adapter *adapter, struct i2c_driver *driver);
 
 static DEFINE_STATIC_KEY_FALSE(i2c_trace_msg_key);
 static bool is_registered;
+
+#ifdef CONFIG_SYNO_I2C_OF_PROBE
+static int syno_i2c_dynamic_bus_begin_index;
+#endif /* CONFIG_SYNO_I2C_OF_PROBE */
 
 int i2c_transfer_trace_reg(void)
 {
@@ -112,11 +114,11 @@ static int i2c_device_match(struct device *dev, struct device_driver *drv)
 	if (acpi_driver_match_device(dev, drv))
 		return 1;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_OF_PROBE
 	if (of_root && syno_of_i2c_driver_match_device(dev, drv)) {
 		return 1;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_OF_PROBE */
 
 	driver = to_i2c_driver(drv);
 
@@ -164,6 +166,33 @@ static void set_sda_gpio_value(struct i2c_adapter *adap, int val)
 	gpiod_set_value_cansleep(adap->bus_recovery_info->sda_gpiod, val);
 }
 
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+int syno_export_get_scl_gpio_value(struct i2c_adapter *adap)
+{
+	return get_scl_gpio_value(adap);
+}
+
+void syno_export_set_scl_gpio_value(struct i2c_adapter *adap, int val)
+{
+	set_scl_gpio_value(adap, val);
+}
+
+int syno_export_get_sda_gpio_value(struct i2c_adapter *adap)
+{
+	return get_sda_gpio_value(adap);
+}
+
+void syno_export_set_sda_gpio_value(struct i2c_adapter *adap, int val)
+{
+	set_sda_gpio_value(adap, val);
+}
+
+void syno_set_scl_mux(struct i2c_adapter *adap, int val)
+{
+	gpiod_set_mux_cansleep(adap->bus_recovery_info->scl_gpiod, val);
+}
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 static int i2c_generic_bus_free(struct i2c_adapter *adap)
 {
 	struct i2c_bus_recovery_info *bri = adap->bus_recovery_info;
@@ -195,6 +224,12 @@ int i2c_generic_scl_recovery(struct i2c_adapter *adap)
 
 	if (bri->prepare_recovery)
 		bri->prepare_recovery(adap);
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+	if (bri->syno_mux_ops.set_scl_mux)
+		bri->syno_mux_ops.set_scl_mux(adap, bri->syno_mux_ops.scl_mode_gpio);
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 	if (bri->pinctrl)
 		pinctrl_select_state(bri->pinctrl, bri->pins_gpio);
 
@@ -255,12 +290,24 @@ int i2c_generic_scl_recovery(struct i2c_adapter *adap)
 	if (bri->pinctrl)
 		pinctrl_select_state(bri->pinctrl, bri->pins_default);
 
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+	if (bri->syno_mux_ops.set_scl_mux)
+		bri->syno_mux_ops.set_scl_mux(adap, bri->syno_mux_ops.scl_mode_i2c);
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(i2c_generic_scl_recovery);
 
 int i2c_recover_bus(struct i2c_adapter *adap)
 {
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+	if (adap->syno_init_recovery_info) {
+		adap->syno_init_recovery_info(adap);
+	}
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 	if (!adap->bus_recovery_info)
 		return -EOPNOTSUPP;
 
@@ -1480,9 +1527,9 @@ static int i2c_register_adapter(struct i2c_adapter *adap)
 
 	/* create pre-declared device nodes */
 	of_i2c_register_devices(adap);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_OF_PROBE
 	syno_of_i2c_register_devices(adap);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_OF_PROBE */
 	i2c_acpi_install_space_handler(adap);
 	i2c_acpi_register_devices(adap);
 
@@ -1546,10 +1593,9 @@ int i2c_add_adapter(struct i2c_adapter *adapter)
 	struct device *dev = &adapter->dev;
 	int id;
 
-#ifdef MY_DEF_HERE
-	struct device_node *pI2CNode = NULL;
+#ifdef CONFIG_SYNO_I2C_OF_PROBE
 	int index = 0;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_OF_PROBE */
 
 	if (dev->of_node) {
 		id = of_alias_get_id(dev->of_node, "i2c");
@@ -1559,19 +1605,42 @@ int i2c_add_adapter(struct i2c_adapter *adapter)
 		}
 	}
 
-#ifdef MY_DEF_HERE
-	if (adapter->nr == -1) {
-		/* -1 means dynamically assign bus id */
-		if (NULL != (pI2CNode = syno_of_i2c_bus_match(dev, &index))) {
-			adapter->nr = index;
-			return __i2c_add_numbered_adapter(adapter);
+#ifdef CONFIG_SYNO_I2C_OF_PROBE
+	// In order not to affect the behavior of old models,
+	// add the past behavior to the else part
+	if (is_syno_i2c_bus_bind()) {
+		// If the i2c mux bus binding fails, it will go here.
+		// Do not deal with i2c mux bus case.
+		if (NULL == i2c_verify_adapter(dev->parent)) {
+			if (NULL != syno_of_i2c_bus_match(dev, &index)) {
+				adapter->nr = index;
+				return __i2c_add_numbered_adapter(adapter);
+			}
+		}
+	} else {
+		if (adapter->nr == -1) {
+			/* -1 means dynamically assign bus id */
+			if (NULL != syno_of_i2c_bus_match(dev, &index)) {
+				adapter->nr = index;
+				return __i2c_add_numbered_adapter(adapter);
+			}
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_OF_PROBE */
 
 	mutex_lock(&core_lock);
+#ifdef CONFIG_SYNO_I2C_OF_PROBE
+	if (is_syno_i2c_bus_bind()) {
+		id = idr_alloc(&i2c_adapter_idr, adapter,
+				syno_i2c_dynamic_bus_begin_index, 0, GFP_KERNEL);
+	} else {
+		id = idr_alloc(&i2c_adapter_idr, adapter,
+				__i2c_first_dynamic_bus_num, 0, GFP_KERNEL);
+	}
+#else /* CONFIG_SYNO_I2C_OF_PROBE */
 	id = idr_alloc(&i2c_adapter_idr, adapter,
 		       __i2c_first_dynamic_bus_num, 0, GFP_KERNEL);
+#endif /* CONFIG_SYNO_I2C_OF_PROBE */
 	mutex_unlock(&core_lock);
 	if (WARN(id < 0, "couldn't get idr"))
 		return id;
@@ -1898,6 +1967,30 @@ void i2c_clients_command(struct i2c_adapter *adap, unsigned int cmd, void *arg)
 }
 EXPORT_SYMBOL(i2c_clients_command);
 
+#ifdef CONFIG_SYNO_I2C_OF_PROBE
+static int syno_find_i2c_dynamic_bus_begin_by_dts(void) {
+	struct device_node *pI2CNode = NULL;
+	int iBegin = -1;
+	int index = -1;
+
+	if (NULL == of_root) {
+		goto END;
+	}
+
+	for_each_child_of_node(of_root, pI2CNode) {
+		if (pI2CNode->full_name
+				&& 0 == (strncmp(pI2CNode->full_name, DT_I2C_BUS, strlen(DT_I2C_BUS)))) {
+			if (1 == sscanf(pI2CNode->full_name, DT_I2C_BUS"@%d", &index)) {
+				iBegin = max(iBegin, index);
+			}
+		}
+	}
+
+END:
+	return (iBegin + 1);
+}
+#endif /* CONFIG_SYNO_I2C_OF_PROBE */
+
 static int __init i2c_init(void)
 {
 	int retval;
@@ -1914,6 +2007,10 @@ static int __init i2c_init(void)
 		return retval;
 
 	is_registered = true;
+
+#ifdef CONFIG_SYNO_I2C_OF_PROBE
+	syno_i2c_dynamic_bus_begin_index = syno_find_i2c_dynamic_bus_begin_by_dts();
+#endif /* CONFIG_SYNO_I2C_OF_PROBE */
 
 #ifdef CONFIG_I2C_COMPAT
 	i2c_adapter_compat_class = class_compat_register("i2c-adapter");

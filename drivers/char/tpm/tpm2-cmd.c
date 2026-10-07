@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2014, 2015 Intel Corporation
@@ -101,11 +98,11 @@ static u8 tpm2_ordinal_duration_index(u32 ordinal)
 		return TPM_LONG;
 
 	case TPM2_CC_GET_CAPABILITY:          /* 17A */
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TPM_TIMEOUT_ADJUST_AND_RETRY
 		return TPM_LONG;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_TPM_TIMEOUT_ADJUST_AND_RETRY */
 		return TPM_MEDIUM;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TPM_TIMEOUT_ADJUST_AND_RETRY */
 
 	case TPM2_CC_NV_READ:                 /* 14E */
 		return TPM_LONG;

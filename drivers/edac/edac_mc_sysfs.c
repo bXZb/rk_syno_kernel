@@ -211,6 +211,9 @@ static ssize_t channel_dimm_label_show(struct device *dev,
 			rank->dimm->label);
 }
 
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+/* channel_dimm_label_store removed: dimm_label is read-only */
+#else /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 static ssize_t channel_dimm_label_store(struct device *dev,
 					struct device_attribute *mattr,
 					const char *data, size_t count)
@@ -234,6 +237,21 @@ static ssize_t channel_dimm_label_store(struct device *dev,
 
 	return count;
 }
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
+
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+/* show function for dynamic chX_present attribute */
+static ssize_t channel_dimm_present_show(struct device *dev,
+					 struct device_attribute *mattr,
+					 char *data)
+{
+	struct csrow_info *csrow = to_csrow(dev);
+	unsigned int chan = to_channel(mattr);
+	struct rank_info *rank = csrow->channels[chan];
+
+	return sprintf(data, "%u\n", !!rank->dimm->nr_pages);
+}
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 
 /* show function for dynamic chX_ce_count attribute */
 static ssize_t channel_ce_count_show(struct device *dev,
@@ -282,6 +300,24 @@ static const struct device_type csrow_attr_type = {
  * possible dynamic channel DIMM Label attribute files
  *
  */
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+DEVICE_CHANNEL(ch0_dimm_label, S_IRUGO,
+	channel_dimm_label_show, NULL, 0);
+DEVICE_CHANNEL(ch1_dimm_label, S_IRUGO,
+	channel_dimm_label_show, NULL, 1);
+DEVICE_CHANNEL(ch2_dimm_label, S_IRUGO,
+	channel_dimm_label_show, NULL, 2);
+DEVICE_CHANNEL(ch3_dimm_label, S_IRUGO,
+	channel_dimm_label_show, NULL, 3);
+DEVICE_CHANNEL(ch4_dimm_label, S_IRUGO,
+	channel_dimm_label_show, NULL, 4);
+DEVICE_CHANNEL(ch5_dimm_label, S_IRUGO,
+	channel_dimm_label_show, NULL, 5);
+DEVICE_CHANNEL(ch6_dimm_label, S_IRUGO,
+	channel_dimm_label_show, NULL, 6);
+DEVICE_CHANNEL(ch7_dimm_label, S_IRUGO,
+	channel_dimm_label_show, NULL, 7);
+#else /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 DEVICE_CHANNEL(ch0_dimm_label, S_IRUGO | S_IWUSR,
 	channel_dimm_label_show, channel_dimm_label_store, 0);
 DEVICE_CHANNEL(ch1_dimm_label, S_IRUGO | S_IWUSR,
@@ -298,6 +334,29 @@ DEVICE_CHANNEL(ch6_dimm_label, S_IRUGO | S_IWUSR,
 	channel_dimm_label_show, channel_dimm_label_store, 6);
 DEVICE_CHANNEL(ch7_dimm_label, S_IRUGO | S_IWUSR,
 	channel_dimm_label_show, channel_dimm_label_store, 7);
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
+
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+/*
+ * possible dynamic channel present attribute files
+ */
+DEVICE_CHANNEL(ch0_dimm_present, S_IRUGO,
+	channel_dimm_present_show, NULL, 0);
+DEVICE_CHANNEL(ch1_dimm_present, S_IRUGO,
+	channel_dimm_present_show, NULL, 1);
+DEVICE_CHANNEL(ch2_dimm_present, S_IRUGO,
+	channel_dimm_present_show, NULL, 2);
+DEVICE_CHANNEL(ch3_dimm_present, S_IRUGO,
+	channel_dimm_present_show, NULL, 3);
+DEVICE_CHANNEL(ch4_dimm_present, S_IRUGO,
+	channel_dimm_present_show, NULL, 4);
+DEVICE_CHANNEL(ch5_dimm_present, S_IRUGO,
+	channel_dimm_present_show, NULL, 5);
+DEVICE_CHANNEL(ch6_dimm_present, S_IRUGO,
+	channel_dimm_present_show, NULL, 6);
+DEVICE_CHANNEL(ch7_dimm_present, S_IRUGO,
+	channel_dimm_present_show, NULL, 7);
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 
 /* Total possible dynamic DIMM Label attribute file table */
 static struct attribute *dynamic_csrow_dimm_attr[] = {
@@ -311,6 +370,21 @@ static struct attribute *dynamic_csrow_dimm_attr[] = {
 	&dev_attr_legacy_ch7_dimm_label.attr.attr,
 	NULL
 };
+
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+/* Total possible dynamic present attribute file table */
+static struct attribute *dynamic_csrow_present_attr[] = {
+	&dev_attr_legacy_ch0_dimm_present.attr.attr,
+	&dev_attr_legacy_ch1_dimm_present.attr.attr,
+	&dev_attr_legacy_ch2_dimm_present.attr.attr,
+	&dev_attr_legacy_ch3_dimm_present.attr.attr,
+	&dev_attr_legacy_ch4_dimm_present.attr.attr,
+	&dev_attr_legacy_ch5_dimm_present.attr.attr,
+	&dev_attr_legacy_ch6_dimm_present.attr.attr,
+	&dev_attr_legacy_ch7_dimm_present.attr.attr,
+	NULL
+};
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 
 /* possible dynamic channel ce_count attribute files */
 DEVICE_CHANNEL(ch0_ce_count, S_IRUGO,
@@ -343,6 +417,44 @@ static struct attribute *dynamic_csrow_ce_count_attr[] = {
 	NULL
 };
 
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+/*
+ * Expose dimm_label and present:
+ * - If labeled by DTS/DMI (smbios_handle != 0): always visible
+ * - Otherwise: only visible when DIMM is populated (nr_pages > 0)
+ */
+static umode_t csrow_dev_dimm_is_visible(struct kobject *kobj,
+					 struct attribute *attr, int idx)
+{
+	struct device *dev = kobj_to_dev(kobj);
+	struct csrow_info *csrow = container_of(dev, struct csrow_info, dev);
+	struct dimm_info *dimm;
+
+	if (idx >= csrow->nr_channels) {
+		return 0;
+	}
+
+	if (idx >= ARRAY_SIZE(dynamic_csrow_dimm_attr) - 1) {
+		WARN_ONCE(1, "idx: %d\n", idx);
+		return 0;
+	}
+
+	dimm = csrow->channels[idx]->dimm;
+
+	/* DTS/DMI labeled slot: always show, even when not populated */
+	if (dimm->smbios_handle) {
+		return attr->mode;
+	}
+
+	/* Default label: only show populated DIMMs (original behavior) */
+	if (!dimm->nr_pages) {
+		return 0;
+	}
+
+	return attr->mode;
+}
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
+
 static umode_t csrow_dev_is_visible(struct kobject *kobj,
 				    struct attribute *attr, int idx)
 {
@@ -365,21 +477,42 @@ static umode_t csrow_dev_is_visible(struct kobject *kobj,
 }
 
 
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+static const struct attribute_group csrow_dev_dimm_group = {
+	.attrs = dynamic_csrow_dimm_attr,
+	.is_visible = csrow_dev_dimm_is_visible,
+};
+
+static const struct attribute_group csrow_dev_present_group = {
+	.attrs = dynamic_csrow_present_attr,
+	.is_visible = csrow_dev_dimm_is_visible,
+};
+#else /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 static const struct attribute_group csrow_dev_dimm_group = {
 	.attrs = dynamic_csrow_dimm_attr,
 	.is_visible = csrow_dev_is_visible,
 };
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 
 static const struct attribute_group csrow_dev_ce_count_group = {
 	.attrs = dynamic_csrow_ce_count_attr,
 	.is_visible = csrow_dev_is_visible,
 };
 
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+static const struct attribute_group *csrow_dev_groups[] = {
+	&csrow_dev_dimm_group,
+	&csrow_dev_present_group,
+	&csrow_dev_ce_count_group,
+	NULL
+};
+#else /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 static const struct attribute_group *csrow_dev_groups[] = {
 	&csrow_dev_dimm_group,
 	&csrow_dev_ce_count_group,
 	NULL
 };
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 
 static void csrow_release(struct device *dev)
 {
@@ -398,6 +531,21 @@ static inline int nr_pages_per_csrow(struct csrow_info *csrow)
 
 	return nr_pages;
 }
+
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+static inline bool csrow_has_syno_dimm_label(struct csrow_info *csrow)
+{
+	int chan;
+
+	for (chan = 0; chan < csrow->nr_channels; chan++) {
+		if (csrow->channels[chan]->dimm->smbios_handle) {
+			return true;
+		}
+	}
+
+	return false;
+}
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 
 /* Create a CSROW object under specifed edac_mc_device */
 static int edac_create_csrow_object(struct mem_ctl_info *mci,
@@ -434,7 +582,11 @@ static int edac_create_csrow_objects(struct mem_ctl_info *mci)
 
 	for (i = 0; i < mci->nr_csrows; i++) {
 		csrow = mci->csrows[i];
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+		if (!nr_pages_per_csrow(csrow) && !csrow_has_syno_dimm_label(csrow))
+#else /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 		if (!nr_pages_per_csrow(csrow))
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 			continue;
 		err = edac_create_csrow_object(mci, mci->csrows[i], i);
 		if (err < 0)
@@ -494,6 +646,9 @@ static ssize_t dimmdev_label_show(struct device *dev,
 	return snprintf(data, sizeof(dimm->label) + 1, "%s\n", dimm->label);
 }
 
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+/* dimmdev_label_store removed: dimm_label is read-only */
+#else /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 static ssize_t dimmdev_label_store(struct device *dev,
 				   struct device_attribute *mattr,
 				   const char *data,
@@ -516,6 +671,7 @@ static ssize_t dimmdev_label_store(struct device *dev,
 
 	return count;
 }
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 
 static ssize_t dimmdev_size_show(struct device *dev,
 				 struct device_attribute *mattr, char *data)
@@ -569,8 +725,13 @@ static ssize_t dimmdev_ue_count_show(struct device *dev,
 }
 
 /* dimm/rank attribute files */
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+static DEVICE_ATTR(dimm_label, S_IRUGO,
+		   dimmdev_label_show, NULL);
+#else /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 static DEVICE_ATTR(dimm_label, S_IRUGO | S_IWUSR,
 		   dimmdev_label_show, dimmdev_label_store);
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 static DEVICE_ATTR(dimm_location, S_IRUGO, dimmdev_location_show, NULL);
 static DEVICE_ATTR(size, S_IRUGO, dimmdev_size_show, NULL);
 static DEVICE_ATTR(dimm_mem_type, S_IRUGO, dimmdev_mem_type_show, NULL);

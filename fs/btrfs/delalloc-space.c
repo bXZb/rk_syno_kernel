@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 
 #include "ctree.h"
@@ -153,7 +150,7 @@ int btrfs_check_data_free_space(struct btrfs_inode *inode,
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL
 int btrfs_alloc_data_chunk_ondemand_with_no_commit(struct btrfs_inode *inode, u64 bytes)
 {
 	int ret;
@@ -222,7 +219,7 @@ int btrfs_check_data_free_space_with_no_commit(struct btrfs_inode *inode,
 		ret = 0;
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL */
 
 /*
  * Called if we need to clear a data reservation for this inode
@@ -299,13 +296,13 @@ static void btrfs_inode_rsv_release(struct btrfs_inode *inode, bool qgroup_free)
 						   qgroup_to_release);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 void btrfs_calculate_inode_block_rsv_size(struct btrfs_fs_info *fs_info,
 						 struct btrfs_inode *inode)
 #else
 static void btrfs_calculate_inode_block_rsv_size(struct btrfs_fs_info *fs_info,
 						 struct btrfs_inode *inode)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 {
 	struct btrfs_block_rsv *block_rsv = &inode->block_rsv;
 	u64 reserve_size = 0;
@@ -330,14 +327,14 @@ static void btrfs_calculate_inode_block_rsv_size(struct btrfs_fs_info *fs_info,
 	reserve_size += btrfs_calc_insert_metadata_size(fs_info,
 							csum_leaves);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	if (outstanding_extents == 0 && atomic_read(&inode->syno_uq_refs) == 0)
 		clear_bit(BTRFS_INODE_USRQUOTA_META_RESERVED,
 			&inode->runtime_flags);
 	if (test_bit(BTRFS_INODE_USRQUOTA_META_RESERVED,
 			&inode->runtime_flags))
 		reserve_size += btrfs_calc_metadata_size(fs_info, 1);;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	/*
 	 * For qgroup rsv, the calculation is very simple:
@@ -381,9 +378,9 @@ int btrfs_delalloc_reserve_metadata(struct btrfs_inode *inode, u64 num_bytes)
 	unsigned nr_extents;
 	enum btrfs_reserve_flush_enum flush = BTRFS_RESERVE_FLUSH_ALL;
 	int ret = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	bool usrquota_meta = false;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	/*
 	 * If we are a free space inode we need to not flush since we will be in
@@ -422,22 +419,22 @@ int btrfs_delalloc_reserve_metadata(struct btrfs_inode *inode, u64 num_bytes)
 	if (ret)
 		return ret;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	if (btrfs_usrquota_fast_chown_enable(&inode->vfs_inode) &&
 			!test_and_set_bit(BTRFS_INODE_USRQUOTA_META_RESERVED,
 			&inode->runtime_flags)) {
 		meta_reserve += btrfs_calc_metadata_size(fs_info, 1);
 		usrquota_meta = true;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	ret = btrfs_reserve_metadata_bytes(root, block_rsv, meta_reserve, flush);
 	if (ret) {
 		btrfs_qgroup_free_meta_prealloc(root, qgroup_reserve);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 		if (usrquota_meta)
 			clear_bit(BTRFS_INODE_USRQUOTA_META_RESERVED, &inode->runtime_flags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 		return ret;
 	}
 

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  *  libata.h - helper library for ATA
@@ -18,7 +15,7 @@
 #define DRV_NAME	"libata"
 #define DRV_VERSION	"3.00"	/* must be exactly four chars */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_WCACHE_DISABLE
 struct ata_blacklist_entry {
 	const char *model_num;
 	const char *model_rev;
@@ -26,7 +23,7 @@ struct ata_blacklist_entry {
 };
 
 extern struct ata_blacklist_entry ata_device_blacklist [];
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_WCACHE_DISABLE */
 
 /* libata-core.c */
 enum {
@@ -42,6 +39,14 @@ enum {
 
 	ATA_DNXFER_QUIET	= (1 << 31),
 };
+
+#ifdef CONFIG_SYNO_SATA_DEEPSLEEP
+enum {
+	SYNO_DEEP_SLEEP_OFF = 0,
+	SYNO_DEEP_SLEEP_ON,
+	SYNO_DEEP_SLEEP_ON_WITH_HIBERNATION_CHECK,
+};
+#endif /* CONFIG_SYNO_SATA_DEEPSLEEP */
 
 extern atomic_t ata_print_id;
 extern int atapi_passthru16;
@@ -154,9 +159,9 @@ extern void ata_scsi_set_sense_information(struct ata_device *dev,
 					   const struct ata_taskfile *tf);
 extern void ata_scsi_media_change_notify(struct ata_device *dev);
 extern void ata_scsi_hotplug(struct work_struct *work);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_HOTPLUG_TASK
 extern void ata_syno_pmp_hotplug(struct work_struct *work);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_HOTPLUG_TASK */
 extern void ata_schedule_scsi_eh(struct Scsi_Host *shost);
 extern void ata_scsi_dev_rescan(struct work_struct *work);
 extern int ata_bus_probe(struct ata_port *ap);
@@ -199,9 +204,9 @@ extern int ata_ering_map(struct ata_ering *ering,
 extern unsigned int atapi_eh_tur(struct ata_device *dev, u8 *r_sense_key);
 extern unsigned int atapi_eh_request_sense(struct ata_device *dev,
 					   u8 *sense_buf, u8 dfl_sense_key);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_RECOVER_MECHANISM
 extern void sata_pmp_detach(struct ata_device *dev);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 
 /* libata-pmp.c */
 #ifdef CONFIG_SATA_PMP
@@ -274,7 +279,7 @@ static inline void zpodd_disable_run_wake(struct ata_device *dev) {}
 static inline void zpodd_post_poweron(struct ata_device *dev) {}
 #endif /* CONFIG_SATA_ZPODD */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 int syno_gpio_with_scmd(struct ata_port *ap, struct scsi_device *sdev, SYNO_PM_PKG *pPkg, u8 rw);
 int syno_i2c_with_scmd(struct ata_port *ap, struct scsi_device *sdev, SYNO_PM_I2C_PKG *pPkg, u8 rw);
 int syno_jmb_575_led_ctl_with_scmd(struct ata_port *ap, struct scsi_device *sdev, u8 *pLedMask, u8 rw);
@@ -303,14 +308,14 @@ int syno_sata_jmb575_disk_led_set_with_scmnd(struct ata_link *link, u8 ledIdx, u
 #define SYNO_JMB575_SPI_GET_INFO_FEATURE 0x3;
 #define SYNO_JMB575_SPI_GET_INFO_DEVICE 0x62;
 #define SYNO_JMB575_SPI_GET_INFO_COMMAND 0xF7;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_SMBUS
 void syno_smbus_hdd_powerctl_init(void);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
 
-#ifdef MY_ABC_HERE
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_DEEPSLEEP
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 /*
  * Event for user space
  *
@@ -319,19 +324,19 @@ void syno_smbus_hdd_powerctl_init(void);
  *        nested config to fix the kconfig dependency.
  */
 extern void SendDsleepWakeEvent(struct work_struct *work);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_PORT_MAPPING_V2 */
 static inline void SendDsleepWakeEvent(struct work_struct *work)
 {
 	return;
 }
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
+#endif /* CONFIG_SYNO_SATA_DEEPSLEEP */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP
 extern struct Scsi_Host* ata_scsi_is_eunit_deepsleep(struct Scsi_Host *host);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_ERROR_REPORT
 extern void SendSataErrEvent(struct work_struct *work);
 extern void SendDiskRetryEvent(struct work_struct *work);
 extern void SendDiskTimeoutEvent(struct work_struct *work);
@@ -339,18 +344,18 @@ extern void SendDiskSoftResetFailEvent(struct work_struct *work);
 extern void SendDiskHardResetFailEvent(struct work_struct *work);
 extern void SendPortDisEvent(struct work_struct *work);
 extern void SendPwrResetEvent(struct work_struct *work);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_ERROR_REPORT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_DISK_PRESENT_CHECK
 extern void SendPortRetryFailedEvent(struct work_struct *work);
 extern void SendLinkDownEvent(struct work_struct *work);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_DISK_PRESENT_CHECK */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_DETECT_POWER_SHORT_BREAK
 extern void SendDiskPowerShortBreakEvent(struct work_struct *work);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_DETECT_POWER_SHORT_BREAK */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 extern int syno_ap_to_port_index(const struct ata_port *ap);
 extern struct device_node *syno_ap_to_eunit_node(struct ata_port *ap);
 extern int syno_pci_eunit_i2c_write(int iBus, SYNO_JMB575_I2C_DEV_INFO *pI2C, int blSet);
@@ -359,6 +364,6 @@ extern int syno_pci_eunit_slot_power_ctl(struct ata_port *ap, u8 pwrOp);
 extern int syno_pci_eunit_index_get(const struct ata_port *ap);
 extern bool syno_is_ap_rx1224rp(struct ata_port *ap);
 extern u8 syno_is_synology_pci_eunit(const struct ata_port *ap);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
 
 #endif /* __LIBATA_H__ */

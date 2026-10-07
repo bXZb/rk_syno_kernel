@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *  Copyright (C) 2008 Red Hat, Inc., Eric Paris <eparis@redhat.com>
@@ -108,10 +105,10 @@ static __u32 *fsnotify_conn_mask_p(struct fsnotify_mark_connector *conn)
 		return &fsnotify_conn_mount(conn)->mnt_fsnotify_mask;
 	else if (conn->type == FSNOTIFY_OBJ_TYPE_SB)
 		return &fsnotify_conn_sb(conn)->s_fsnotify_mask;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	else if (conn->type == FSNOTIFY_OBJ_TYPE_SYNO_VFSMOUNT)
 		return &fsnotify_conn_syno_mount(conn)->mnt_fsnotify_syno_mask;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 	return NULL;
 }
 
@@ -195,11 +192,11 @@ static void *fsnotify_detach_connector_from_object(
 	} else if (conn->type == FSNOTIFY_OBJ_TYPE_SB) {
 		fsnotify_conn_sb(conn)->s_fsnotify_mask = 0;
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	else if (conn->type == FSNOTIFY_OBJ_TYPE_SYNO_VFSMOUNT) {
 		fsnotify_conn_syno_mount(conn)->mnt_fsnotify_syno_mask = 0;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	rcu_assign_pointer(*(conn->obj), NULL);
 	conn->obj = NULL;

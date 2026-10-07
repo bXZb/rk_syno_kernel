@@ -64,6 +64,10 @@
 #define EDAC_MC "MC"
 #define EDAC_PCI "PCI"
 #define EDAC_DEBUG "DEBUG"
+#ifdef CONFIG_SYNO_EDAC_DIMM_LABEL
+#define EDAC_DMI "DMI"
+#define EDAC_DTS "DTS"
+#endif /* CONFIG_SYNO_EDAC_DIMM_LABEL */
 
 extern const char * const edac_mem_types[];
 

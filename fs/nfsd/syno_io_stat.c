@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 #include <linux/file.h>
 #include <linux/fs.h>
 #include <linux/fsnotify.h>
@@ -12,14 +9,14 @@
 #include <linux/socket.h>
 #include <linux/sunrpc/addr.h>
 #include <linux/jiffies.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 #include <linux/list.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
 
 #include "syno_io_stat.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 #include "state.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
 #include "nfsd.h"
 #include "netns.h"
 
@@ -93,11 +90,11 @@ static int client_io_stat_open(struct inode *inode, struct file *file);
 static int client_register(struct nfsd_net *nn,
 			   const struct syno_nfsd_client_addr addr,
 			   struct xdr_netobj *os_name);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 static void __nfsd_connection_reg(const struct xdr_netobj *os_name, struct syno_nfsd_client_addr addr);
 static void inc_connection(void);
 static void dec_connection(void);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
 
 static inline bool is_should_expire_version(enum syno_nfsd_version nfs_vers)
 {
@@ -424,9 +421,9 @@ retry:
 	create = true;
 	entry = new;
 	new = NULL;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 	inc_connection();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
 found:
 	ret = 0;
 	atomic_inc(&entry->holder);
@@ -465,9 +462,9 @@ static void client_unregister(const struct syno_nfsd_client_addr addr)
 		goto unlock;
 	if (atomic_dec_return(&entry->holder) > 0)
 		goto put_client;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 	dec_connection();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
 	client_rmdir(entry);
 	put_client(entry);
 
@@ -937,7 +934,7 @@ static int client_io_stat_open(struct inode *inode, struct file *file)
 	return single_open(file, client_io_stat_show, inode);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 
 #define MAX_OS_ENTRIES 		(100)
 
@@ -1152,9 +1149,9 @@ void syno_nfsd_total_connection_reset(void)
 	mutex_unlock(&g_syno_delete_client_mutex);
 }
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 enum syno_nfsd_latency_stage {
 	SYNO_NFSD_LATENCY_STAGE_TOTAL_RPC = 0,
 	SYNO_NFSD_LATENCY_STAGE_TOTAL_VFS,
@@ -1330,5 +1327,5 @@ void syno_nfsd_store_error(int errno, enum syno_nfsd_version nfs_vers)
 	}
 }
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 

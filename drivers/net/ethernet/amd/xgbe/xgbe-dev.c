@@ -2201,7 +2201,12 @@ static int xgbe_exit(struct xgbe_prv_data *pdata)
 	return __xgbe_exit(pdata);
 }
 
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+static int xgbe_flush_tx_queues(struct xgbe_prv_data *pdata,
+				unsigned int max_count)
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 static int xgbe_flush_tx_queues(struct xgbe_prv_data *pdata)
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 {
 	unsigned int i, count;
 
@@ -2213,13 +2218,25 @@ static int xgbe_flush_tx_queues(struct xgbe_prv_data *pdata)
 
 	/* Poll Until Poll Condition */
 	for (i = 0; i < pdata->tx_q_count; i++) {
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+		count = max_count;
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 		count = 2000;
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 		while (--count && XGMAC_MTL_IOREAD_BITS(pdata, i,
 							MTL_Q_TQOMR, FTQ))
 			usleep_range(500, 600);
 
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+		if (!count) {
+			netdev_warn(pdata->netdev,
+				    "timed out flushing Tx queue %u\n", i);
+			return -EBUSY;
+		}
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 		if (!count)
 			return -EBUSY;
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	}
 
 	return 0;
@@ -3240,9 +3257,53 @@ static void xgbe_txq_prepare_tx_stop(struct xgbe_prv_data *pdata,
 	}
 
 	if (!time_before(jiffies, tx_timeout))
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+	{
+		struct xgbe_ring *ring = NULL;
+		struct netdev_queue *txq = NULL;
+		unsigned int trcsts, txqsts, pending = 0;
+		unsigned int xmit_stopped = 0;
+
+		trcsts = XGMAC_GET_BITS(tx_status, MTL_Q_TQDR, TRCSTS);
+		txqsts = XGMAC_GET_BITS(tx_status, MTL_Q_TQDR, TXQSTS);
+
+		if (queue < pdata->channel_count && pdata->channel[queue]) {
+			ring = pdata->channel[queue]->tx_ring;
+		}
+
+		if (queue < pdata->netdev->num_tx_queues) {
+			txq = netdev_get_tx_queue(pdata->netdev, queue);
+			xmit_stopped = netif_xmit_stopped(txq) ? 1 : 0;
+		}
+
+		if (ring) {
+			pending = (ring->cur - ring->dirty) &
+				  (ring->rdesc_count - 1);
+			netdev_info(pdata->netdev,
+				    "timed out waiting for Tx queue %u to empty "
+				    "[TQDR=0x%08x TRCSTS=%u TXQSTS=%u "
+				    "ring cur=%u dirty=%u pending=%u/%u%s%s "
+				    "xmit_stopped=%u]\n",
+				    queue, tx_status, trcsts, txqsts,
+				    ring->cur, ring->dirty, pending,
+				    ring->rdesc_count,
+				    (pending == 0) ? " EMPTY" : "",
+				    (pending == ring->rdesc_count - 1) ?
+					" FULL" : "",
+				    xmit_stopped);
+		} else {
+			netdev_info(pdata->netdev,
+				    "timed out waiting for Tx queue %u to empty "
+				    "[TQDR=0x%08x TRCSTS=%u TXQSTS=%u "
+				    "(no ring)]\n",
+				    queue, tx_status, trcsts, txqsts);
+		}
+	}
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 		netdev_info(pdata->netdev,
 			    "timed out waiting for Tx queue %u to empty\n",
 			    queue);
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 }
 
 static void xgbe_prepare_tx_stop(struct xgbe_prv_data *pdata,
@@ -3309,10 +3370,98 @@ static void xgbe_enable_tx(struct xgbe_prv_data *pdata)
 	XGMAC_IOWRITE_BITS(pdata, MAC_TCR, TE, 1);
 }
 
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+/*
+ * xgbe_syno_flush_tx_with_retry - flush all MTL Tx queues via FTQ,
+ * retrying through MAC internal loopback if the first attempt times out.
+ *
+ * Call this after halting the DMA engine (ST=0) and waiting for the DMA
+ * to quiesce, but before disabling the MAC Tx path.
+ */
+static void xgbe_syno_flush_tx_with_retry(struct xgbe_prv_data *pdata)
+{
+	if (!xgbe_flush_tx_queues(pdata, 2000))
+		return;
+
+	/* First attempt timed out; retry via MAC internal loopback so the
+	 * MAC Core can drain residual MTL FIFO data without PHY link.
+	 */
+	netdev_warn(pdata->netdev,
+		    "FTQ flush stalled, enabling loopback to drain\n");
+	XGMAC_IOWRITE_BITS(pdata, MAC_RCR, LM, 1);
+	usleep_range(1000, 2000);
+
+	if (xgbe_flush_tx_queues(pdata, 4000)) {
+		netdev_warn(pdata->netdev,
+			    "FTQ flush failed even with loopback\n");
+	} else {
+		netdev_warn(pdata->netdev,
+			    "FTQ flush recovered via loopback\n");
+	}
+
+	XGMAC_IOWRITE_BITS(pdata, MAC_RCR, LM, 0);
+}
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
+
 static void xgbe_disable_tx(struct xgbe_prv_data *pdata)
 {
 	unsigned int i;
 
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+	/* Stop DMA first to prevent new data from entering MTL FIFO */
+	for (i = 0; i < pdata->channel_count; i++) {
+		if (!pdata->channel[i]->tx_ring) {
+			break;
+		}
+
+		XGMAC_DMA_IOWRITE_BITS(pdata->channel[i], DMA_CH_TCR, ST, 0);
+	}
+
+	/* Wait for in-flight DMA bursts to complete before flushing.
+	 * After clearing ST, the DMA may still have outstanding AXI
+	 * transactions.  If we issue FTQ while data is still being
+	 * pushed into the MTL FIFO, the flush can finish first and
+	 * then the late-arriving data re-populates the FIFO, leaving
+	 * TRCSTS=1 / TXQSTS=1 permanently.
+	 */
+	for (i = 0; i < pdata->tx_q_count; i++) {
+		unsigned int count = 2000;   /* ~1 s max */
+		unsigned int tqdr;
+
+		while (--count) {
+			tqdr = XGMAC_MTL_IOREAD(pdata, i, MTL_Q_TQDR);
+			if ((XGMAC_GET_BITS(tqdr, MTL_Q_TQDR, TRCSTS) == 0) &&
+			    (XGMAC_GET_BITS(tqdr, MTL_Q_TQDR, TXQSTS) == 0)) {
+				break;
+			}
+			usleep_range(500, 600);
+		}
+
+		if (!count) {
+			netdev_warn(pdata->netdev,
+				    "DMA stop: Tx queue %u not idle before FTQ "
+				    "[TQDR=0x%08x]\n", i, tqdr);
+		}
+	}
+
+	/* Flush each Tx queue via FTQ before disabling MAC, retrying via
+	 * MAC internal loopback if the first attempt stalls.
+	 */
+	xgbe_syno_flush_tx_with_retry(pdata);
+
+	/* Prepare for Tx DMA channel stop */
+	for (i = 0; i < pdata->tx_q_count; i++) {
+		xgbe_prepare_tx_stop(pdata, i);
+	}
+
+	/* Disable MAC Tx */
+	XGMAC_IOWRITE_BITS(pdata, MAC_TCR, TE, 0);
+
+	/* Disable each Tx queue */
+	for (i = 0; i < pdata->tx_q_count; i++) {
+		XGMAC_MTL_IOWRITE_BITS(pdata, i, MTL_Q_TQOMR, TXQEN, 0);
+	}
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	/* Prepare for Tx DMA channel stop */
 	for (i = 0; i < pdata->tx_q_count; i++)
 		xgbe_prepare_tx_stop(pdata, i);
@@ -3331,6 +3480,7 @@ static void xgbe_disable_tx(struct xgbe_prv_data *pdata)
 
 		XGMAC_DMA_IOWRITE_BITS(pdata->channel[i], DMA_CH_TCR, ST, 0);
 	}
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 }
 
 static void xgbe_prepare_rx_stop(struct xgbe_prv_data *pdata,
@@ -3430,6 +3580,48 @@ static void xgbe_powerdown_tx(struct xgbe_prv_data *pdata)
 {
 	unsigned int i;
 
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+	/* Stop DMA first to prevent new data from entering MTL FIFO */
+	for (i = 0; i < pdata->channel_count; i++) {
+		if (!pdata->channel[i]->tx_ring) {
+			break;
+		}
+
+		XGMAC_DMA_IOWRITE_BITS(pdata->channel[i], DMA_CH_TCR, ST, 0);
+	}
+
+	/* Wait for in-flight DMA bursts to complete before flushing */
+	for (i = 0; i < pdata->tx_q_count; i++) {
+		unsigned int count = 2000;   /* ~1 s max */
+		unsigned int tqdr;
+
+		while (--count) {
+			tqdr = XGMAC_MTL_IOREAD(pdata, i, MTL_Q_TQDR);
+			if ((XGMAC_GET_BITS(tqdr, MTL_Q_TQDR, TRCSTS) == 0) &&
+			    (XGMAC_GET_BITS(tqdr, MTL_Q_TQDR, TXQSTS) == 0)) {
+				break;
+			}
+			usleep_range(500, 600);
+		}
+
+		if (!count) {
+			netdev_warn(pdata->netdev,
+				    "DMA stop: Tx queue %u not idle before FTQ "
+				    "[TQDR=0x%08x]\n", i, tqdr);
+		}
+	}
+
+	/* Flush each Tx queue via FTQ, retrying via loopback if needed */
+	xgbe_syno_flush_tx_with_retry(pdata);
+
+	/* Prepare for Tx DMA channel stop */
+	for (i = 0; i < pdata->tx_q_count; i++) {
+		xgbe_prepare_tx_stop(pdata, i);
+	}
+
+	/* Disable MAC Tx */
+	XGMAC_IOWRITE_BITS(pdata, MAC_TCR, TE, 0);
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	/* Prepare for Tx DMA channel stop */
 	for (i = 0; i < pdata->tx_q_count; i++)
 		xgbe_prepare_tx_stop(pdata, i);
@@ -3444,6 +3636,7 @@ static void xgbe_powerdown_tx(struct xgbe_prv_data *pdata)
 
 		XGMAC_DMA_IOWRITE_BITS(pdata->channel[i], DMA_CH_TCR, ST, 0);
 	}
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 }
 
 static void xgbe_powerup_rx(struct xgbe_prv_data *pdata)
@@ -3554,7 +3747,11 @@ static int xgbe_init(struct xgbe_prv_data *pdata)
 	DBGPR("-->xgbe_init\n");
 
 	/* Flush Tx queues */
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+	ret = xgbe_flush_tx_queues(pdata, 2000);
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	ret = xgbe_flush_tx_queues(pdata);
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	if (ret) {
 		netdev_err(pdata->netdev, "error flushing TX queues\n");
 		return ret;

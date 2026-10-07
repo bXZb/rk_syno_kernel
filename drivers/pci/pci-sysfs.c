@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * (C) Copyright 2002-2004 Greg Kroah-Hartman <greg@kroah.com>
@@ -31,9 +28,12 @@
 #include <linux/pm_runtime.h>
 #include <linux/of.h>
 #include "pci.h"
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 #include <linux/synobios.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+#include <linux/synolib.h>
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 
 static int sysfs_initialized;	/* = 0 */
 
@@ -422,8 +422,27 @@ static ssize_t rescan_store(struct bus_type *bus, const char *buf, size_t count)
 }
 static BUS_ATTR_WO(rescan);
 
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+static ssize_t syno_process_failed_devices_store(struct bus_type *bus, const char *buf, size_t count)
+{
+	unsigned long val;
+
+	if (kstrtoul(buf, 0, &val) < 0)
+		return -EINVAL;
+
+	if (val) {
+		syno_pci_process_all_failed_devices();
+	}
+	return count;
+}
+static BUS_ATTR_WO(syno_process_failed_devices);
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
+
 static struct attribute *pci_bus_attrs[] = {
 	&bus_attr_rescan.attr,
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+	&bus_attr_syno_process_failed_devices.attr,
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 	NULL,
 };
 
@@ -1317,6 +1336,27 @@ static ssize_t reset_store(struct device *dev, struct device_attribute *attr,
 
 static DEVICE_ATTR(reset, 0200, NULL, reset_store);
 
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+static ssize_t syno_deep_retry_store(struct device *dev, struct device_attribute *attr,
+			   const char *buf, size_t count)
+{
+	unsigned long val = 0;
+	struct pci_dev *pci_dev = to_pci_dev(dev);
+
+	if (kstrtoul(buf, 0, &val) < 0) {
+		goto END;
+	}
+	if (!val) {
+		goto END;
+	}
+	syno_pci_deep_retry(pci_dev);
+
+END:
+	return count;
+}
+static DEVICE_ATTR(syno_deep_retry, 0200, NULL, syno_deep_retry_store);
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
+
 static int pci_create_capabilities_sysfs(struct pci_dev *dev)
 {
 	int retval;
@@ -1335,7 +1375,7 @@ error:
 	return retval;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 extern bool syno_is_pci_dev_eunit_entry(struct pci_dev *pdev);
 extern bool syno_is_pci_dev_rx1224rp(struct pci_dev *pdev);
 extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
@@ -1417,7 +1457,7 @@ static ssize_t syno_eunit_info_show(struct device *dev,
 	return strlen(buf);
 }
 DEVICE_ATTR(syno_eunit_info, 0444, syno_eunit_info_show, NULL);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
 
 int __must_check pci_create_sysfs_dev_files(struct pci_dev *pdev)
 {
@@ -1427,12 +1467,17 @@ int __must_check pci_create_sysfs_dev_files(struct pci_dev *pdev)
 
 	if (!sysfs_initialized)
 		return -EACCES;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 	if (syno_is_pci_dev_eunit_entry(pdev))  {
 		retval = device_create_file(&pdev->dev, &dev_attr_syno_eunit_info);
 		dev_info(&pdev->dev, "syno_eunit_info created\n");
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+	retval = device_create_file(&pdev->dev, &dev_attr_syno_deep_retry);
+	if (retval)
+		goto err;
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 	if (pdev->cfg_size > PCI_CFG_SPACE_SIZE)
 		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pcie_config_attr);
 	else

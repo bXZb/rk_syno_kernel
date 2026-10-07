@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * NVM Express device driver
@@ -24,9 +21,9 @@
 #include <linux/nvme_ioctl.h>
 #include <linux/pm_qos.h>
 #include <asm/unaligned.h>
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NVME_SW_ACTIVITY
 #include  <linux/synobios.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NVME_SW_ACTIVITY */
 
 #include "nvme.h"
 #include "fabrics.h"
@@ -34,18 +31,18 @@
 #define CREATE_TRACE_POINTS
 #include "trace.h"
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_NVME_DEVICE_INDEX) || defined(CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP)
 #include <linux/synolib.h>
-#endif /* defined(MY_ABC_HERE) || defined(MY_ABC_HERE) */
+#endif /* defined(CONFIG_SYNO_NVME_DEVICE_INDEX) || defined(CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP) */
 
-#if defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C)
+#if defined(CONFIG_SYNO_USB_EUNIT_CONTROL) && defined(CONFIG_SYNO_PCI_EUNIT_I2C)
 #include <linux/of.h>
 #include <linux/synolib.h>
 extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
 extern void syno_acm_device_list_add(int slot_index, const char* device_name);
 extern void syno_acm_device_list_delete(const char* device_name);
 extern struct device_node *syno_pcie_path_to_eunit_root_port(const char *pciepath, bool exactly);
-#endif /* defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C) */
+#endif /* defined(CONFIG_SYNO_USB_EUNIT_CONTROL) && defined(CONFIG_SYNO_PCI_EUNIT_I2C) */
 
 #define NVME_MINORS		(1U << MINORBITS)
 
@@ -54,11 +51,11 @@ module_param(admin_timeout, uint, 0644);
 MODULE_PARM_DESC(admin_timeout, "timeout in seconds for admin commands");
 EXPORT_SYMBOL_GPL(admin_timeout);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_EXTEND_IO_TIMEOUT
 unsigned int nvme_io_timeout = 60;
 #else
 unsigned int nvme_io_timeout = 30;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_EXTEND_IO_TIMEOUT */
 module_param_named(io_timeout, nvme_io_timeout, uint, 0644);
 MODULE_PARM_DESC(io_timeout, "timeout in seconds for I/O");
 EXPORT_SYMBOL_GPL(nvme_io_timeout);
@@ -76,11 +73,11 @@ module_param(default_ps_max_latency_us, ulong, 0644);
 MODULE_PARM_DESC(default_ps_max_latency_us,
 		 "max power saving latency for new devices; use PM QOS to change per device");
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT
 unsigned int syno_force_timeout_default = 0;
 module_param(syno_force_timeout_default, uint, 0644);
 MODULE_PARM_DESC(syno_force_timeout_default, "type of force timeout for debug");
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT */
 
 static bool force_apst;
 module_param(force_apst, bool, 0644);
@@ -122,13 +119,13 @@ static void nvme_put_subsystem(struct nvme_subsystem *subsys);
 static void nvme_remove_invalid_namespaces(struct nvme_ctrl *ctrl,
 					   unsigned nsid);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NVME_SW_ACTIVITY
 static void (*syno_sw_activity)(struct nvme_ctrl *ctrl);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_TRIGGER
 void syno_nvme_sw_activity_by_lp3943(struct nvme_ctrl *ctrl);
-#endif /* MY_ABC_HERE */
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_LEDS_TRIGGER */
+#endif /* CONFIG_SYNO_NVME_SW_ACTIVITY */
 
 static void nvme_update_bdev_size(struct gendisk *disk)
 {
@@ -338,9 +335,9 @@ static inline enum nvme_disposition nvme_decide_disposition(struct request *req)
 	return RETRY;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 int syno_nvme_do_remap_req(struct request *req);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 
 static inline void nvme_end_req(struct request *req)
 {
@@ -351,7 +348,7 @@ static inline void nvme_end_req(struct request *req)
 		req->__sector = nvme_lba_to_sect(req->q->queuedata,
 			le64_to_cpu(nvme_req(req)->result.u64));
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 	/* The read data could not be recovered from the media */
 	if ((nvme_req(req)->status & 0x7ff) == NVME_SC_READ_ERROR) {
 		if (syno_nvme_do_remap_req(req) < 0) {
@@ -361,7 +358,7 @@ static inline void nvme_end_req(struct request *req)
 			return;
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 
 	nvme_trace_bio_complete(req, status);
 	blk_mq_end_request(req, status);
@@ -902,11 +899,11 @@ static inline blk_status_t nvme_setup_rw(struct nvme_ns *ns,
 	if (req->cmd_flags & REQ_RAHEAD)
 		dsmgmt |= NVME_RW_DSM_FREQ_PREFETCH;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_IDLE_TIME
 	if (0 == ns->ctrl->do_standby_syncing) {
 		ns->ctrl->idle = jiffies;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_IDLE_TIME */
 
 	cmnd->rw.opcode = op;
 	cmnd->rw.nsid = cpu_to_le32(ns->head->ns_id);
@@ -947,11 +944,11 @@ static inline blk_status_t nvme_setup_rw(struct nvme_ns *ns,
 	cmnd->rw.control = cpu_to_le16(control);
 	cmnd->rw.dsmgmt = cpu_to_le32(dsmgmt);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NVME_SW_ACTIVITY
 	if (syno_sw_activity) {
 		syno_sw_activity(ctrl);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NVME_SW_ACTIVITY */
 
 	return 0;
 }
@@ -1571,7 +1568,7 @@ int nvme_get_features(struct nvme_ctrl *dev, unsigned int fid,
 }
 EXPORT_SYMBOL_GPL(nvme_get_features);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 int syno_nvme_get_error_log_page(struct nvme_ctrl *dev,
 		struct syno_nvme_error_log_page **err_log, int *err_entries)
 {
@@ -1628,7 +1625,7 @@ int syno_nvme_lba_write_pattern(struct nvme_ns *ns, u64 lba)
 	buf = NULL;
 	return error;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 
 int nvme_set_queue_count(struct nvme_ctrl *ctrl, int *count)
 {
@@ -2324,7 +2321,7 @@ static void nvme_set_chunk_sectors(struct nvme_ns *ns, struct nvme_id_ns *id)
 	blk_queue_chunk_sectors(ns->queue, iob);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_CRIT_WARN_MEDIA_SET_RO
 static int syno_nvme_update_nsattr(struct nvme_ns *ns, struct nvme_id_ns *id)
 {
 	u8 smart_log_buf[4] ={0};
@@ -2345,11 +2342,11 @@ static int syno_nvme_update_nsattr(struct nvme_ns *ns, struct nvme_id_ns *id)
 		id->nsattr |= NVME_NS_ATTR_RO;
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_CRIT_WARN_MEDIA_SET_RO */
 
 static int nvme_update_ns_info(struct nvme_ns *ns, struct nvme_id_ns *id)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_CRIT_WARN_MEDIA_SET_RO
 	struct pci_dev *pdev = to_pci_dev(ns->ctrl->dev);
 	bool is_snv3400_series = (pdev->vendor == 0x1987 &&
 				  pdev->device == 0x5012 &&
@@ -2359,13 +2356,13 @@ static int nvme_update_ns_info(struct nvme_ns *ns, struct nvme_id_ns *id)
 	unsigned lbaf = id->flbas & NVME_NS_FLBAS_LBA_MASK;
 	int ret;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_CRIT_WARN_MEDIA_SET_RO
 	if (is_snv3400_series) {
 		ret = syno_nvme_update_nsattr(ns, id);
 		if (ret)
 			return ret;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_CRIT_WARN_MEDIA_SET_RO */
 
 	blk_mq_freeze_queue(ns->disk->queue);
 	ns->lba_shift = id->lbaf[lbaf].ds;
@@ -2575,14 +2572,14 @@ static int nvme_wait_ready(struct nvme_ctrl *ctrl, u64 cap, bool enabled)
 		((NVME_CAP_TIMEOUT(cap) + 1) * HZ / 2) + jiffies;
 	u32 csts, bit = enabled ? NVME_CSTS_RDY : 0;
 	int ret;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT
 	if (unlikely(ctrl->syno_force_timeout & (2 << enabled))) {
 		dev_err(ctrl->dev,
 			"Device not ready; aborting %s\n",
 			enabled ? "initialisation" : "reset");
 		return -ENODEV;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT */
 
 	while ((ret = ctrl->ops->reg_read32(ctrl, NVME_REG_CSTS, &csts)) == 0) {
 		if (csts == ~0)
@@ -2668,13 +2665,13 @@ int nvme_shutdown_ctrl(struct nvme_ctrl *ctrl)
 	unsigned long timeout = jiffies + (ctrl->shutdown_timeout * HZ);
 	u32 csts;
 	int ret;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT
 	if (unlikely(ctrl->syno_force_timeout & (2 << 2))) {
 		dev_err(ctrl->dev,
 			"Device shutdown incomplete; abort shutdown\n");
 		return -ENODEV;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT */
 
 	ctrl->ctrl_config &= ~NVME_CC_SHN_MASK;
 	ctrl->ctrl_config |= NVME_CC_SHN_NORMAL;
@@ -3340,9 +3337,9 @@ int nvme_init_identify(struct nvme_ctrl *ctrl)
 	} else
 		ctrl->shutdown_timeout = shutdown_timeout;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 	ctrl->syno_elpe = id->elpe;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 	ctrl->npss = id->npss;
 	ctrl->apsta = id->apsta;
 	prev_apst_enabled = ctrl->apst_enabled;
@@ -3557,7 +3554,7 @@ static ssize_t nvme_sysfs_rescan(struct device *dev,
 }
 static DEVICE_ATTR(rescan_controller, S_IWUSR, NULL, nvme_sysfs_rescan);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_IDLE_TIME
 static ssize_t
 sdev_show_syno_idle_time(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -3632,9 +3629,9 @@ END:
 }
 
 static DEVICE_ATTR(syno_standby_syncing, S_IRUGO | S_IWUSR, nvme_show_syno_standby_syncing, nvme_store_syno_standby_syncing);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_IDLE_TIME */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT
 static ssize_t syno_show_force_timeout(struct device *dev,
 				       struct device_attribute *attr, char *buf)
 {
@@ -3650,7 +3647,7 @@ END:
 	return len;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_BLOCK_INFO
 static ssize_t syno_block_info_show(struct device *device, struct device_attribute *attr, char *buf)
 {
 	struct nvme_ctrl *ctrl = dev_get_drvdata(device);
@@ -3665,7 +3662,7 @@ END:
 	return len;
 }
 static DEVICE_ATTR(syno_block_info, S_IRUGO, syno_block_info_show, NULL);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_BLOCK_INFO */
 
 static ssize_t syno_store_force_timeout(struct device *dev,
 				struct device_attribute *attr, const char *buf,
@@ -3682,7 +3679,7 @@ END:
 	return count;
 }
 static DEVICE_ATTR(syno_force_timeout, S_IWUSR | S_IRUSR, syno_show_force_timeout, syno_store_force_timeout);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT */
 
 static inline struct nvme_ns_head *dev_to_ns_head(struct device *dev)
 {
@@ -3995,15 +3992,15 @@ static DEVICE_ATTR(reconnect_delay, S_IRUGO | S_IWUSR,
 
 static struct attribute *nvme_dev_attrs[] = {
 	&dev_attr_reset_controller.attr,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_IDLE_TIME
 	&dev_attr_syno_idle_time.attr,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NVME_IDLE_TIME */
+#ifdef CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT
 	&dev_attr_syno_force_timeout.attr,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT */
+#ifdef CONFIG_SYNO_NVME_BLOCK_INFO
 	&dev_attr_syno_block_info.attr,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_BLOCK_INFO */
 	&dev_attr_rescan_controller.attr,
 	&dev_attr_model.attr,
 	&dev_attr_serial.attr,
@@ -4021,9 +4018,9 @@ static struct attribute *nvme_dev_attrs[] = {
 	&dev_attr_hostid.attr,
 	&dev_attr_ctrl_loss_tmo.attr,
 	&dev_attr_reconnect_delay.attr,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_IDLE_TIME
 	&dev_attr_syno_standby_syncing.attr,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_IDLE_TIME */
 	NULL
 };
 
@@ -4223,7 +4220,7 @@ struct nvme_ns *nvme_find_get_ns(struct nvme_ctrl *ctrl, unsigned nsid)
 }
 EXPORT_SYMBOL_NS_GPL(nvme_find_get_ns, NVME_TARGET_PASSTHRU);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 void syno_nvme_put_ns(struct nvme_ns *ns)
 {
 	nvme_put_ns(ns);
@@ -4233,9 +4230,9 @@ struct nvme_ns *syno_nvme_find_get_ns(struct nvme_ctrl *ctrl, unsigned int nsid)
 {
 	return nvme_find_get_ns(ctrl, nsid);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_EIO_NODEV_HANDLER
 static bool syno_is_nvme_device_disappear(struct gendisk *disk)
 {
 	struct nvme_ns *ns = disk->private_data;
@@ -4256,18 +4253,18 @@ static bool syno_is_nvme_device_disappear(struct gendisk *disk)
 end:
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_EIO_NODEV_HANDLER */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLK_DEV_GENDISK_OPERATIONS
 static const struct syno_gendisk_operations syno_nvme_gd_ops = {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_EIO_NODEV_HANDLER
 	.is_device_disappear    = syno_is_nvme_device_disappear,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_EIO_NODEV_HANDLER */
+#ifdef CONFIG_SYNO_NVME_DEVICE_INDEX
 	.get_device_index		= SynoNVMeGetDeviceIndex,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NVME_DEVICE_INDEX */
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLK_DEV_GENDISK_OPERATIONS */
 
 static void nvme_alloc_ns(struct nvme_ctrl *ctrl, unsigned nsid,
 		struct nvme_ns_ids *ids)
@@ -4316,9 +4313,9 @@ static void nvme_alloc_ns(struct nvme_ctrl *ctrl, unsigned nsid,
 	memcpy(disk->disk_name, disk_name, DISK_NAME_LEN);
 	ns->disk = disk;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLK_DEV_GENDISK_OPERATIONS
 	disk->syno_ops = &syno_nvme_gd_ops;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLK_DEV_GENDISK_OPERATIONS */
 
 	if (nvme_update_ns_info(ns, id))
 		goto out_put_disk;
@@ -4363,21 +4360,21 @@ static void nvme_alloc_ns(struct nvme_ctrl *ctrl, unsigned nsid,
 	kfree(id);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY
 int (*syno_raid_nvme_unplug)(char *szNVMeName) = NULL;
 EXPORT_SYMBOL(syno_raid_nvme_unplug);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY */
 static void nvme_ns_remove(struct nvme_ns *ns)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY
 	char device_name[16] = {0};
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY */
 	if (test_and_set_bit(NVME_NS_REMOVING, &ns->flags))
 		return;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY
 	strlcpy(device_name, ns->disk->disk_name, sizeof(device_name));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY */
 	set_capacity(ns->disk, 0);
 	nvme_fault_inject_fini(&ns->fault_inject);
 
@@ -4404,10 +4401,10 @@ static void nvme_ns_remove(struct nvme_ns *ns)
 
 	nvme_mpath_check_last_path(ns);
 	nvme_put_ns(ns);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY
 	if (syno_raid_nvme_unplug)
 		syno_raid_nvme_unplug(device_name);
-#endif  /* MY_ABC_HERE */
+#endif  /* CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY */
 }
 
 static void nvme_ns_remove_by_nsid(struct nvme_ctrl *ctrl, u32 nsid)
@@ -4887,12 +4884,12 @@ static void nvme_free_ctrl(struct device *dev)
 	struct nvme_ctrl *ctrl =
 		container_of(dev, struct nvme_ctrl, ctrl_device);
 	struct nvme_subsystem *subsys = ctrl->subsys;
-#if defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C)
+#if defined(CONFIG_SYNO_USB_EUNIT_CONTROL) && defined(CONFIG_SYNO_PCI_EUNIT_I2C)
 	char disk_name[DISK_NAME_LEN] = {0};
 
 	sprintf(disk_name, "nvme%d", ctrl->instance);
 	syno_acm_device_list_delete(disk_name);
-#endif /* defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C) */
+#endif /* defined(CONFIG_SYNO_USB_EUNIT_CONTROL) && defined(CONFIG_SYNO_PCI_EUNIT_I2C) */
 
 
 	if (!subsys || ctrl->instance != subsys->instance)
@@ -4925,12 +4922,12 @@ int nvme_init_ctrl(struct nvme_ctrl *ctrl, struct device *dev,
 {
 	int ret;
 
-#if defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C)
+#if defined(CONFIG_SYNO_USB_EUNIT_CONTROL) && defined(CONFIG_SYNO_PCI_EUNIT_I2C)
 	char sztemp[SYNO_DTS_PROPERTY_CONTENT_LENGTH] = {'\0'};
 	struct device_node *eunit_node = NULL;
 	int index = -1;
 	char disk_name[DISK_NAME_LEN] = {0};
-#endif /* defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C) */
+#endif /* defined(CONFIG_SYNO_USB_EUNIT_CONTROL) && defined(CONFIG_SYNO_PCI_EUNIT_I2C) */
 
 	ctrl->state = NVME_CTRL_NEW;
 	spin_lock_init(&ctrl->lock);
@@ -4941,19 +4938,19 @@ int nvme_init_ctrl(struct nvme_ctrl *ctrl, struct device *dev,
 	ctrl->dev = dev;
 	ctrl->ops = ops;
 	ctrl->quirks = quirks;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT
 	ctrl->syno_force_timeout = syno_force_timeout_default;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NVME_DEBUG_FORCE_TIMEOUT */
+#ifdef CONFIG_SYNO_NVME_QUIRK_NO_APST
 	ctrl->quirks |= NVME_QUIRK_NO_APST;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NVME_QUIRK_NO_APST */
+#ifdef CONFIG_SYNO_NVME_IDLE_TIME
 	ctrl->idle = jiffies;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NVME_IDLE_TIME */
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 	INIT_LIST_HEAD(&ctrl->syno_remap_reqs);
 	spin_lock_init(&ctrl->syno_remap_reqs_lock);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 
 	ctrl->numa_node = NUMA_NO_NODE;
 	INIT_WORK(&ctrl->scan_work, nvme_scan_work);
@@ -5009,7 +5006,7 @@ int nvme_init_ctrl(struct nvme_ctrl *ctrl, struct device *dev,
 	nvme_fault_inject_init(&ctrl->fault_inject, dev_name(ctrl->device));
 	nvme_mpath_init_ctrl(ctrl);
 
-#if defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C)
+#if defined(CONFIG_SYNO_USB_EUNIT_CONTROL) && defined(CONFIG_SYNO_PCI_EUNIT_I2C)
 	syno_pciepath_dts_pattern_get(to_pci_dev(ctrl->dev), sztemp, SYNO_DTS_PROPERTY_CONTENT_LENGTH);
 	eunit_node = syno_pcie_path_to_eunit_root_port(sztemp, false);
 
@@ -5021,7 +5018,7 @@ int nvme_init_ctrl(struct nvme_ctrl *ctrl, struct device *dev,
 			syno_acm_device_list_add(index, disk_name);
 		}
 	}	
-#endif /* defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C) */
+#endif /* defined(CONFIG_SYNO_USB_EUNIT_CONTROL) && defined(CONFIG_SYNO_PCI_EUNIT_I2C) */
 
 	return 0;
 out_free_name:
@@ -5222,15 +5219,15 @@ static int __init nvme_core_init(void)
 		goto destroy_class;
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NVME_SW_ACTIVITY
 	syno_sw_activity = NULL;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_TRIGGER
 	if (syno_is_hw_version(HW_SA6500)) {
 		syno_sw_activity = syno_nvme_sw_activity_by_lp3943;
 	}
-#endif /* MY_ABC_HERE */
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_LEDS_TRIGGER */
+#endif /* CONFIG_SYNO_NVME_SW_ACTIVITY */
 
 	return 0;
 

@@ -76,6 +76,9 @@ install_dev_kernel_devel()
 
     install -Dm644 "include/linux/syno_gpio.h" "$WRKDIR/include/linux/syno_gpio.h"
     install -Dm644 "include/linux/syno_fdt.h" "$WRKDIR/include/linux/syno_fdt.h"
+
+    install -Dm644 "include/linux/syno_microp.h" "$WRKDIR/include/linux/syno_microp.h"
+
     install -Dm755 "scripts/sign-file" "${DebDevBuild}/usr/syno/bin/sign-file"
 }
 

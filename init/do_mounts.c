@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 #include <linux/module.h>
 #include <linux/sched.h>
@@ -321,7 +318,7 @@ EXPORT_SYMBOL_GPL(name_to_dev_t);
 
 static int __init root_dev_setup(char *line)
 {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_KVMX64SOFS
 	strlcpy(saved_root_name, "/dev/sata1p1", sizeof(saved_root_name));
 #else
 	strlcpy(saved_root_name, line, sizeof(saved_root_name));

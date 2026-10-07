@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * fs/dcache.c
@@ -194,10 +191,10 @@ int proc_nr_dentry(struct ctl_table *table, int write, void *buffer,
  * In contrast, 'ct' and 'tcount' can be from a pathname, and do
  * need the careful unaligned handling.
  */
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 static
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 inline int dentry_string_cmp(const unsigned char *cs, const unsigned char *ct, unsigned tcount)
 {
 	unsigned long a,b,mask;
@@ -221,10 +218,10 @@ inline int dentry_string_cmp(const unsigned char *cs, const unsigned char *ct, u
 
 #else
 
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 static
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 inline int dentry_string_cmp(const unsigned char *cs, const unsigned char *ct, unsigned tcount)
 {
 	do {
@@ -238,14 +235,14 @@ inline int dentry_string_cmp(const unsigned char *cs, const unsigned char *ct, u
 }
 
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 EXPORT_SYMBOL(dentry_string_cmp);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 static
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 inline int dentry_cmp(const struct dentry *dentry, const unsigned char *ct, unsigned tcount)
 {
 	/*
@@ -268,9 +265,9 @@ inline int dentry_cmp(const struct dentry *dentry, const unsigned char *ct, unsi
 
 	return dentry_string_cmp(cs, ct, tcount);
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 EXPORT_SYMBOL(dentry_cmp);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 struct external_name {
 	union {
@@ -330,7 +327,7 @@ void release_dentry_name_snapshot(struct name_snapshot *name)
 }
 EXPORT_SYMBOL(release_dentry_name_snapshot);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 /*
  * It would modify dentry's name, so caller should
  * care about not only the race-condition issue
@@ -370,7 +367,7 @@ int dentry_replace_name(struct dentry *dentry, const char *new_name, u32 name_le
 }
 EXPORT_SYMBOL(dentry_replace_name);
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 static inline void __d_set_inode_and_type(struct dentry *dentry,
 					  struct inode *inode,
@@ -1348,13 +1345,13 @@ enum d_walk_ret {
  *
  * The @enter() callbacks are called with d_lock held.
  */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 void d_walk(struct dentry *parent, void *data,
 		   enum d_walk_ret (*enter)(void *, struct dentry *))
 #else
 static void d_walk(struct dentry *parent, void *data,
 		   enum d_walk_ret (*enter)(void *, struct dentry *))
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 {
 	struct dentry *this_parent;
 	struct list_head *next;
@@ -1458,9 +1455,9 @@ rename_retry:
 	seq = 1;
 	goto again;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 EXPORT_SYMBOL_GPL(d_walk);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 struct check_mount {
 	struct vfsmount *mnt;
@@ -1938,10 +1935,10 @@ void d_set_d_op(struct dentry *dentry, const struct dentry_operations *op)
 		dentry->d_flags |= DCACHE_OP_HASH;
 	if (op->d_compare)
 		dentry->d_flags |= DCACHE_OP_COMPARE;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	if (op->d_compare_case)
 		dentry->d_flags |= DCACHE_OP_COMPARE_CASE;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 	if (op->d_revalidate)
 		dentry->d_flags |= DCACHE_OP_REVALIDATE;
 	if (op->d_weak_revalidate)
@@ -2265,12 +2262,12 @@ EXPORT_SYMBOL(d_add_ci);
 static inline bool d_same_name(const struct dentry *dentry,
 				const struct dentry *parent,
 				const struct qstr *name
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 				, const int caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 				)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	if (likely(parent->d_flags & DCACHE_OP_COMPARE_CASE))
 		return parent->d_op->d_compare_case(dentry,
 						    dentry->d_name.len,
@@ -2278,7 +2275,7 @@ static inline bool d_same_name(const struct dentry *dentry,
 						    name,
 						    caseless) == 0;
 	else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 	if (likely(!(parent->d_flags & DCACHE_OP_COMPARE))) {
 		if (dentry->d_name.len != name->len)
 			return false;
@@ -2321,9 +2318,9 @@ static inline bool d_same_name(const struct dentry *dentry,
 struct dentry *__d_lookup_rcu(const struct dentry *parent,
 				const struct qstr *name,
 				unsigned *seqp
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 				, const int caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 				)
 {
 	u64 hashlen = name->hash_len;
@@ -2331,9 +2328,9 @@ struct dentry *__d_lookup_rcu(const struct dentry *parent,
 	struct hlist_bl_head *b = d_hash(hashlen_hash(hashlen));
 	struct hlist_bl_node *node;
 	struct dentry *dentry;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	struct dentry *found = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 	/*
 	 * Note: There is significant duplication with __d_lookup_rcu which is
@@ -2382,11 +2379,11 @@ seqretry:
 		if (d_unhashed(dentry))
 			continue;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 		if (likely(parent->d_flags & (DCACHE_OP_COMPARE | DCACHE_OP_COMPARE_CASE))) {
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 		if (unlikely(parent->d_flags & DCACHE_OP_COMPARE)) {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 			int tlen;
 			const char *tname;
 			if (dentry->d_name.hash != hashlen_hash(hashlen))
@@ -2398,7 +2395,7 @@ seqretry:
 				cpu_relax();
 				goto seqretry;
 			}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 			if (likely(parent->d_flags & DCACHE_OP_COMPARE_CASE)) {
 				if (parent->d_op->d_compare_case(dentry,
 								 tlen,
@@ -2424,7 +2421,7 @@ seqretry:
 					continue;
 				}
 			} else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 			if (parent->d_op->d_compare(dentry,
 						    tlen, tname, name) != 0)
 				continue;
@@ -2437,11 +2434,11 @@ seqretry:
 		*seqp = seq;
 		return dentry;
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	return found;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 	return NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 }
 
 /**
@@ -2462,11 +2459,11 @@ struct dentry *d_lookup(const struct dentry *parent, const struct qstr *name)
 
 	do {
 		seq = read_seqbegin(&rename_lock);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 		dentry = __d_lookup(parent, name, 0);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 		dentry = __d_lookup(parent, name);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 		if (dentry)
 			break;
 	} while (read_seqretry(&rename_lock, seq));
@@ -2490,9 +2487,9 @@ EXPORT_SYMBOL(d_lookup);
  * __d_lookup callers must be commented.
  */
 struct dentry *__d_lookup(const struct dentry *parent, const struct qstr *name
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 			  , const int caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 			  )
 {
 	unsigned int hash = name->hash;
@@ -2500,9 +2497,9 @@ struct dentry *__d_lookup(const struct dentry *parent, const struct qstr *name
 	struct hlist_bl_node *node;
 	struct dentry *found = NULL;
 	struct dentry *dentry;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	struct dentry *negative_dentry = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 	/*
 	 * Note: There is significant duplication with __d_lookup_rcu which is
@@ -2537,14 +2534,14 @@ struct dentry *__d_lookup(const struct dentry *parent, const struct qstr *name
 		if (d_unhashed(dentry))
 			goto next;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 		if (!d_same_name(dentry, parent, name, caseless))
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 		if (!d_same_name(dentry, parent, name))
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 			goto next;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 		if (likely(parent->d_flags & DCACHE_OP_COMPARE_CASE)
 				&& caseless
 				&& !dentry->d_inode) {
@@ -2561,27 +2558,27 @@ struct dentry *__d_lookup(const struct dentry *parent, const struct qstr *name
 			}
 			goto next;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 		dentry->d_lockref.count++;
 		found = dentry;
 		spin_unlock(&dentry->d_lock);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 		if (negative_dentry) {
 			spin_lock(&negative_dentry->d_lock);
 			negative_dentry->d_lockref.count--;
 			spin_unlock(&negative_dentry->d_lock);
 			negative_dentry = NULL;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 		break;
 next:
 		spin_unlock(&dentry->d_lock);
  	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	if (!found && negative_dentry)
 		found = negative_dentry;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
  	rcu_read_unlock();
 
  	return found;
@@ -2706,16 +2703,16 @@ static void d_wait_lookup(struct dentry *dentry)
 	}
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 struct dentry *__d_alloc_parallel(struct dentry *parent,
 				const struct qstr *name,
 				wait_queue_head_t *wq,
 				const int caseless)
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 struct dentry *d_alloc_parallel(struct dentry *parent,
 				const struct qstr *name,
 				wait_queue_head_t *wq)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 {
 	unsigned int hash = name->hash;
 	struct hlist_bl_head *b = in_lookup_hash(parent, hash);
@@ -2731,11 +2728,11 @@ retry:
 	rcu_read_lock();
 	seq = smp_load_acquire(&parent->d_inode->i_dir_seq);
 	r_seq = read_seqbegin(&rename_lock);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	dentry = __d_lookup_rcu(parent, name, &d_seq, caseless);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 	dentry = __d_lookup_rcu(parent, name, &d_seq);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 	if (unlikely(dentry)) {
 		if (!lockref_get_not_dead(&dentry->d_lockref)) {
 			rcu_read_unlock();
@@ -2747,6 +2744,14 @@ retry:
 			goto retry;
 		}
 		rcu_read_unlock();
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
+		if (caseless && dentry && !dentry->d_inode) {
+			d_invalidate(dentry);
+			dput(dentry);
+			dentry = NULL;
+			goto retry;
+		}
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 		dput(new);
 		return dentry;
 	}
@@ -2778,11 +2783,11 @@ retry:
 			continue;
 		if (dentry->d_parent != parent)
 			continue;
-#ifdef MY_ABC_HERE
-		if (!d_same_name(dentry, parent, name, caseless))
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
+		if (!d_same_name(dentry, parent, name, 0))
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 		if (!d_same_name(dentry, parent, name))
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 			continue;
 		hlist_bl_unlock(b);
 		/* now we can try to grab a reference */
@@ -2810,11 +2815,11 @@ retry:
 			goto mismatch;
 		if (unlikely(d_unhashed(dentry)))
 			goto mismatch;
-#ifdef MY_ABC_HERE
-		if (unlikely(!d_same_name(dentry, parent, name, caseless)))
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
+		if (unlikely(!d_same_name(dentry, parent, name, 0)))
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 		if (unlikely(!d_same_name(dentry, parent, name)))
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 			goto mismatch;
 		/* OK, it *is* a hashed match; return it */
 		spin_unlock(&dentry->d_lock);
@@ -2833,11 +2838,11 @@ mismatch:
 	dput(dentry);
 	goto retry;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 EXPORT_SYMBOL(__d_alloc_parallel);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 EXPORT_SYMBOL(d_alloc_parallel);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 void __d_lookup_done(struct dentry *dentry)
 {
@@ -2928,11 +2933,11 @@ struct dentry *d_exact_alias(struct dentry *entry, struct inode *inode)
 			continue;
 		if (alias->d_parent != entry->d_parent)
 			continue;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 		if (!d_same_name(alias, entry->d_parent, &entry->d_name, 0))
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 		if (!d_same_name(alias, entry->d_parent, &entry->d_name))
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 			continue;
 		spin_lock(&alias->d_lock);
 		if (!d_unhashed(alias)) {
@@ -3138,9 +3143,9 @@ void d_exchange(struct dentry *dentry1, struct dentry *dentry2)
 
 	write_sequnlock(&rename_lock);
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 EXPORT_SYMBOL_GPL(d_exchange);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 /**
  * d_ancestor - search for an ancestor

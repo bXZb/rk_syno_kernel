@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: LGPL-2.1
 /*
  * Copyright (c) 2012 Taobao.
@@ -1634,9 +1631,9 @@ struct buffer_head *ext4_find_inline_entry(struct inode *dir,
 					struct ext4_filename *fname,
 					struct ext4_dir_entry_2 **res_dir,
 					int *has_inline_data
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 					, int caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 					)
 {
 	int ret;
@@ -1658,9 +1655,9 @@ struct buffer_head *ext4_find_inline_entry(struct inode *dir,
 	inline_size = EXT4_MIN_INLINE_DATA_SIZE - EXT4_INLINE_DOTDOT_SIZE;
 	ret = ext4_search_dir(iloc.bh, inline_start, inline_size,
 			      dir, fname, 0, res_dir
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 			      , caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 			      );
 	if (ret == 1)
 		goto out_find;
@@ -1675,9 +1672,9 @@ struct buffer_head *ext4_find_inline_entry(struct inode *dir,
 
 	ret = ext4_search_dir(iloc.bh, inline_start, inline_size,
 			      dir, fname, 0, res_dir
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 			      , caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 			      );
 	if (ret == 1)
 		goto out_find;

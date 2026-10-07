@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  *   fs/cifs/inode.c
  *
@@ -2017,16 +2014,16 @@ cifs_do_rename(const unsigned int xid, struct dentry *from_dentry,
 	tcon = tlink_tcon(tlink);
 	server = tcon->ses->server;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_SMB_OPS
 	// cifs_sb_tlink need cifs_put_tlink before return
 	if (!server->ops->rename) {
 		rc = -ENOSYS;
 		goto do_rename_exit;
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_CIFS_SMB_OPS */
 	if (!server->ops->rename)
 		return -ENOSYS;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_SMB_OPS */
 
 	/* try path-based rename first */
 	rc = server->ops->rename(xid, tcon, from_path, to_path, cifs_sb);
@@ -2444,7 +2441,7 @@ int cifs_getattr(const struct path *path, struct kstat *stat,
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_CREATE_TIME
 int cifs_syno_getattr(struct dentry *dentry, struct kstat *kst, unsigned int syno_flags)
 {
 	struct inode *inode = d_inode(dentry);
@@ -2464,7 +2461,7 @@ int cifs_syno_get_crtime(struct inode *inode, struct timespec64 *crtime)
 
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_CREATE_TIME */
 
 int cifs_fiemap(struct inode *inode, struct fiemap_extent_info *fei, u64 start,
 		u64 len)

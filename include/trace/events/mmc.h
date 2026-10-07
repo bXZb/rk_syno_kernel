@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #undef TRACE_SYSTEM
 #define TRACE_SYSTEM mmc
@@ -190,7 +187,7 @@ TRACE_EVENT(mmc_request_done,
 		  __entry->hold_retune, __entry->retune_period)
 );
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 /*
  * Tracepoint for rtk emmc issue legacy command.
  */
@@ -245,7 +242,7 @@ TRACE_EVENT(mmc_rtkemmc_legacy_irq_complete,
                   __entry->error_interrupt)
 );
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 #endif /* _TRACE_MMC_H */
 
 /* This part must be outside protection */

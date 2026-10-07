@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/fs/file_table.c
@@ -35,11 +32,11 @@
 
 #include "internal.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 #include <linux/dcache.h>
 #include "mount.h"
 static spinlock_t files_list_lock;
-#endif /*MY_ABC_HERE*/
+#endif /*CONFIG_SYNO_FS_UNMOUNT*/
 
 /* sysctl tunables... */
 struct files_stat_struct files_stat = {
@@ -118,9 +115,9 @@ static struct file *__alloc_file(int flags, const struct cred *cred)
 		return ERR_PTR(error);
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 	INIT_LIST_HEAD(&f->open_list);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_UNMOUNT */
 	atomic_long_set(&f->f_count, 1);
 	rwlock_init(&f->f_owner.lock);
 	spin_lock_init(&f->f_lock);
@@ -174,9 +171,9 @@ over:
 	}
 	return ERR_PTR(-ENFILE);
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 EXPORT_SYMBOL_GPL(alloc_empty_file);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 /*
  * Variant of alloc_empty_file() that doesn't check and modify nr_files.
@@ -352,9 +349,9 @@ void fput_many(struct file *file, unsigned int refs)
 	if (atomic_long_sub_and_test(refs, &file->f_count)) {
 		struct task_struct *task = current;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 		file_sb_list_del(file);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_UNMOUNT */
 
 		if (likely(!in_interrupt() && !(task->flags & PF_KTHREAD))) {
 			init_task_work(&file->f_u.fu_rcuhead, ____fput);
@@ -390,9 +387,9 @@ void __fput_sync(struct file *file)
 	if (atomic_long_dec_and_test(&file->f_count)) {
 		struct task_struct *task = current;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 		file_sb_list_del(file);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_UNMOUNT */
 
 		BUG_ON(!(task->flags & PF_KTHREAD));
 		__fput(file);
@@ -406,9 +403,9 @@ void __init files_init(void)
 {
 	filp_cachep = kmem_cache_create("filp", sizeof(struct file), 0,
 			SLAB_HWCACHE_ALIGN | SLAB_PANIC | SLAB_ACCOUNT, NULL);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 	spin_lock_init(&files_list_lock);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_UNMOUNT */
 	percpu_counter_init(&nr_files, 0, GFP_KERNEL);
 }
 
@@ -427,7 +424,7 @@ void __init files_maxfiles_init(void)
 
 	files_stat.max_files = max_t(unsigned long, n, NR_FILE);
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 static inline int file_list_cpu(struct file *file)
 {
 #ifdef CONFIG_SMP
@@ -541,4 +538,4 @@ void fs_show_opened_file(struct mount *mnt,
 	} while_file_list_for_each_entry;
 	spin_unlock_irqrestore(&files_list_lock, flags);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_UNMOUNT */

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/fs/namespace.c
@@ -33,23 +30,23 @@
 #include <uapi/linux/mount.h>
 #include <linux/fs_context.h>
 #include <linux/shmem_fs.h>
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_KEXEC_TEST
 #include <linux/synolib.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_KEXEC_TEST */
 
 #include "pnode.h"
 #include "internal.h"
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK
 extern bool ramdisk_check_failed;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 int (*funcSYNOSendErrorFsBtrfsEvent)(const u8*) = NULL;
 int (*funcSYNOMetaCorruptedEvent)(const u8*, u64 start) = NULL;
 EXPORT_SYMBOL(funcSYNOSendErrorFsBtrfsEvent);
 EXPORT_SYMBOL(funcSYNOMetaCorruptedEvent);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 /* Maximum number of mounts in a mount namespace */
 unsigned int sysctl_mount_max __read_mostly = 100000;
@@ -86,7 +83,7 @@ static DEFINE_IDA(mnt_group_ida);
 static struct hlist_head *mount_hashtable __read_mostly;
 static struct hlist_head *mountpoint_hashtable __read_mostly;
 static struct kmem_cache *mnt_cache __read_mostly;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 /*
  * <DSM> #89004
  * Since we'll access mount list under namespace(mnt_list),
@@ -101,7 +98,7 @@ DECLARE_RWSEM(namespace_sem);
 static DEFINE_MUTEX(namespace_mutex);
 #else
 static DECLARE_RWSEM(namespace_sem);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 static HLIST_HEAD(unmounted);	/* protected by namespace_sem */
 static LIST_HEAD(ex_mountpoints); /* protected by namespace_sem */
 
@@ -463,9 +460,9 @@ void __mnt_drop_write(struct vfsmount *mnt)
 	mnt_dec_writers(real_mount(mnt));
 	preempt_enable();
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 EXPORT_SYMBOL_GPL(__mnt_drop_write);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 /**
  * mnt_drop_write - give up write access to a mount
@@ -1323,9 +1320,9 @@ static void *m_start(struct seq_file *m, loff_t *pos)
 	struct proc_mounts *p = m->private;
 	struct list_head *prev;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	mutex_lock(&namespace_mutex);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 	down_read(&namespace_sem);
 	if (!*pos) {
 		prev = &p->ns->list;
@@ -1361,9 +1358,9 @@ static void m_stop(struct seq_file *m, void *v)
 		list_del_init(&p->cursor.mnt_list);
 	unlock_ns_list(p->ns);
 	up_read(&namespace_sem);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	mutex_unlock(&namespace_mutex);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 }
 
 static int m_show(struct seq_file *m, void *v)
@@ -1460,9 +1457,9 @@ static void namespace_unlock(void)
 	list_splice_init(&ex_mountpoints, &list);
 
 	up_write(&namespace_sem);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	mutex_unlock(&namespace_mutex);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	shrink_dentry_list(&list);
 
@@ -1479,9 +1476,9 @@ static void namespace_unlock(void)
 
 static inline void namespace_lock(void)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	mutex_lock(&namespace_mutex);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 	down_write(&namespace_sem);
 }
 
@@ -1607,11 +1604,11 @@ static int do_umount(struct mount *mnt, int flags)
 {
 	struct super_block *sb = mnt->mnt.mnt_sb;
 	int retval;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 	char *file_name_buf = NULL;
 	char *mnt_point_buf = NULL;
 	char *mnt_point_name = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_UNMOUNT */
 
 	retval = security_sb_umount(&mnt->mnt, flags);
 	if (retval)
@@ -1676,11 +1673,11 @@ static int do_umount(struct mount *mnt, int flags)
 		return do_umount_root(sb);
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 	/* malloc before getting the spinlock */
 	file_name_buf = kmalloc(PATH_MAX, GFP_KERNEL);
 	mnt_point_buf = kmalloc(PATH_MAX, GFP_KERNEL);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_UNMOUNT */
 
 	namespace_lock();
 	lock_mount_hash();
@@ -1704,26 +1701,26 @@ static int do_umount(struct mount *mnt, int flags)
 			retval = 0;
 		}
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 	if (-EBUSY == retval && file_name_buf && mnt_point_buf) {
 		mnt_point_name = dentry_path_raw(mnt->mnt_mountpoint, mnt_point_buf, PATH_MAX - 1);
 		if (!IS_ERR(mnt_point_name))
 			fs_show_opened_file(mnt, mnt_point_name, file_name_buf, PATH_MAX);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_UNMOUNT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOBOOT_LOG
 	if (NULL != strstr(sb->s_id, "synoboot"))
 		printk(KERN_NOTICE"%s unmounted, process=%s\n", sb->s_id, current->comm);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOBOOT_LOG */
 
 out:
 	unlock_mount_hash();
 	namespace_unlock();
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 	kfree(file_name_buf);
 	kfree(mnt_point_buf);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_UNMOUNT */
 	return retval;
 }
 
@@ -2063,9 +2060,9 @@ int iterate_mounts(int (*f)(struct vfsmount *, void *), void *arg,
 	}
 	return 0;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 EXPORT_SYMBOL(iterate_mounts);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 static void lock_mnt_tree(struct mount *mnt)
 {
@@ -3293,26 +3290,26 @@ int path_mount(const char *dev_name, struct path *path,
 		return do_reconfigure_mnt(path, mnt_flags);
 	if (flags & MS_REMOUNT)
 		return do_remount(path, flags, sb_flags, mnt_flags, data_page);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK
 	if ((flags & MS_BIND) && ramdisk_check_failed)
 		return -EPERM;
-#endif /* MY_DEF_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
+#ifdef CONFIG_SYNO_KEXEC_TEST
 	if ((flags & MS_BIND) && kexec_test_flags)
 		return -EPERM;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_KEXEC_TEST */
 	if (flags & MS_BIND)
 		return do_loopback(path, dev_name, flags & MS_REC);
 	if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
 		return do_change_type(path, flags);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK
 	if ((flags & MS_MOVE) && ramdisk_check_failed)
 		return -EPERM;
-#endif /* MY_DEF_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
+#ifdef CONFIG_SYNO_KEXEC_TEST
 	if ((flags & MS_MOVE) && kexec_test_flags)
 		return -EPERM;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_KEXEC_TEST */
 	if (flags & MS_MOVE)
 		return do_move_mount_old(path, dev_name);
 
@@ -3325,14 +3322,14 @@ long do_mount(const char *dev_name, const char __user *dir_name,
 {
 	struct path path;
 	int ret;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_INSTALL_FLAG
 	extern int gSynoInstallFlag;
 	if ( 0 == gSynoInstallFlag &&
 			NULL != dev_name &&
 			strstr(dev_name, CONFIG_SYNO_USB_FLASH_DEVICE_NAME)) {
 		return -EINVAL;
 	}
-#endif /*MY_ABC_HERE*/
+#endif /*CONFIG_SYNO_INSTALL_FLAG*/
 
 	ret = user_path_at(AT_FDCWD, dir_name, LOOKUP_FOLLOW, &path);
 	if (ret)

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * iSCSI lib functions
@@ -660,9 +657,9 @@ __iscsi_conn_send_pdu(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
 	uint8_t opcode = hdr->opcode & ISCSI_OPCODE_MASK;
 	struct iscsi_task *task;
 	itt_t itt;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE
 	unsigned long flags;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE */
 
 	if (session->state == ISCSI_STATE_TERMINATE)
 		return NULL;
@@ -749,17 +746,17 @@ __iscsi_conn_send_pdu(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
 		if (session->tt->xmit_task(task))
 			goto free_task;
 	} else {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE
 		spin_lock_irqsave(&conn->taskqueuelock, flags);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE */
 		spin_lock_bh(&conn->taskqueuelock);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE */
 		list_add_tail(&task->running, &conn->mgmtqueue);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE
 		spin_unlock_irqrestore(&conn->taskqueuelock, flags);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE */
 		spin_unlock_bh(&conn->taskqueuelock);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE */
 		iscsi_conn_queue_work(conn);
 	}
 
@@ -767,17 +764,17 @@ __iscsi_conn_send_pdu(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
 
 free_task:
 	/* regular RX path uses back_lock */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE
 	spin_lock_irqsave(&session->back_lock, flags);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE */
 	spin_lock(&session->back_lock);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE */
 	__iscsi_put_task(task);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE
 	spin_unlock_irqrestore(&session->back_lock, flags);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE */
 	spin_unlock(&session->back_lock);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ISCSI_DEAD_LOCK_BH_ISSUE */
 	return NULL;
 }
 

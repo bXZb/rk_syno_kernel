@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Copyright (C) 2001, 2002 Sistina Software (UK) Limited.
  * Copyright (C) 2004-2008 Red Hat, Inc. All rights reserved.
@@ -11,12 +8,12 @@
 #include "dm-core.h"
 #include "dm-rq.h"
 #include "dm-uevent.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_FAST_WAKEUP
 #include "syno-md-fast-wakeup.h"
 #ifdef CONFIG_BLK_DEV_MD
 #include "md.h"
 #endif /* CONFIG_BLK_DEV_MD */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FAST_WAKEUP */
 
 #include <linux/init.h>
 #include <linux/module.h>
@@ -38,6 +35,9 @@
 #include <linux/part_stat.h>
 #include <linux/blk-crypto.h>
 
+#ifdef CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD
+#include <linux/synolib.h>
+#endif /* CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD */
 #define DM_MSG_PREFIX "core"
 
 /*
@@ -46,6 +46,10 @@
  */
 #define DM_COOKIE_ENV_VAR_NAME "DM_COOKIE"
 #define DM_COOKIE_LENGTH 24
+
+#ifdef CONFIG_SYNO_MULTIPATH_DM_BAD_SECTOR_AUTO_REMAP
+extern int syno_blk_dev_with_part_remap_mode_set(struct block_device* bdev, int partno, unsigned char auto_remap);
+#endif /* CONFIG_SYNO_MULTIPATH_DM_BAD_SECTOR_AUTO_REMAP */
 
 static const char *_name = DM_NAME;
 
@@ -61,15 +65,15 @@ static void do_deferred_remove(struct work_struct *w);
 static DECLARE_WORK(deferred_remove_work, do_deferred_remove);
 
 static struct workqueue_struct *deferred_remove_workqueue;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 static struct kmem_cache *_syno_noclone_cache;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
+#ifdef CONFIG_SYNO_MD_FAST_WAKEUP
 static void syno_dm_fast_wakeup_md(struct mapped_device *md, struct dm_table *map);
 #ifdef CONFIG_BLK_DEV_MD
 extern void syno_md_fast_wakeup_devices(void *md);
 #endif /* CONFIG_BLK_DEV_MD */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FAST_WAKEUP */
 
 atomic_t dm_global_event_nr = ATOMIC_INIT(0);
 DECLARE_WAIT_QUEUE_HEAD(dm_global_eventq);
@@ -123,7 +127,7 @@ struct dm_io {
 	struct dm_target_io tio;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 /*
  * One of these is allocated per noclone bio.
  */
@@ -134,7 +138,7 @@ struct syno_dm_noclone {
 	unsigned long start_time;
 	struct bvec_iter orig_bi_iter;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 void *dm_per_bio_data(struct bio *bio, size_t data_size)
 {
@@ -175,6 +179,9 @@ EXPORT_SYMBOL_GPL(dm_bio_get_target_bio_nr);
 #define DMF_DEFERRED_REMOVE 6
 #define DMF_SUSPENDED_INTERNALLY 7
 #define DMF_POST_SUSPENDING 8
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+#define DMF_FORCE_RENAME_AS_SAS_DISK_FLAG 20
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 
 #define DM_NUMA_NODE NUMA_NO_NODE
 static int dm_numa_node = DM_NUMA_NODE;
@@ -189,15 +196,297 @@ static int get_swap_bios(void)
 	return latch;
 }
 
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+static int SynoMpathGetDeviceIndex(struct gendisk *disk)
+{
+	int ret = -1;
+	struct mapped_device *md = NULL;
+
+	if ((NULL == disk) || (NULL == (md = disk->private_data))) {
+		DMERR("bad parameters");
+		goto end;
+	}
+
+	dm_get(md);
+	ret = md->syno_disk_id;
+	dm_put(md);
+
+end:
+	return ret;
+}
+
+static bool SYNOIsMpathDeviceDisappear(struct gendisk *disk)
+{
+	int srcu_idx;
+	bool blRet = true;
+	struct dm_table *map = NULL;
+	struct dm_dev_internal *dd = NULL;
+	struct mapped_device *md = NULL;
+
+	if ((NULL == disk) || (NULL == (md = disk->private_data))) {
+		DMERR("bad parameters");
+		goto END;
+	}
+
+	if (0 != dm_hold(md)) {
+		/* struct may have been destoried, treat as disappear */
+		goto END;
+	}
+
+	map = dm_get_live_table(md, &srcu_idx);
+	if (map) {
+		list_for_each_entry (dd, dm_table_get_devices(map), list) {
+			if (dd && dd->dm_dev->bdev) {
+				if (!syno_is_device_disappear(dd->dm_dev->bdev)) {
+					blRet = false;
+					break;
+				}
+			}
+		}
+	}
+	dm_put_live_table(md, srcu_idx);
+	dm_put(md);
+END:
+	return blRet;
+}
+
+bool SynoIsDmMultipathDevice(struct mapped_device *md)
+{
+	return (test_bit(DMF_FORCE_RENAME_AS_SAS_DISK_FLAG, &md->flags) != 0);
+}
+
+static void SynoDmTargetBlkdevIoctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
+			unsigned long arg) {
+	struct dm_table *map = NULL;
+	struct dm_dev_internal *dd = NULL;
+	int srcu_idx;
+	struct mapped_device *md = NULL;
+
+	if ((NULL == bdev) || (NULL == bdev->bd_disk) || (NULL == (md = bdev->bd_disk->private_data))) {
+		DMERR("bad parameters");
+		return;
+	}
+
+	if (!SynoDmCheckByGendisk(bdev->bd_disk)) {
+		return;
+	}
+
+	dm_get(md);
+
+	if (!SynoIsDmMultipathDevice(md)) {
+		DMERR("[%s]fail! DM but not multipath", md->name);
+		goto MP_CHECK_ERR;
+	}
+
+	map = dm_get_live_table(md, &srcu_idx);
+	if (map) {
+		list_for_each_entry (dd, dm_table_get_devices(map), list) {
+			if (dd && dd->dm_dev->bdev) {
+				if (0 == dd->dm_dev->bdev->bd_part->partno) {
+					blkdev_ioctl(dd->dm_dev->bdev, mode, cmd, arg);
+				}
+			}
+		}
+	}
+
+	dm_put_live_table(md, srcu_idx);
+MP_CHECK_ERR:
+	dm_put(md);
+
+}
+
+char* SynoDmGetDiskNameFromMd(struct mapped_device *md)
+{
+	char *disk_name = NULL;
+
+	if (md && md->disk) {
+		disk_name = md->disk->disk_name;
+	}
+	return disk_name;
+}
+EXPORT_SYMBOL(SynoDmGetDiskNameFromMd);
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
+
+#ifdef CONFIG_SYNO_MULTIPATH_DM_BAD_SECTOR_AUTO_REMAP
+static int SynoDmScsiRemapModeSet(struct mapped_device *md, int partno, unsigned char auto_remap)
+{
+	struct dm_table *map = NULL;
+	struct dm_dev_internal *dd = NULL;
+	int srcu_idx;
+	int iFuncRet = -1;
+	int ret = -1;
+
+	dm_get(md);
+
+	if (!SynoIsDmMultipathDevice(md)) {
+		DMERR("[%s]fail! DM but not multipath", md->name);
+		goto MP_CHECK_ERR;
+	}
+
+	map = dm_get_live_table(md, &srcu_idx);
+	if (map) {
+		list_for_each_entry (dd, dm_table_get_devices(map), list) {
+			if (dd && dd->dm_dev->bdev) {
+				iFuncRet = syno_blk_dev_with_part_remap_mode_set(dd->dm_dev->bdev, partno, auto_remap);
+				if (-2 == iFuncRet) {
+					/*target partition may already be removed due to target unplugged or some error occurred.*/
+					DMERR("[%s][%s] partition[%d] of target device doesn't exist", md->disk->disk_name, 
+						dd->dm_dev->bdev->bd_disk->disk_name, partno);
+				} else if (-1 == iFuncRet) {
+					DMERR("[%s][%s] partition[%d] of target device sets auto remap fail!", md->disk->disk_name, 
+						dd->dm_dev->bdev->bd_disk->disk_name, partno);
+				}
+			}
+		}
+	}
+
+	ret = 0;
+
+	dm_put_live_table(md, srcu_idx);
+MP_CHECK_ERR:
+	dm_put(md);
+
+	return ret;
+}
+
+static int SynoDmRemapModeSet(struct block_device *bdev, unsigned char auto_remap)
+{
+	int ret = -1;
+
+	if (!bdev) {
+		WARN_ON(bdev == NULL);
+		goto end;
+	}
+	if (SynoDmCheckByGendisk(bdev->bd_disk)) {
+		if (0 > SynoDmScsiRemapModeSet(bdev->bd_disk->private_data, bdev->bd_part->partno, auto_remap)) {
+			goto end;
+		}
+	}
+
+	ret = 0;
+end:
+	return ret;
+}
+#endif /* CONFIG_SYNO_MULTIPATH_DM_BAD_SECTOR_AUTO_REMAP */
+#ifdef CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+static void SynoMpathCoherentWorkHandlder(struct work_struct *work)
+{
+	struct syno_mulitpath_coherent_work *mpath_coherent_work = NULL;
+	struct mapped_device *md = NULL;
+	struct gendisk *dm_disk = NULL, *initiating_disk = NULL;
+	struct dm_table *map = NULL;
+	struct dm_dev_internal *dd = NULL;
+	SYNO_MPATH_COHERENT_ACTION coherence_action = MPATH_COHERENT_ACTION_MAX;
+	int srcu_idx;
+
+	if (!work) {
+		goto END;
+	}
+	mpath_coherent_work =
+		container_of(work, struct syno_mulitpath_coherent_work, work);
+	if ((NULL == (dm_disk = mpath_coherent_work->dm_disk)) ||
+		(NULL == (initiating_disk = mpath_coherent_work->initiating_disk))) {
+		goto END;
+	}
+	if ((NULL == (md = dm_disk->private_data)) || !SynoIsDmMultipathDevice(md)) {
+		goto END;
+	}
+	coherence_action = mpath_coherent_work->action;
+
+	map = dm_get_live_table(md, &srcu_idx);
+	if (map) {
+		list_for_each_entry (dd, dm_table_get_devices(map), list) {
+			if (dd && dd->dm_dev->bdev) {
+				if (initiating_disk == dd->dm_dev->bdev->bd_disk) {
+					continue;
+				}
+				switch (coherence_action) {
+#ifdef CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP
+					case MPATH_COHERENT_ACTION_DISK_STANDBY_SET:
+						if (dd->dm_dev->bdev->bd_disk->syno_ops &&
+							dd->dm_dev->bdev->bd_disk->syno_ops->scsi_standby_flag_set) {
+							dd->dm_dev->bdev->bd_disk->syno_ops->scsi_standby_flag_set(dd->dm_dev->bdev->bd_disk);
+						}
+						break;
+					case MPATH_COHERENT_ACTION_DISK_STANDBY_CLEAR:
+						if (dd->dm_dev->bdev->bd_disk->syno_ops &&
+							dd->dm_dev->bdev->bd_disk->syno_ops->scsi_standby_flag_clear) {
+							dd->dm_dev->bdev->bd_disk->syno_ops->scsi_standby_flag_clear(dd->dm_dev->bdev->bd_disk);
+						}
+						break;
+#endif //CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP
+					default:
+						DMERR("[%s] unexpected coherence action(%d)", md->disk->disk_name, coherence_action);
+						break;
+				}
+			}
+		}
+	}
+	dm_put_live_table(md, srcu_idx);
+
+END:
+	if (mpath_coherent_work) {
+		if (mpath_coherent_work->data) {
+			kfree(mpath_coherent_work->data);
+		}
+		kfree(mpath_coherent_work);
+	}
+}
+static int SynoMpathCoherentWorkSend(struct syno_mulitpath_coherent_work *coherent_work) {
+	int ret = -1;
+	struct mapped_device *md = NULL;
+
+	if (!coherent_work || !coherent_work->dm_disk ||
+		!(md = coherent_work->dm_disk->private_data)) {
+		goto END;
+	}
+	if (test_bit(DMF_FREEING, &md->flags) || dm_deleting_md(md)) {
+		goto END;
+	}
+	dm_get(md);
+	spin_lock(&md->coherent_wq_lock);
+	if (!(md->coherent_wq)) {
+		goto END_UNLOCK;
+	}
+	INIT_WORK(&coherent_work->work, SynoMpathCoherentWorkHandlder);
+	if (!queue_work(md->coherent_wq, &coherent_work->work)) {
+		goto END_UNLOCK;
+	}
+
+	ret = 0;
+END_UNLOCK:
+	spin_unlock(&md->coherent_wq_lock);
+	dm_put(md);
+END:
+	return ret;
+}
+#endif  //CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+
+#ifdef CONFIG_SYNO_BLK_DEV_GENDISK_OPERATIONS
+static const struct syno_gendisk_operations syno_mpath_gd_ops = {
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+	.get_device_index = SynoMpathGetDeviceIndex,
+	.is_device_disappear = SYNOIsMpathDeviceDisappear,
+	.multipath_dm_target_blkdev_ioctl = SynoDmTargetBlkdevIoctl,
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
+#ifdef CONFIG_SYNO_MULTIPATH_DM_BAD_SECTOR_AUTO_REMAP
+	.autoremap_stackable_dev_target_set = SynoDmRemapModeSet,
+#endif /* CONFIG_SYNO_MULTIPATH_DM_BAD_SECTOR_AUTO_REMAP */
+#ifdef CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+	.multipath_dm_coherent_work_send = SynoMpathCoherentWorkSend,
+#endif /* CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE */
+};
+#endif /* CONFIG_SYNO_BLK_DEV_GENDISK_OPERATIONS */
+
 /*
  * For mempools pre-allocation at the table loading time.
  */
 struct dm_md_mempools {
 	struct bio_set bs;
 	struct bio_set io_bs;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 	unsigned int syno_pool_size;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 };
 
 struct table_device {
@@ -205,6 +494,56 @@ struct table_device {
 	refcount_t count;
 	struct dm_dev dm_dev;
 };
+
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+
+#if defined(CONFIG_SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME)
+extern int SYNOSASIDAGetNewIndex(int *id);
+extern void SYNOSASIDAFreeIndex(int id);
+extern int syno_sd_format_numeric_disk_name(char *prefix, int synoindex, char *buf, int buflen);
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME */
+
+static int SYNODiskNameForDMGet(char *szName, int cbName, SYNO_RENAME_DM_AS_TPYE type)
+{
+	int iRet = -1;
+	int error = -1;
+	u32 synoidx = -1;
+	int ret = -1;
+
+	if ((NULL == szName) || (0 >= cbName)) {
+		goto ERR;
+	}
+
+	if (SYNO_RENAME_DM_AS_SAS == type) {
+#if defined(CONFIG_SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME)
+		ret = SYNOSASIDAGetNewIndex(&synoidx);
+		if (ret) {
+			printk(KERN_ERR "%s: Failed to get a new index.", __FUNCTION__);
+			goto ERR;
+		}
+		error = syno_sd_format_numeric_disk_name(
+							CONFIG_SYNO_SAS_DEVICE_PREFIX, synoidx,
+							szName, cbName);
+		if (error) {
+			printk(KERN_ERR "%s: Failed to get a format disk name with index [%d]", __FUNCTION__, synoidx);
+			SYNOSASIDAFreeIndex(synoidx);
+			synoidx = -1;
+			goto ERR;
+		}
+#else
+		error = 0;
+		synoidx = -1;
+		goto ERR;
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME  */
+	} else {
+		goto ERR;
+	}
+
+	iRet = synoidx;
+ERR:
+	return iRet;
+}
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 
 /*
  * Bio-based DM's mempools' reserved IOs set by the user.
@@ -279,32 +618,32 @@ static int __init local_init(void)
 		goto out_uevent_exit;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 	_syno_noclone_cache = KMEM_CACHE(syno_dm_noclone, 0);
 	if (!_syno_noclone_cache) {
 		r = -ENOMEM;
 		goto out_free_workqueue;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 	_major = major;
 	r = register_blkdev(_major, _name);
 	if (r < 0)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 		goto out_free_noclone_cache;
 #else
 		goto out_free_workqueue;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 	if (!_major)
 		_major = r;
 
 	return 0;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 out_free_noclone_cache:
 	kmem_cache_destroy(_syno_noclone_cache);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 out_free_workqueue:
 	destroy_workqueue(deferred_remove_workqueue);
 out_uevent_exit:
@@ -317,9 +656,9 @@ static void local_exit(void)
 {
 	flush_scheduled_work();
 	destroy_workqueue(deferred_remove_workqueue);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 	kmem_cache_destroy(_syno_noclone_cache);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 	unregister_blkdev(_major, _name);
 	dm_uevent_exit();
@@ -570,7 +909,7 @@ out:
 #define dm_blk_report_zones		NULL
 #endif /* CONFIG_BLK_DEV_ZONED */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_EXTRA_IOCTL
 /*
  *  Refer to dm_prepare_ioctl() behavior
  *  1: Extra ioctl doesn't exist or cmd is not supported
@@ -631,7 +970,7 @@ out:
 
 	return r;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_EXTRA_IOCTL */
 
 static int dm_prepare_ioctl(struct mapped_device *md, int *srcu_idx,
 			    struct block_device **bdev)
@@ -678,14 +1017,14 @@ static int dm_blk_ioctl(struct block_device *bdev, fmode_t mode,
 	struct mapped_device *md = bdev->bd_disk->private_data;
 	int r, srcu_idx;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_EXTRA_IOCTL
 	r = syno_dm_do_extra_ioctl(md, &srcu_idx, cmd, arg);
 	if (0 >= r) {
 		// Get error or Perform extra IOCTL successfully
 		goto out_extra_ioctl;
 	}
 	// No supported extra ioctl
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_EXTRA_IOCTL */
 
 	r = dm_prepare_ioctl(md, &srcu_idx, &bdev);
 	if (r < 0)
@@ -708,9 +1047,9 @@ static int dm_blk_ioctl(struct block_device *bdev, fmode_t mode,
 	r =  __blkdev_driver_ioctl(bdev, mode, cmd, arg);
 out:
 	dm_unprepare_ioctl(md, srcu_idx);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_EXTRA_IOCTL
 out_extra_ioctl:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_EXTRA_IOCTL */
 	return r;
 }
 
@@ -753,7 +1092,7 @@ static void end_io_acct(struct dm_io *io)
 		wake_up(&md->wait);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 // Modified from end_io_acct()
 static void syno_noclone_end_io_acct(struct mapped_device *md, struct bio *bio, unsigned long start_time)
 {
@@ -763,7 +1102,7 @@ static void syno_noclone_end_io_acct(struct mapped_device *md, struct bio *bio, 
 	if (unlikely(wq_has_sleeper(&md->wait)))
 		wake_up(&md->wait);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 static struct dm_io *alloc_io(struct mapped_device *md, struct bio *bio)
 {
@@ -880,8 +1219,199 @@ static void dm_put_live_table_fast(struct mapped_device *md) __releases(RCU)
 	rcu_read_unlock();
 }
 
-static char *_dm_claim_ptr = "I belong to device-mapper";
+#ifdef CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD
 
+/* The max number of target of multipath device on disk */
+#define SYNO_MPATH_DISK_MAX_TARGET 2
+
+static ssize_t mpath_device_attr_show_arbi(
+		struct mapped_device *md, struct attribute *attr, char *page)
+{
+	int srcu_idx = 0;
+	ssize_t ret = -EINVAL;
+	struct dm_table *map = NULL;
+	struct dm_dev_internal *dd = NULL;
+	SYNO_MPATH_TARGET_SYSFS *pTargetSysfs = NULL;
+
+	dm_get(md);
+	pTargetSysfs = md->targetSysfs;
+	map = dm_get_live_table(md, &srcu_idx);
+	if (map) {
+		list_for_each_entry (dd, dm_table_get_devices(map), list) {
+			if (dd && dd->dm_dev->bdev && pTargetSysfs->funcTargetSysfsShow) {
+				ret = pTargetSysfs->funcTargetSysfsShow(
+							dd->dm_dev->bdev->bd_disk, attr, page);
+				break;
+			}
+		}
+	}
+
+	dm_put_live_table(md, srcu_idx);
+	dm_put(md);
+	return ret;
+}
+
+static ssize_t mpath_device_attr_show_value_aggr(
+		struct mapped_device *md, struct attribute *attr, char *page, int base,
+		ssize_t (*funcAggrMethod)(char *, char **, int , int))
+{
+	int i = 0;
+	int srcu_idx = 0;
+	int targetCount = 0;
+	ssize_t ret = -EINVAL;
+	struct dm_table *map = NULL;
+	struct dm_dev_internal *dd = NULL;
+	char *rgBuff[SYNO_MPATH_DISK_MAX_TARGET] = {0};
+	SYNO_MPATH_TARGET_SYSFS *pTargetSysfs = NULL;
+
+	for (i = 0; i < SYNO_MPATH_DISK_MAX_TARGET; i ++) {
+		rgBuff[i] = kmalloc(PAGE_SIZE, GFP_KERNEL);
+		if (NULL == rgBuff[i]) {
+			goto END;
+		}
+	}
+
+	dm_get(md);
+	map = dm_get_live_table(md, &srcu_idx);
+	pTargetSysfs = md->targetSysfs;
+	if (map) {
+		targetCount = 0;
+		list_for_each_entry (dd, dm_table_get_devices(map), list) {
+			if (dd && dd->dm_dev->bdev && pTargetSysfs->funcTargetSysfsShow) {
+				if (SYNO_MPATH_DISK_MAX_TARGET <= targetCount) {
+					DMERR("[%s] Too many target from a multipath disk", md->name);
+					goto END_DM_RELEASE;
+				}
+
+				ret = pTargetSysfs->funcTargetSysfsShow(
+							dd->dm_dev->bdev->bd_disk, attr, rgBuff[targetCount]);
+				if (0 > ret) {
+					goto END_DM_RELEASE;
+				}
+				targetCount++;
+			}
+		}
+	}
+
+	ret = funcAggrMethod(page, (char**)&rgBuff, targetCount, base);
+
+END_DM_RELEASE:
+	dm_put_live_table(md, srcu_idx);
+	dm_put(md);
+END:
+	for (i = 0; i < SYNO_MPATH_DISK_MAX_TARGET; i ++) {
+		if (NULL != rgBuff[i]) {
+			kfree(rgBuff[i]);
+		}
+	}
+	return ret;
+}
+
+static ssize_t mpath_device_attr_min_ul_method(
+		char *page, char **rgBuff, int targetCnt, int base)
+{
+	int i = 0;
+	int minTargetIdx = -1;
+	ssize_t ret = -EINVAL;
+	unsigned long curValue = 0;
+	unsigned long minValue = ULONG_MAX;
+
+	for (i = 0; i < targetCnt && i < SYNO_MPATH_DISK_MAX_TARGET;  i++) {
+		if (0 != kstrtoul(rgBuff[i], base, &curValue)) {
+			continue;
+		}
+
+		if (curValue < minValue) {
+			minValue = curValue;
+			minTargetIdx = i;
+		}
+	}
+
+	if (-1 != minTargetIdx) {
+		ret = snprintf(page, PAGE_SIZE, "%s", rgBuff[minTargetIdx]);
+	}
+	return ret;
+}
+
+static ssize_t mpath_device_attr_show_min_ul(
+	struct mapped_device *md, struct attribute *attr, char *page, int base)
+{
+	return mpath_device_attr_show_value_aggr(
+		md, attr, page, base, &mpath_device_attr_min_ul_method);
+}
+
+
+static ssize_t mpath_device_attr_show(struct kobject *kobj, struct attribute *attr,
+				   char *page)
+{
+	ssize_t ret = -EINVAL;
+	struct mapped_device *md = NULL;
+	SYNO_MPATH_TARGET_SYSFS *pTargetSysfs = NULL;
+
+	pTargetSysfs = container_of(kobj, SYNO_MPATH_TARGET_SYSFS, deviceKobj);
+	md = pTargetSysfs->md;
+	if (!md || test_bit(DMF_FREEING, &md->flags) || dm_deleting_md(md)) {
+		return -EINVAL;
+	}
+
+	switch(pTargetSysfs->funcTargetShowAggrMethod(attr)){
+		case MPATH_SYSFS_SHOW_AGGR_MIN_UL_DEC:
+			ret = mpath_device_attr_show_min_ul(md, attr, page, 10);
+			break;
+		case MPATH_SYSFS_SHOW_AGGR_ARBITRARY:
+		default:
+			ret = mpath_device_attr_show_arbi(md, attr, page);
+			break;
+	}
+
+	return ret;
+}
+
+static ssize_t mpath_device_attr_store(struct kobject *kobj,
+				    struct attribute *attr, const char *page,
+				    size_t count)
+{
+	int srcu_idx = 0;
+	ssize_t ret = count;
+	ssize_t tagetRet = -EINVAL;
+	struct mapped_device *md = NULL;
+	struct dm_table *map = NULL;
+	struct dm_dev_internal *dd = NULL;
+	SYNO_MPATH_TARGET_SYSFS *pTargetSysfs = NULL;
+
+	pTargetSysfs = container_of(kobj, SYNO_MPATH_TARGET_SYSFS, deviceKobj);
+	md = pTargetSysfs->md;
+	if (!md || test_bit(DMF_FREEING, &md->flags) || dm_deleting_md(md)) {
+		return -EINVAL;
+	}
+
+	dm_get(md);
+	map = dm_get_live_table(md, &srcu_idx);
+	if (map) {
+		list_for_each_entry (dd, dm_table_get_devices(map), list) {
+			if (dd && dd->dm_dev->bdev && pTargetSysfs->funcTargetSysfsStore) {
+				tagetRet = pTargetSysfs->funcTargetSysfsStore(
+								dd->dm_dev->bdev->bd_disk, attr, page, count);
+				if (0 > tagetRet) {
+					ret = tagetRet;
+				}
+			}
+		}
+	}
+	dm_put_live_table(md, srcu_idx);
+	dm_put(md);
+
+	return ret;
+}
+
+static const struct sysfs_ops mpath_device_ops = {
+	.show	= &mpath_device_attr_show,
+	.store	= &mpath_device_attr_store,
+};
+
+#endif /* CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD */
+
+static char *_dm_claim_ptr = "I belong to device-mapper";
 /*
  * Open a table device so we can use it as a map destination.
  */
@@ -898,6 +1428,38 @@ static int open_table_device(struct table_device *td, dev_t dev,
 	if (IS_ERR(bdev))
 		return PTR_ERR(bdev);
 
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME
+	if (SynoIsDmMultipathDevice(md)) {
+#ifdef CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD
+		if (bdev->bd_disk->syno_ops && bdev->bd_disk->syno_ops->reg_sysfs_to_multipath_dm) {
+			if (NULL == md->targetSysfs) {
+				md->targetSysfs =
+					(SYNO_MPATH_TARGET_SYSFS*) kzalloc(sizeof(SYNO_MPATH_TARGET_SYSFS), GFP_KERNEL);
+				if (NULL == md->targetSysfs) {
+					DMERR("[%s]Failed to register device's sysfs", md->name);
+				} else {
+					md->targetSysfs->deviceKtype.sysfs_ops = &mpath_device_ops;
+					md->targetSysfs->md = md;
+					md->targetSysfs->parent = &(disk_to_dev(dm_disk(md))->kobj);
+					if (0 != bdev->bd_disk->syno_ops->reg_sysfs_to_multipath_dm(
+														bdev->bd_disk, md->targetSysfs)) {
+						kfree(md->targetSysfs);
+						md->targetSysfs = NULL;
+					}
+				}
+			}
+		}
+#endif /* CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD */
+		if (bdev->bd_disk->mpath_info) {
+			bdev->bd_disk->mpath_info->holder_syno_index = md->syno_disk_id;
+#ifdef CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+			spin_lock(&bdev->bd_disk->mpath_info->mpath_info_lock);
+			bdev->bd_disk->mpath_info->dm_disk = md->disk;
+			spin_unlock(&bdev->bd_disk->mpath_info->mpath_info_lock);
+#endif /* CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE */
+		}
+	}
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME */
 	r = bd_link_disk_holder(bdev, dm_disk(md));
 	if (r) {
 		blkdev_put(bdev, td->dm_dev.mode | FMODE_EXCL);
@@ -917,6 +1479,19 @@ static void close_table_device(struct table_device *td, struct mapped_device *md
 	if (!td->dm_dev.bdev)
 		return;
 
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+	if (md && SynoIsDmMultipathDevice(md)) {
+		DMERR("[%s] remove %s from disk", SynoDmGetDiskNameFromMd(md), td->dm_dev.bdev->bd_disk->disk_name);
+		if (td->dm_dev.bdev->bd_disk->mpath_info) {
+			td->dm_dev.bdev->bd_disk->mpath_info->holder_syno_index = -1;
+#ifdef CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+			spin_lock(&td->dm_dev.bdev->bd_disk->mpath_info->mpath_info_lock);
+			td->dm_dev.bdev->bd_disk->mpath_info->dm_disk = NULL;
+			spin_unlock(&td->dm_dev.bdev->bd_disk->mpath_info->mpath_info_lock);
+#endif /* CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE */
+		}
+	}
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 	bd_unlink_disk_holder(td->dm_dev.bdev, dm_disk(md));
 	blkdev_put(td->dm_dev.bdev, td->dm_dev.mode | FMODE_EXCL);
 	put_dax(td->dm_dev.dax_dev);
@@ -1116,12 +1691,12 @@ void disable_write_zeroes(struct mapped_device *md)
 	limits->max_write_zeroes_sectors = 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 static void disable_unused_hint(struct mapped_device *md)
 {
 	blk_queue_flag_clear(QUEUE_FLAG_UNUSED_HINT, md->queue);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 
 static bool swap_bios_limit(struct dm_target *ti, struct bio *bio)
 {
@@ -1148,11 +1723,11 @@ static void clone_endio(struct bio *bio)
 			 !bio->bi_disk->queue->limits.max_write_zeroes_sectors)
 			disable_write_zeroes(md);
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 	if (unlikely(error == BLK_STS_NOTSUPP) &&
 	    bio_op(bio) == REQ_OP_UNUSED_HINT)
 		disable_unused_hint(md);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 
 	/*
 	 * For zone-append bios get offset in zone of the written
@@ -1166,10 +1741,10 @@ static void clone_endio(struct bio *bio)
 		orig_bio->bi_iter.bi_sector += written_sector & mask;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 	if (unlikely(bio_flagged(bio, BIO_CORRECTION_ERR)))
 		bio_set_flag(orig_bio, BIO_CORRECTION_ERR);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DATA_CORRECTION */
 
 	if (endio) {
 		int r = endio(tio->ti, bio, &error);
@@ -1197,7 +1772,7 @@ static void clone_endio(struct bio *bio)
 	dec_pending(io, error);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 static void syno_noclone_endio(struct bio *bio)
 {
 	struct syno_dm_noclone *noclone = bio->bi_private;
@@ -1218,15 +1793,15 @@ static void syno_noclone_endio(struct bio *bio)
 
 	mempool_free(noclone, &md->syno_noclone_pool);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLOCK_BLKTRACE_FIX
 	/* If bio is no clone io, restore completion flag
 	 * when bio returns from the underlying block devices */
 	bio_set_flag(bio, BIO_TRACE_COMPLETION);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLOCK_BLKTRACE_FIX */
 
 	bio_endio(bio);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 /*
  * Return maximum size of I/O possible at the supplied sector up to the current
@@ -1735,9 +2310,9 @@ static bool is_abnormal_io(struct bio *bio)
 	switch (bio_op(bio)) {
 	case REQ_OP_DISCARD:
 	case REQ_OP_SECURE_ERASE:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 	case REQ_OP_UNUSED_HINT:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 	case REQ_OP_WRITE_SAME:
 	case REQ_OP_WRITE_ZEROES:
 		r = true;
@@ -1760,11 +2335,11 @@ static bool __process_abnormal_io(struct clone_info *ci, struct dm_target *ti,
 	case REQ_OP_SECURE_ERASE:
 		num_bios = ti->num_secure_erase_bios;
 		break;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 	case REQ_OP_UNUSED_HINT:
 		num_bios = ti->num_unused_hint_bios;
 		break;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 	case REQ_OP_WRITE_SAME:
 		num_bios = ti->num_write_same_bios;
 		break;
@@ -1880,7 +2455,7 @@ static blk_qc_t __split_and_process_bio(struct mapped_device *md,
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 static bool syno_can_bio_use_noclone(struct bio *bio)
 {
 	if (is_abnormal_io(bio))
@@ -1894,7 +2469,7 @@ static bool syno_can_bio_use_noclone(struct bio *bio)
 
 	return true;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 static blk_qc_t dm_submit_bio(struct bio *bio)
 {
@@ -1902,11 +2477,11 @@ static blk_qc_t dm_submit_bio(struct bio *bio)
 	blk_qc_t ret = BLK_QC_T_NONE;
 	int srcu_idx;
 	struct dm_table *map;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 	int r;
 	struct syno_dm_noclone *noclone;
 	struct dm_target *ti;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 	map = dm_get_live_table(md, &srcu_idx);
 	if (unlikely(!map)) {
@@ -1927,10 +2502,10 @@ static blk_qc_t dm_submit_bio(struct bio *bio)
 		goto out;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_FAST_WAKEUP
 	if (syno_md_fast_wakeup_info_update(&md->syno_fast_wakeup_info))
 		syno_dm_fast_wakeup_md(md, map);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FAST_WAKEUP */
 	/*
 	 * Use blk_queue_split() for abnormal IO (e.g. discard, writesame, etc)
 	 * otherwise associated queue_limits won't be imposed.
@@ -1938,7 +2513,7 @@ static blk_qc_t dm_submit_bio(struct bio *bio)
 	if (is_abnormal_io(bio))
 		blk_queue_split(&bio);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 	if (!syno_can_bio_use_noclone(bio))
 		goto no_fast_path;
 
@@ -1973,10 +2548,10 @@ static blk_qc_t dm_submit_bio(struct bio *bio)
 	case DM_MAPIO_REMAPPED:
 		trace_block_bio_remap(bio->bi_disk->queue, bio,
 				      disk_devt(dm_disk(md)), noclone->orig_bi_iter.bi_sector);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLOCK_BLKTRACE_FIX
 		/* Clear the flag so the underlying block device gets queue events */
 		bio_clear_flag(bio, BIO_TRACE_COMPLETION);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLOCK_BLKTRACE_FIX */
 		ret = submit_bio_noacct(bio);
 		break;
 	case DM_MAPIO_SUBMITTED:
@@ -1990,7 +2565,7 @@ static blk_qc_t dm_submit_bio(struct bio *bio)
 	}
 	goto out;
 no_fast_path:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 	ret = __split_and_process_bio(md, map, bio);
 out:
 	dm_put_live_table(md, srcu_idx);
@@ -2052,15 +2627,33 @@ static const struct dax_operations dm_dax_ops;
 
 static void dm_wq_work(struct work_struct *work);
 
+
+#ifdef CONFIG_SYNO_MULTIPATH_FEATURE
+int SynoDmCheckByGendisk(struct gendisk *disk)
+{
+	int ret = 0;
+
+	if (NULL == disk) {
+		goto end;
+	}
+	if (&dm_blk_dops == disk->fops) {
+		ret = 1;
+	}
+
+end:
+	return ret;
+}
+#endif /* CONFIG_SYNO_MULTIPATH_FEATURE */
+
 static void cleanup_mapped_device(struct mapped_device *md)
 {
 	if (md->wq)
 		destroy_workqueue(md->wq);
 	bioset_exit(&md->bs);
 	bioset_exit(&md->io_bs);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 	mempool_exit(&md->syno_noclone_pool);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 	if (md->dax_dev) {
 		kill_dax(md->dax_dev);
@@ -2074,6 +2667,20 @@ static void cleanup_mapped_device(struct mapped_device *md)
 		spin_unlock(&_minor_lock);
 		del_gendisk(md->disk);
 		put_disk(md->disk);
+#if defined(CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK) && defined(CONFIG_SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME)
+		if (test_bit(DMF_FORCE_RENAME_AS_SAS_DISK_FLAG, &md->flags)) {
+			SYNOSASIDAFreeIndex(md->syno_disk_id);
+#ifdef CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD
+			if (md->targetSysfs) {
+				kobject_uevent(&(md->targetSysfs->deviceKobj), KOBJ_REMOVE);
+				kobject_del(&(md->targetSysfs->deviceKobj));
+				kobject_put(&(md->targetSysfs->deviceKobj));
+				kfree(md->targetSysfs);
+				md->targetSysfs = NULL;
+			}
+#endif /* CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD */
+		}
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK && CONFIG_SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME */
 	}
 
 	if (md->queue)
@@ -2097,11 +2704,18 @@ static void cleanup_mapped_device(struct mapped_device *md)
 /*
  * Allocate and initialise a blank device with a given minor.
  */
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+static struct mapped_device *alloc_dev(int minor, SYNO_RENAME_DM_AS_TPYE type)
+#else /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 static struct mapped_device *alloc_dev(int minor)
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 {
 	int r, numa_node_id = dm_get_numa_node();
 	struct mapped_device *md;
 	void *old_md;
+#ifdef CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+	char coherent_wq_name[64] = {0};
+#endif /* CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE */
 
 	md = kvzalloc_node(sizeof(*md), GFP_KERNEL, numa_node_id);
 	if (!md) {
@@ -2166,7 +2780,25 @@ static struct mapped_device *alloc_dev(int minor)
 	md->disk->fops = &dm_blk_dops;
 	md->disk->queue = md->queue;
 	md->disk->private_data = md;
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+	md->syno_disk_id = SYNODiskNameForDMGet(md->disk->disk_name, sizeof(md->disk->disk_name), type);
+	if (-1 != md->syno_disk_id) {
+		if (SYNO_RENAME_DM_AS_SAS == type) {
+			set_bit(DMF_FORCE_RENAME_AS_SAS_DISK_FLAG, &md->flags);
+			md->disk->flags |= GENHD_FL_EXT_DEVT;
+			md->disk->syno_ops = &syno_mpath_gd_ops;
+		}
+#ifdef CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+		snprintf(coherent_wq_name, sizeof(coherent_wq_name), "%s_coherent_wq", md->disk->disk_name);
+		md->coherent_wq = create_singlethread_workqueue(coherent_wq_name);
+		spin_lock_init(&md->coherent_wq_lock);
+#endif /* CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE */
+	} else {
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 	sprintf(md->disk->disk_name, "dm-%d", minor);
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+	}
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 
 	if (IS_ENABLED(CONFIG_DAX_DRIVER)) {
 		md->dax_dev = alloc_dax(md, md->disk->disk_name,
@@ -2194,9 +2826,9 @@ static struct mapped_device *alloc_dev(int minor)
 	spin_unlock(&_minor_lock);
 
 	BUG_ON(old_md != MINOR_ALLOCED);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_FAST_WAKEUP
 	syno_md_fast_wakeup_info_init(&md->syno_fast_wakeup_info);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FAST_WAKEUP */
 
 	return md;
 
@@ -2216,6 +2848,20 @@ static void unlock_fs(struct mapped_device *md);
 static void free_dev(struct mapped_device *md)
 {
 	int minor = MINOR(disk_devt(md->disk));
+#ifdef CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+	struct workqueue_struct *wq = NULL;
+#endif /* CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE */
+
+#ifdef CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+	wq = md->coherent_wq;
+	if (wq) {
+		spin_lock(&md->coherent_wq_lock);
+		md->coherent_wq = NULL;
+		spin_unlock(&md->coherent_wq_lock);
+		flush_workqueue(wq);
+		destroy_workqueue(wq);
+	}
+#endif /* CONFIG_SYNO_MULTIPATH_SLAVE_DISK_COHERENCE */
 
 	unlock_fs(md);
 
@@ -2233,9 +2879,9 @@ static int __bind_mempools(struct mapped_device *md, struct dm_table *t)
 {
 	struct dm_md_mempools *p = dm_table_get_md_mempools(t);
 	int ret = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 	bool noclone_pool_inited = false;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 	if (dm_table_bio_based(t)) {
 		/*
@@ -2262,7 +2908,7 @@ static int __bind_mempools(struct mapped_device *md, struct dm_table *t)
 	       bioset_initialized(&md->bs) ||
 	       bioset_initialized(&md->io_bs));
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 	if (mempool_initialized(&md->syno_noclone_pool))
 		ret = mempool_resize(&md->syno_noclone_pool,
 		                     p->syno_pool_size);
@@ -2273,7 +2919,7 @@ static int __bind_mempools(struct mapped_device *md, struct dm_table *t)
 	if (ret)
 		goto out;
 	noclone_pool_inited = true;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 	ret = bioset_init_from_src(&md->bs, &p->bs);
 	if (ret)
@@ -2282,10 +2928,10 @@ static int __bind_mempools(struct mapped_device *md, struct dm_table *t)
 	if (ret)
 		bioset_exit(&md->bs);
 out:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 	if (ret && noclone_pool_inited)
 		mempool_exit(&md->syno_noclone_pool);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 	/* mempool bind completed, no longer need any mempools in the table */
 	dm_table_free_md_mempools(t);
 	return ret;
@@ -2399,7 +3045,11 @@ int dm_create(int minor, struct mapped_device **result)
 	int r;
 	struct mapped_device *md;
 
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+	md = alloc_dev(minor, SYNO_RENAME_DM_AS_NONE);
+#else
 	md = alloc_dev(minor);
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 	if (!md)
 		return -ENXIO;
 
@@ -2412,6 +3062,26 @@ int dm_create(int minor, struct mapped_device **result)
 	*result = md;
 	return 0;
 }
+
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+/*
+ * Constructor for a new device with custom name
+ */
+int syno_dm_create_with_custom_name(int minor, SYNO_RENAME_DM_AS_TPYE type,
+									struct mapped_device **result)
+{
+	struct mapped_device *md;
+
+	md = alloc_dev(minor, type);
+	if (!md)
+		return -ENXIO;
+
+	dm_sysfs_init(md);
+
+	*result = md;
+	return 0;
+}
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 
 /*
  * Functions to manage md->type.
@@ -2595,6 +3265,13 @@ static void __dm_destroy(struct mapped_device *md, bool wait)
 
 	dm_sysfs_exit(md);
 	dm_table_destroy(__unbind(md));
+
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+	if (SynoIsDmMultipathDevice(md)) {
+		DMERR("[%s] destroy DM", SynoDmGetDiskNameFromMd(md));
+	}
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
+
 	free_dev(md);
 }
 
@@ -3256,9 +3933,9 @@ struct dm_md_mempools *dm_alloc_md_mempools(struct mapped_device *md, enum dm_qu
 	if (integrity && bioset_integrity_create(&pools->bs, pool_size))
 		goto out;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 	pools->syno_pool_size = pool_size;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 	return pools;
 
@@ -3469,7 +4146,7 @@ static const struct dax_operations dm_dax_ops = {
 	.zero_page_range = dm_dax_zero_page_range,
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_FAST_WAKEUP
 static void syno_dm_fast_wakeup_md(struct mapped_device *md, struct dm_table *map)
 {
 #ifdef CONFIG_BLK_DEV_MD
@@ -3533,7 +4210,7 @@ void dm_active_set(struct mapped_device *md, unsigned long value)
 		dm_put_live_table(md, srcu_idx);
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FAST_WAKEUP */
 /*
  * module hooks
  */

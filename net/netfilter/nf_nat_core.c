@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * (C) 1999-2001 Paul `Rusty' Russell
@@ -599,7 +596,7 @@ struct nf_conn_nat *nf_ct_nat_ext_add(struct nf_conn *ct)
 }
 EXPORT_SYMBOL_GPL(nf_ct_nat_ext_add);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NF_NAT_WORKAROUND
 /* bridge netfilter uses cloned skbs when forwarding to multiple bridge ports.
  * when userspace queueing is involved, we might try to set up NAT bindings
  * on the same conntrack simultaneoulsy.  Can happen e.g. when broadcast has
@@ -624,7 +621,7 @@ static inline void nf_nat_bridge_unlock(struct nf_conn *ct)
 {
 	spin_unlock_bh(&ct->lock);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NF_NAT_WORKAROUND */
 
 unsigned int
 nf_nat_setup_info(struct nf_conn *ct,
@@ -634,30 +631,30 @@ nf_nat_setup_info(struct nf_conn *ct,
 	struct net *net = nf_ct_net(ct);
 	struct nf_conntrack_tuple curr_tuple, new_tuple;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NF_NAT_WORKAROUND
 	WARN_ON(maniptype != NF_NAT_MANIP_SRC &&
 		maniptype != NF_NAT_MANIP_DST);
 
 	if (!nf_nat_bridge_lock(ct, maniptype))
 		return NF_ACCEPT;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NF_NAT_WORKAROUND */
 
 	/* Can't setup nat info for confirmed ct. */
 	if (nf_ct_is_confirmed(ct))
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NF_NAT_WORKAROUND
 	{
 		nf_nat_bridge_unlock(ct);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NF_NAT_WORKAROUND */
 		return NF_ACCEPT;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NF_NAT_WORKAROUND
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NF_NAT_WORKAROUND */
 
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_NF_NAT_WORKAROUND
+#else /* CONFIG_SYNO_NF_NAT_WORKAROUND */
 	WARN_ON(maniptype != NF_NAT_MANIP_SRC &&
 		maniptype != NF_NAT_MANIP_DST);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NF_NAT_WORKAROUND */
 
 	if (WARN_ON(nf_nat_initialized(ct, maniptype)))
 		return NF_DROP;
@@ -687,14 +684,14 @@ nf_nat_setup_info(struct nf_conn *ct,
 
 		if (nfct_help(ct) && !nfct_seqadj(ct))
 			if (!nfct_seqadj_ext_add(ct))
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NF_NAT_WORKAROUND
 			{
 				nf_nat_bridge_unlock(ct);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NF_NAT_WORKAROUND */
 				return NF_DROP;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NF_NAT_WORKAROUND
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NF_NAT_WORKAROUND */
 	}
 
 	if (maniptype == NF_NAT_MANIP_SRC) {
@@ -716,9 +713,9 @@ nf_nat_setup_info(struct nf_conn *ct,
 	else
 		ct->status |= IPS_SRC_NAT_DONE;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NF_NAT_WORKAROUND
        nf_nat_bridge_unlock(ct);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NF_NAT_WORKAROUND */
 	return NF_ACCEPT;
 }
 EXPORT_SYMBOL(nf_nat_setup_info);

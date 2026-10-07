@@ -70,6 +70,11 @@ static DECLARE_RWSEM(_hash_lock);
  */
 static DEFINE_MUTEX(dm_hash_cells_mutex);
 
+#ifdef CONFIG_SYNO_MULTIPATH_DEVICE_HOTPLUG_NOTIFY
+extern int (*syno_raid_scsi_unplug)(char *szDiskName);
+extern bool SynoIsDmMultipathDevice(struct mapped_device *md);
+#endif /* CONFIG_SYNO_MULTIPATH_DEVICE_HOTPLUG_NOTIFY */
+
 static void init_buckets(struct list_head *buckets)
 {
 	unsigned int i;
@@ -768,11 +773,31 @@ static void __dev_status(struct mapped_device *md, struct dm_ioctl *param)
 	}
 }
 
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+SYNO_RENAME_DM_AS_TPYE SYNORenameDMTypeGetByParmName(char *szParmName)
+{
+	SYNO_RENAME_DM_AS_TPYE typeRet = SYNO_RENAME_DM_AS_NONE;
+
+	if (NULL == szParmName) {
+		goto END;
+	}
+
+	if (strstr(szParmName, SYNO_DM_RENAME_SAS_PREFIX)) {
+		typeRet = SYNO_RENAME_DM_AS_SAS;
+	}
+
+END:
+	return typeRet;
+}
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
+
 static int dev_create(struct file *filp, struct dm_ioctl *param, size_t param_size)
 {
 	int r, m = DM_ANY_MINOR;
 	struct mapped_device *md;
-
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+	SYNO_RENAME_DM_AS_TPYE type = SYNO_RENAME_DM_AS_NONE;
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 	r = check_name(param->name);
 	if (r)
 		return r;
@@ -780,9 +805,20 @@ static int dev_create(struct file *filp, struct dm_ioctl *param, size_t param_si
 	if (param->flags & DM_PERSISTENT_DEV_FLAG)
 		m = MINOR(huge_decode_dev(param->dev));
 
-	r = dm_create(m, &md);
-	if (r)
-		return r;
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+	type = SYNORenameDMTypeGetByParmName(param->name);
+	if (SYNO_RENAME_DM_AS_NONE != type) {
+		r = syno_dm_create_with_custom_name(m, type, &md);
+		if (r)
+			return r;
+	} else {
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
+		r = dm_create(m, &md);
+		if (r)
+			return r;
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+	}
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 
 	r = dm_hash_insert(param->name, *param->uuid ? param->uuid : NULL, md);
 	if (r) {
@@ -866,6 +902,9 @@ static int dev_remove(struct file *filp, struct dm_ioctl *param, size_t param_si
 	struct mapped_device *md;
 	int r;
 	struct dm_table *t;
+#ifdef CONFIG_SYNO_MULTIPATH_DEVICE_HOTPLUG_NOTIFY
+	struct gendisk *disk;
+#endif /* CONFIG_SYNO_MULTIPATH_DEVICE_HOTPLUG_NOTIFY */
 
 	down_write(&_hash_lock);
 	hc = __find_device_hash_cell(param);
@@ -884,6 +923,16 @@ static int dev_remove(struct file *filp, struct dm_ioctl *param, size_t param_si
 	r = dm_lock_for_deletion(md, !!(param->flags & DM_DEFERRED_REMOVE), false);
 	if (r) {
 		if (r == -EBUSY && param->flags & DM_DEFERRED_REMOVE) {
+#ifdef CONFIG_SYNO_MULTIPATH_DEVICE_HOTPLUG_NOTIFY
+			if (SynoIsDmMultipathDevice(md) &&
+			    (NULL != (disk = dm_disk(md)))) {
+				DMDEBUG_LIMIT("Unplug %s.....", disk->disk_name);
+				if (syno_raid_scsi_unplug) {
+					/*dm_blk_close would be executed here, and dm_destroy would also be executed.*/
+					syno_raid_scsi_unplug(disk->disk_name);
+				}
+			}
+#endif /* CONFIG_SYNO_MULTIPATH_DEVICE_HOTPLUG_NOTIFY */
 			up_write(&_hash_lock);
 			dm_put(md);
 			return 0;
@@ -1082,6 +1131,26 @@ static int do_resume(struct dm_ioctl *param)
 
 	if (dm_suspended_md(md)) {
 		r = dm_resume(md);
+#ifdef CONFIG_SYNO_MULTIPATH_NEW_TARGET_DEVICE_UEVENT
+		if (!r && new_map && SynoIsDmMultipathDevice(md)) {
+			int old_disk_cnt = 0;
+			int new_disk_cnt = 0;
+			struct gendisk *disk = NULL;
+			char *pTargetAddType[2] = {0};
+
+			new_disk_cnt = syno_dm_table_first_target_data_devices_count(new_map);
+			if (old_map)
+				old_disk_cnt = syno_dm_table_first_target_data_devices_count(old_map);
+			if (new_disk_cnt > old_disk_cnt && old_disk_cnt >= 0) {
+				disk = dm_disk(md);
+				pTargetAddType[0] = old_disk_cnt ?
+						    SZ_SYNO_MPATH_TARGET_ADD_TYPE_APPE :
+						    SZ_SYNO_MPATH_TARGET_ADD_TYPE_INIT;
+				pTargetAddType[1] = NULL;
+				kobject_uevent_env(&disk_to_dev(disk)->kobj, KOBJ_ADD, pTargetAddType);
+			}
+		}
+#endif /* CONFIG_SYNO_MULTIPATH_NEW_TARGET_DEVICE_UEVENT */
 		if (!r && !dm_kobject_uevent(md, KOBJ_CHANGE, param->event_nr))
 			param->flags |= DM_UEVENT_GENERATED_FLAG;
 	}

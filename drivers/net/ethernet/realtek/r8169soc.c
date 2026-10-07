@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0 OR MIT
 /* r8169soc.c: RealTek 8169soc ethernet driver.
  *
@@ -3046,11 +3043,11 @@ static void rtl_hw_start_8168(struct net_device *dev)
 
 	RTL_W16(C_PLUS_CMD, tp->cp_cmd);
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 	RTL_W16(INTR_MITIGATE, 0x1111);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_RTD1619B */
 	RTL_W16(INTR_MITIGATE, 0x5151);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 
 	rtl_set_rx_tx_desc_registers(tp, ioaddr);
 
@@ -4820,12 +4817,12 @@ static void rtl_shutdown(struct platform_device *pdev)
 
 	rtl8169_net_suspend(dev);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 	//  We customize MAC(s), avoid restoring original mac address when shutdown.
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MAC_ADDRESS */
 	/* Restore original MAC address */
 	rtl_rar_set(tp, dev->perm_addr);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
 
 	rtl8169_hw_reset(tp);
 

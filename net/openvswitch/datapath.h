@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2007-2014 Nicira, Inc.
@@ -130,7 +127,7 @@ struct dp_upcall_info {
 	u16 mru;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OVS_MODE_REFINEMENT
 struct syno_ovs_bond_slave_list {
 	char *name;
 	struct list_head next;
@@ -141,7 +138,7 @@ struct syno_ovs_bond_list {
 	struct list_head slaves;
 	struct list_head next;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OVS_MODE_REFINEMENT */
 
 /**
  * struct ovs_net - Per net-namespace data for ovs.
@@ -159,11 +156,11 @@ struct ovs_net {
 	/* Module reference for configuring conntrack. */
 	bool xt_label;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OVS_MODE_REFINEMENT
 	struct net *net;
 	struct class_attribute class_attr_syno_ovs_bonds;
 	struct list_head bond_list;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OVS_MODE_REFINEMENT */
 };
 
 /**
@@ -277,7 +274,7 @@ void ovs_dp_notify_wq(struct work_struct *work);
 int action_fifos_init(void);
 void action_fifos_exit(void);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OVS_MODE_REFINEMENT
 bool syno_is_ovs_bond_name(const char *name);
 bool syno_is_ovs_eth_name(const char *name);
 bool syno_is_eth_name(const char *name);
@@ -289,7 +286,7 @@ struct net_device *syno_ovs_bond_get_from_eth(struct net_device *netdev);
 
 /* Must be under rtnl_lock when this function is called. */
 void syno_ovs_bond_set_carrier(struct net_device *netdev);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OVS_MODE_REFINEMENT */
 
 /* 'KEY' must not have any bits set outside of the 'MASK' */
 #define OVS_MASKED(OLD, KEY, MASK) ((KEY) | ((OLD) & ~(MASK)))

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * This file contains work-arounds for many known PCI hardware bugs.
@@ -5703,7 +5700,7 @@ static void apex_pci_fixup_class(struct pci_dev *pdev)
 DECLARE_PCI_FIXUP_CLASS_HEADER(0x1ac1, 0x089a,
 			       PCI_CLASS_NOT_DEFINED, 8, apex_pci_fixup_class);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_MV92XX_PORTING
 /*
  * Marvell provide PCI Programming steps for 88SE9235 without SPI flash
  * to slove some compatibility issue.
@@ -5766,9 +5763,9 @@ static void mv9235_non_spi_programming(struct pci_dev *dev)
 }
 DECLARE_PCI_FIXUP_FINAL(0x1b4b, 0x9235, mv9235_non_spi_programming);
 DECLARE_PCI_FIXUP_FINAL(0x1b4b, 0x9215, mv9235_non_spi_programming);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_MV92XX_PORTING */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_MV9170_PORTING
 /*
  * Marvell provide PCI Programming steps for 88SE9170 without SPI flash
  * to slove some compatibility issue.
@@ -5877,5 +5874,5 @@ static void mv9170_non_spi_programming(struct pci_dev *dev)
 	ndelay(80);
 }
 DECLARE_PCI_FIXUP_FINAL(0x1b4b, 0x9170, mv9170_non_spi_programming);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_MV9170_PORTING */
 

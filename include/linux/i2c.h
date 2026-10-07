@@ -584,6 +584,20 @@ struct i2c_timings {
 	u32 analog_filter_cutoff_freq_hz;
 };
 
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+struct syno_mux_ops {
+	void (*set_scl_mux)(struct i2c_adapter *adap, int val);
+	int scl_mode_i2c;
+	int scl_mode_gpio;
+};
+
+int syno_export_get_scl_gpio_value(struct i2c_adapter *adap);
+void syno_export_set_scl_gpio_value(struct i2c_adapter *adap, int val);
+int syno_export_get_sda_gpio_value(struct i2c_adapter *adap);
+void syno_export_set_sda_gpio_value(struct i2c_adapter *adap, int val);
+void syno_set_scl_mux(struct i2c_adapter *adap, int val);
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 /**
  * struct i2c_bus_recovery_info - I2C bus recovery information
  * @recover_bus: Recover routine. Either pass driver's recover_bus() routine, or
@@ -633,6 +647,9 @@ struct i2c_bus_recovery_info {
 	struct pinctrl *pinctrl;
 	struct pinctrl_state *pins_default;
 	struct pinctrl_state *pins_gpio;
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+	struct syno_mux_ops syno_mux_ops;
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
 };
 
 int i2c_recover_bus(struct i2c_adapter *adap);
@@ -723,6 +740,10 @@ struct i2c_adapter {
 	const struct i2c_adapter_quirks *quirks;
 
 	struct irq_domain *host_notify_domain;
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+	void (*syno_init_recovery_info)(struct i2c_adapter *adap);
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
 };
 #define to_i2c_adapter(d) container_of(d, struct i2c_adapter, dev)
 

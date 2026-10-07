@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * drivers/base/core.c - core driver model code (device registration, etc)
@@ -35,11 +32,11 @@
 #include "base.h"
 #include "power/power.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_VBUS_GPIO_CONTROL
 #include <linux/delay.h>
 #include <linux/of.h>
 #include <linux/syno_gpio.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_VBUS_GPIO_CONTROL */
 
 #ifdef CONFIG_SYSFS_DEPRECATED
 #ifdef CONFIG_SYSFS_DEPRECATED_V2
@@ -269,9 +266,9 @@ void device_pm_move_to_tail(struct device *dev)
 	device_pm_unlock();
 	device_links_read_unlock(idx);
 }
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 EXPORT_SYMBOL(device_pm_move_to_tail);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 #define to_devlink(dev)	container_of((dev), struct device_link, link_dev)
 
@@ -1931,14 +1928,14 @@ static int dev_uevent(struct kset *kset, struct kobject *kobj,
 			kfree(tmp);
 		}
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_HOTPLUG_TASK
 	/* host with dev->devt 0, if we want to get hotplug of CABLE_CONNECT/CABLE_DISCONNECT
 	 * we must add DEVNAME in env to pass it to hotplug.
 	 **/
 	else {
 		add_uevent_var(env, "DEVNAME=%s", dev_name(dev));
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_HOTPLUG_TASK */
 
 	if (dev->type && dev->type->name)
 		add_uevent_var(env, "DEVTYPE=%s", dev->type->name);
@@ -1946,7 +1943,7 @@ static int dev_uevent(struct kset *kset, struct kobject *kobj,
 	if (dev->driver)
 		add_uevent_var(env, "DRIVER=%s", dev->driver->name);
 
-#if defined(CONFIG_SYSFS_DEPRECATED) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYSFS_DEPRECATED) || defined(CONFIG_SYNO_DEPRECATED_UEVENT_ENV)
 	if (dev->class) {
 		struct device *parent = dev->parent;
 
@@ -1975,7 +1972,7 @@ static int dev_uevent(struct kset *kset, struct kobject *kobj,
 			add_uevent_var(env, "PHYSDEVDRIVER=%s",
 							 dev->driver->name);
 	}
-#endif /* CONFIG_SYSFS_DEPRECATED || MY_ABC_HERE */
+#endif /* CONFIG_SYSFS_DEPRECATED || CONFIG_SYNO_DEPRECATED_UEVENT_ENV */
 
 	/* Add common DT information about the device */
 	of_device_uevent(dev, env);
@@ -4077,7 +4074,7 @@ out:
 }
 EXPORT_SYMBOL_GPL(device_change_owner);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_VBUS_GPIO_CONTROL
 static void syno_turnoff_usb_vbus_gpio(const unsigned vbus_gpio_pin, const unsigned vbus_gpio_polarity)
 {
 	int gpio_off_value = 0;
@@ -4157,19 +4154,19 @@ HUB_PUT_NODE:
 	mdelay(CONFIG_SYNO_USB_POWER_OFF_TIME);
 #endif /* CONFIG_SYNO_USB_POWER_OFF_TIME */
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_VBUS_GPIO_CONTROL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SYSTEM_SHUTDOWN_HOOK
 int (*funcSYNOShutdownHook) (void) = NULL;
 EXPORT_SYMBOL(funcSYNOShutdownHook);
 static void syno_custom_shutdown_prepare(void)
 {
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_VBUS_GPIO_CONTROL
        if (SYSTEM_POWER_OFF == system_state || SYSTEM_RESTART == system_state) {
                syno_turnoff_all_usb_vbus_gpio();
        }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_VBUS_GPIO_CONTROL */
 
        if(NULL != funcSYNOShutdownHook) {
                funcSYNOShutdownHook();
@@ -4177,7 +4174,7 @@ static void syno_custom_shutdown_prepare(void)
 
        return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SYSTEM_SHUTDOWN_HOOK */
 
 /**
  * device_shutdown - call ->shutdown() on each device to shutdown.
@@ -4250,9 +4247,9 @@ void device_shutdown(void)
 	}
 	spin_unlock(&devices_kset->list_lock);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SYSTEM_SHUTDOWN_HOOK
 	syno_custom_shutdown_prepare();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SYSTEM_SHUTDOWN_HOOK */
 }
 
 /*

@@ -132,7 +132,9 @@ extern void elv_unregister(struct elevator_type *);
  */
 extern ssize_t elv_iosched_show(struct request_queue *, char *);
 extern ssize_t elv_iosched_store(struct request_queue *, const char *, size_t);
-
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME
+extern int elevator_change(struct request_queue *, const char *);
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME */
 extern bool elv_bio_merge_ok(struct request *, struct bio *);
 extern struct elevator_queue *elevator_alloc(struct request_queue *,
 					struct elevator_type *);

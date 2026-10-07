@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 
 #include <linux/bitops.h>
@@ -27,9 +24,9 @@
 #include "rcu-string.h"
 #include "backref.h"
 #include "disk-io.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #include "qgroup.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 static struct kmem_cache *extent_state_cache;
 static struct kmem_cache *extent_buffer_cache;
@@ -139,9 +136,9 @@ struct tree_entry {
 
 struct extent_page_data {
 	struct bio *bio;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 	unsigned long bio_flags;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 
 	/* tells writepage not to lock the state bits for this range
 	 * it still does the unlocking
@@ -165,12 +162,12 @@ static int add_extent_changeset(struct extent_state *state, unsigned bits,
 	if (!set && (state->state & bits) == 0)
 		return 0;
 	changeset->bytes_changed += state->end - state->start + 1;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 	ret = ulist_add_for_prealloc(&changeset->range_changed, state->start, state->end, GFP_ATOMIC, &changeset->prealloc_ulist_node);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 	ret = ulist_add(&changeset->range_changed, state->start, state->end,
 			GFP_ATOMIC);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 	return ret;
 }
 
@@ -213,11 +210,11 @@ static int __must_check flush_write_bio(struct extent_page_data *epd)
 	int ret = 0;
 
 	if (epd->bio) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 		ret = submit_one_bio(epd->bio, 0, epd->bio_flags);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 		ret = submit_one_bio(epd->bio, 0, 0);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 		/*
 		 * Clean up of epd->bio is handled by its endio function.
 		 * And endio is either triggered by successful bio execution
@@ -648,9 +645,9 @@ static struct extent_state *clear_state_bit(struct extent_io_tree *tree,
 					    struct extent_state *state,
 					    unsigned *bits, int wake,
 					    struct extent_changeset *changeset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 					    , u64 *add_bytes
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 					    )
 {
 	struct extent_state *next;
@@ -664,11 +661,11 @@ static struct extent_state *clear_state_bit(struct extent_io_tree *tree,
 	}
 
 	if (tree->private_data && is_data_inode(tree->private_data))
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 		btrfs_clear_delalloc_extent(tree->private_data, state, bits, add_bytes);
 #else
 		btrfs_clear_delalloc_extent(tree->private_data, state, bits);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	ret = add_extent_changeset(state, bits_to_clear, changeset, 0);
 	BUG_ON(ret < 0);
@@ -706,14 +703,14 @@ static void extent_io_tree_panic(struct extent_io_tree *tree, int err)
 	"locking error: extent tree was modified by another thread while locked");
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 static bool changeset_ulist_node_need_realloc(struct extent_changeset *changeset, gfp_t mask)
 {
 	if (changeset && !changeset->prealloc_ulist_node && gfpflags_allow_blocking(mask))
 		return true;
 	return false;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 
 /*
  * clear some bits on a range in the tree.  This may require splitting
@@ -739,10 +736,10 @@ int __clear_extent_bit(struct extent_io_tree *tree, u64 start, u64 end,
 	u64 last_end;
 	int err;
 	int clear = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 	int retry_count = 0;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	struct btrfs_inode *inode = NULL;
 	u64 add_bytes = 0;
 
@@ -752,13 +749,18 @@ int __clear_extent_bit(struct extent_io_tree *tree, u64 start, u64 end,
 		if (inode && btrfs_is_free_space_inode(inode))
 			inode = NULL;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	btrfs_debug_check_extent_io_range(tree, start, end);
 	trace_btrfs_clear_extent_bit(tree, start, end - start + 1, bits);
 
 	if (bits & EXTENT_DELALLOC)
 		bits |= EXTENT_NORESERVE;
+
+#ifdef CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS
+	if (bits & EXTENT_DEFRAG)
+		bits |= EXTENT_DEFRAG_COMPRESS;
+#endif /* CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS */
 
 	if (delete)
 		bits |= ~EXTENT_CTLBITS;
@@ -776,14 +778,14 @@ again:
 		 */
 		prealloc = alloc_extent_state(mask);
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 	if (changeset_ulist_node_need_realloc(changeset, mask)) {
 		retry_count = 5;
 		while (!changeset->prealloc_ulist_node && retry_count-- > 0) {
 			changeset->prealloc_ulist_node = kmalloc(sizeof(*changeset->prealloc_ulist_node), mask & ~(__GFP_DMA32|__GFP_HIGHMEM));
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 
 	spin_lock(&tree->lock);
 	if (cached_state) {
@@ -853,9 +855,9 @@ hit_next:
 		if (state->end <= end) {
 			state = clear_state_bit(tree, state, &bits, wake,
 						changeset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 						, inode ? &add_bytes : NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 						);
 			goto next;
 		}
@@ -878,9 +880,9 @@ hit_next:
 			wake_up(&state->wq);
 
 		clear_state_bit(tree, prealloc, &bits, wake, changeset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 				, inode ? &add_bytes : NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				);
 
 		prealloc = NULL;
@@ -888,18 +890,18 @@ hit_next:
 	}
 
 	state = clear_state_bit(tree, state, &bits, wake, changeset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 				, inode ? &add_bytes : NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				);
 next:
 	if (last_end == (u64)-1)
 		goto out;
 	start = last_end + 1;
 	if (start <= end && state && !need_resched()
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 		&& !changeset_ulist_node_need_realloc(changeset, mask)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 		)
 		goto hit_next;
 
@@ -915,13 +917,13 @@ out:
 	spin_unlock(&tree->lock);
 	if (prealloc)
 		free_extent_state(prealloc);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 	if (changeset && changeset->prealloc_ulist_node) {
 		kfree(changeset->prealloc_ulist_node);
 		changeset->prealloc_ulist_node = NULL;
 	}
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	if (add_bytes && inode) {
 		if (bits & EXTENT_ADD_INODE_BYTES) {
 			WARN_ON_ONCE(!gfpflags_allow_blocking(mask));
@@ -942,7 +944,7 @@ out:
 			spin_unlock(&inode->lock);
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	return 0;
 
@@ -1075,9 +1077,9 @@ __set_extent_bit(struct extent_io_tree *tree, u64 start, u64 end,
 	int err = 0;
 	u64 last_start;
 	u64 last_end;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 	int retry_count = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 
 	btrfs_debug_check_extent_io_range(tree, start, end);
 	trace_btrfs_set_extent_bit(tree, start, end - start + 1, bits);
@@ -1093,14 +1095,14 @@ again:
 		 */
 		prealloc = alloc_extent_state(mask);
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 	if (changeset_ulist_node_need_realloc(changeset, mask)) {
 		retry_count = 5;
 		while (!changeset->prealloc_ulist_node && retry_count-- > 0) {
 			changeset->prealloc_ulist_node = kmalloc(sizeof(*changeset->prealloc_ulist_node), mask & ~(__GFP_DMA32|__GFP_HIGHMEM));
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 
 	spin_lock(&tree->lock);
 	if (cached_state && *cached_state) {
@@ -1155,9 +1157,9 @@ hit_next:
 		state = next_state(state);
 		if (start < end && state && state->start == start &&
 		    !need_resched()
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 			&& !changeset_ulist_node_need_realloc(changeset, mask)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 			)
 			goto hit_next;
 		goto search_again;
@@ -1215,9 +1217,9 @@ hit_next:
 			state = next_state(state);
 			if (start < end && state && state->start == start &&
 			    !need_resched()
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 				&& !changeset_ulist_node_need_realloc(changeset, mask)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 				)
 				goto hit_next;
 		}
@@ -1292,12 +1294,12 @@ out:
 	spin_unlock(&tree->lock);
 	if (prealloc)
 		free_extent_state(prealloc);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 	if (changeset && changeset->prealloc_ulist_node) {
 		kfree(changeset->prealloc_ulist_node);
 		changeset->prealloc_ulist_node = NULL;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 
 	return err;
 
@@ -1343,7 +1345,7 @@ int convert_extent_bit(struct extent_io_tree *tree, u64 start, u64 end,
 	u64 last_start;
 	u64 last_end;
 	bool first_iteration = true;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	struct btrfs_inode *inode = NULL;
 	u64 add_bytes = 0;
 
@@ -1353,7 +1355,7 @@ int convert_extent_bit(struct extent_io_tree *tree, u64 start, u64 end,
 		if (inode && btrfs_is_free_space_inode(inode))
 			inode = NULL;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	btrfs_debug_check_extent_io_range(tree, start, end);
 	trace_btrfs_convert_extent_bit(tree, start, end - start + 1, bits,
@@ -1417,9 +1419,9 @@ hit_next:
 		set_state_bits(tree, state, &bits, NULL);
 		cache_state(state, cached_state);
 		state = clear_state_bit(tree, state, &clear_bits, 0, NULL
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 					, inode ? &add_bytes : NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 					);
 		if (last_end == (u64)-1)
 			goto out;
@@ -1463,9 +1465,9 @@ hit_next:
 			cache_state(state, cached_state);
 			state = clear_state_bit(tree, state, &clear_bits, 0,
 						NULL
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 						, inode ? &add_bytes : NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 						);
 			if (last_end == (u64)-1)
 				goto out;
@@ -1529,9 +1531,9 @@ hit_next:
 		set_state_bits(tree, prealloc, &bits, NULL);
 		cache_state(prealloc, cached_state);
 		clear_state_bit(tree, prealloc, &clear_bits, 0, NULL
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 				, inode ? &add_bytes : NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				);
 		prealloc = NULL;
 		goto out;
@@ -1549,7 +1551,7 @@ out:
 	spin_unlock(&tree->lock);
 	if (prealloc)
 		free_extent_state(prealloc);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	if (add_bytes && inode) {
 		if (bits & EXTENT_ADD_INODE_BYTES) {
 			spin_lock(&inode->lock);
@@ -1569,7 +1571,7 @@ out:
 			spin_unlock(&inode->lock);
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	return err;
 }
@@ -2024,7 +2026,7 @@ static noinline int lock_delalloc_pages(struct inode *inode,
 	return ret;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_BTRFS_DEDUPE
 u64 btrfs_max_extent_size(struct inode *inode)
 {
 	if (BTRFS_I(inode)->flags & BTRFS_INODE_NODEDUPE)
@@ -2033,7 +2035,7 @@ u64 btrfs_max_extent_size(struct inode *inode)
 		return BTRFS_I(inode)->root->small_extent_size;
 	return BTRFS_MAX_EXTENT_SIZE;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DEDUPE */
 
 /*
  * Find and lock a contiguous range of bytes in the file marked as delalloc, no
@@ -2048,11 +2050,11 @@ noinline_for_stack bool find_lock_delalloc_range(struct inode *inode,
 				    u64 *end)
 {
 	struct extent_io_tree *tree = &BTRFS_I(inode)->io_tree;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_BTRFS_DEDUPE
 	u64 max_bytes = btrfs_max_extent_size(inode);
 #else
 	u64 max_bytes = BTRFS_MAX_EXTENT_SIZE;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DEDUPE */
 	u64 delalloc_start;
 	u64 delalloc_end;
 	bool found;
@@ -2431,9 +2433,9 @@ int free_io_failure(struct extent_io_tree *failure_tree,
 int repair_io_failure(struct btrfs_fs_info *fs_info, u64 ino, u64 start,
 		      u64 length, u64 logical, struct page *page,
 		      unsigned int pg_offset, int mirror_num
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		      , int abort_correction
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		      )
 {
 	struct bio *bio;
@@ -2443,20 +2445,20 @@ int repair_io_failure(struct btrfs_fs_info *fs_info, u64 ino, u64 start,
 	struct btrfs_bio *bbio = NULL;
 	int ret;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	if (sb_rdonly(fs_info->sb))
 		return 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	ASSERT(!(fs_info->sb->s_flags & SB_RDONLY));
 	BUG_ON(!mirror_num);
 
 	bio = btrfs_io_bio_alloc(1);
 	bio->bi_iter.bi_size = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	if (abort_correction)
 		bio_set_flag(bio, BIO_CORRECTION_ABORT);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	map_length = length;
 
 	/*
@@ -2513,12 +2515,12 @@ int repair_io_failure(struct btrfs_fs_info *fs_info, u64 ino, u64 start,
 		return -EIO;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	btrfs_data_correction_print_in_rcu(fs_info,
 					   fs_info->correction_suppress_log,
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	btrfs_info_rl_in_rcu(fs_info,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		"read error corrected: ino %llu off %llu (dev %s sector %llu)",
 				  ino, start,
 				  rcu_str_deref(dev->name), sector);
@@ -2527,17 +2529,17 @@ int repair_io_failure(struct btrfs_fs_info *fs_info, u64 ino, u64 start,
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 int btrfs_repair_eb_io_failure(struct extent_buffer *eb, int mirror_num)
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 int btrfs_repair_eb_io_failure(const struct extent_buffer *eb, int mirror_num)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 {
 	struct btrfs_fs_info *fs_info = eb->fs_info;
 	u64 start = eb->start;
 	int i, num_pages = num_extent_pages(eb);
 	int ret = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	// No readers now, one page's lock is enough.
 	lock_page(eb->pages[0]);
 	if (!test_and_clear_bit(EXTENT_BUFFER_SHOULD_REPAIR, &eb->bflags) &&
@@ -2571,7 +2573,7 @@ out:
 		eb->nr_retry = 0;
 	}
 
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	if (sb_rdonly(fs_info->sb))
 		return -EROFS;
 
@@ -2584,7 +2586,7 @@ out:
 			break;
 		start += PAGE_SIZE;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	return ret;
 }
@@ -2597,9 +2599,9 @@ int clean_io_failure(struct btrfs_fs_info *fs_info,
 		     struct extent_io_tree *failure_tree,
 		     struct extent_io_tree *io_tree, u64 start,
 		     struct page *page, u64 ino, unsigned int pg_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		     , bool should_put_locked
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		     )
 {
 	u64 private;
@@ -2618,10 +2620,10 @@ int clean_io_failure(struct btrfs_fs_info *fs_info,
 	if (IS_ERR(failrec))
 		return 0;
 
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	BUG_ON(!failrec->this_mirror);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	if (failrec->in_validation) {
 		/* there was no real error, just free the record */
@@ -2630,11 +2632,11 @@ int clean_io_failure(struct btrfs_fs_info *fs_info,
 			failrec->start);
 		goto out;
 	}
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	if (sb_rdonly(fs_info->sb))
 		goto out;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	spin_lock(&io_tree->lock);
 	state = find_first_extent_bit_state(io_tree,
@@ -2646,20 +2648,20 @@ int clean_io_failure(struct btrfs_fs_info *fs_info,
 	    state->end >= failrec->start + failrec->len - 1) {
 		num_copies = btrfs_num_copies(fs_info, failrec->logical,
 					      failrec->len);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		repair_io_failure(fs_info, ino, start, failrec->len,
 				  failrec->logical, page, pg_offset,
 				  failrec->failed_mirror, 1);
 		if (should_put_locked)
 			correction_put_locked_record(fs_info,
 						     failrec->logical);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		if (num_copies > 1)  {
 			repair_io_failure(fs_info, ino, start, failrec->len,
 					  failrec->logical, page, pg_offset,
 					  failrec->failed_mirror);
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	}
 
 out:
@@ -2704,9 +2706,9 @@ void btrfs_free_io_failure_record(struct btrfs_inode *inode, u64 start, u64 end)
 
 static struct io_failure_record *btrfs_get_io_failure_record(struct inode *inode,
 							     u64 start, u64 end
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 							     , bool io_error
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 							     )
 {
 	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
@@ -2742,25 +2744,25 @@ static struct io_failure_record *btrfs_get_io_failure_record(struct inode *inode
 	failrec->this_mirror = 0;
 	failrec->bio_flags = 0;
 	failrec->in_validation = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	failrec->io_error = io_error;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	read_lock(&em_tree->lock);
 	em = lookup_extent_mapping(em_tree, start, failrec->len);
 	if (!em) {
 		read_unlock(&em_tree->lock);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 		em = btrfs_get_extent(BTRFS_I(inode), NULL, 0, start, failrec->len);
 		if (IS_ERR_OR_NULL(em)) {
 			kfree(failrec);
 			return ERR_PTR(-EIO);
 		}
 		read_lock(&em_tree->lock);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 		kfree(failrec);
 		return ERR_PTR(-EIO);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 	}
 
 	if (em->start > start || em->start + em->len <= start) {
@@ -2776,15 +2778,15 @@ static struct io_failure_record *btrfs_get_io_failure_record(struct inode *inode
 	logical = start - em->start;
 	logical = em->block_start + logical;
 	if (test_bit(EXTENT_FLAG_COMPRESSED, &em->flags)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		free_extent_map(em);
 		kfree(failrec);
 		return ERR_PTR(-EIO);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		logical = em->block_start;
 		failrec->bio_flags = EXTENT_BIO_COMPRESSED;
 		extent_set_compress_type(&failrec->bio_flags, em->compress_type);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	}
 
 	btrfs_debug(fs_info,
@@ -2914,7 +2916,7 @@ static bool btrfs_io_needs_validation(struct inode *inode, struct bio *bio)
 	}
 	return false;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 /*
  * Copy from the last part of btrfs_submit_read_repair()
  */
@@ -2969,17 +2971,17 @@ syno_bio_readpage_error(struct bio *failed_bio, struct inode *inode,
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 blk_status_t btrfs_submit_read_repair(struct inode *inode,
 				      struct bio *failed_bio, u64 phy_offset,
 				      struct page *page, unsigned int pgoff,
 				      u64 start, u64 end, int failed_mirror,
 				      submit_bio_hook_t *submit_bio_hook
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 				      , bool do_correction
 				      , bool *run_out_all_copy
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 				      )
 {
 	struct io_failure_record *failrec;
@@ -2992,10 +2994,10 @@ blk_status_t btrfs_submit_read_repair(struct inode *inode,
 	struct bio *repair_bio;
 	struct btrfs_io_bio *repair_io_bio;
 	blk_status_t status;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	struct btrfs_io_bio *btrfs_failed_bio;
 	int retry_fail = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	btrfs_debug(fs_info,
 		   "repair read error: read error at %llu", start);
@@ -3003,14 +3005,14 @@ blk_status_t btrfs_submit_read_repair(struct inode *inode,
 	BUG_ON(bio_op(failed_bio) == REQ_OP_WRITE);
 
 	failrec = btrfs_get_io_failure_record(inode, start, end
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 					      , !!failed_bio->bi_status
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 					      );
 	if (IS_ERR(failrec))
 		return errno_to_blk_status(PTR_ERR(failrec));
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	if (!do_correction)
 		goto try_mirror;
 	/*
@@ -3043,16 +3045,16 @@ blk_status_t btrfs_submit_read_repair(struct inode *inode,
 	failed_io_bio->nr_retry = 0;
 
 try_mirror:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	need_validation = btrfs_io_needs_validation(inode, failed_bio);
 
 	if (!btrfs_check_repairable(inode, need_validation, failrec,
 				    failed_mirror)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		if (!retry_fail && !failrec->io_error && run_out_all_copy)
 			*run_out_all_copy = true;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		free_io_failure(failure_tree, tree, failrec);
 		return BLK_STS_IOERR;
 	}
@@ -3167,7 +3169,7 @@ endio_readpage_release_extent(struct extent_io_tree *tree, u64 start, u64 len,
 	unlock_extent_cached_atomic(tree, start, end, &cached);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 static unsigned int kfifo_latest_peek(struct kfifo *fifo, void *buf, unsigned int len)
 {
 	struct __kfifo *real_fifo = &fifo->kfifo;
@@ -3291,7 +3293,7 @@ void correction_destroy_locked_record(struct btrfs_fs_info *fs_info)
 	}
 	spin_unlock(&fs_info->correction_record_lock);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 /*
  * after a readpage IO is done, we need to:
@@ -3307,12 +3309,12 @@ void correction_destroy_locked_record(struct btrfs_fs_info *fs_info)
 static void end_bio_extent_readpage(struct bio *bio)
 {
 	struct bio_vec *bvec;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	int bio_uptodate = !bio->bi_status;
 	int uptodate;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	int uptodate = !bio->bi_status;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	struct btrfs_io_bio *io_bio = btrfs_io_bio(bio);
 	struct extent_io_tree *tree, *failure_tree;
 	u64 offset = 0;
@@ -3324,7 +3326,7 @@ static void end_bio_extent_readpage(struct bio *bio)
 	int mirror;
 	int ret;
 	struct bvec_iter_all iter_all;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	int found_cksumfailure = 0;
 	struct btrfs_fs_info *info = NULL;
 	bool do_correction = true;
@@ -3341,18 +3343,18 @@ static void end_bio_extent_readpage(struct bio *bio)
 		io_bio->nr_retry = BTRFS_BIO_RETRY_ABORTED;
 		bio_uptodate = 0;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	ASSERT(!bio_flagged(bio, BIO_CLONED));
 	bio_for_each_segment_all(bvec, bio, iter_all) {
 		struct page *page = bvec->bv_page;
 		struct inode *inode = page->mapping->host;
 		struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		blk_status_t status;
 		uptodate = bio_uptodate;
 		info = fs_info;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 		btrfs_debug(fs_info,
 			"end_bio_extent_readpage: bi_sector=%llu, err=%d, mirror=%u",
@@ -3396,9 +3398,9 @@ static void end_bio_extent_readpage(struct bio *bio)
 						 failure_tree, tree, start,
 						 page,
 						 btrfs_ino(BTRFS_I(inode)), 0
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 						 , !!io_bio->nr_retry
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 						 );
 		}
 
@@ -3406,9 +3408,9 @@ static void end_bio_extent_readpage(struct bio *bio)
 			goto readpage_ok;
 
 		if (is_data_inode(inode)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 			bool run_out_all_copy = false;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 			/*
 			 * The generic bio_readpage_error handles errors the
 			 * following way: If possible, new read requests are
@@ -3419,24 +3421,24 @@ static void end_bio_extent_readpage(struct bio *bio)
 			 * If it can't handle the error it will return -EIO and
 			 * we remain responsible for that page.
 			 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 			status = btrfs_submit_read_repair(inode, bio, offset, page,
 						start - page_offset(page),
 						start, end, mirror,
 						btrfs_submit_data_bio
 						, do_correction, &run_out_all_copy);
 			if (!status) {
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 			if (!btrfs_submit_read_repair(inode, bio, offset, page,
 						start - page_offset(page),
 						start, end, mirror,
 						btrfs_submit_data_bio)) {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 				uptodate = !bio->bi_status;
 				offset += len;
 				continue;
 			}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 			if (run_out_all_copy) { // Run out of all redundancies. Report to user space.
 				add_cksumfailed_file(BTRFS_I(inode)->root->root_key.objectid,
 						     (u64)inode->i_ino, fs_info);
@@ -3450,19 +3452,19 @@ static void end_bio_extent_readpage(struct bio *bio)
 				btrfs_err(fs_info, "failed to repair data csum of ino %lu off %llu "
 						"(err = %u)", inode->i_ino, start, status);
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		} else {
 			struct extent_buffer *eb;
 
 			eb = (struct extent_buffer *)page->private;
 			set_bit(EXTENT_BUFFER_READ_ERR, &eb->bflags);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 			btrfs_metadata_io_failed(eb, page, mirror,
 						 bio_flagged(bio, BIO_CORRECTION_ERR));
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 			eb->read_mirror = mirror;
 			atomic_dec(&eb->io_pages);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 			if (test_and_clear_bit(EXTENT_BUFFER_READAHEAD,
 					       &eb->bflags))
 				btree_readahead_hook(eb, -EIO);
@@ -3514,11 +3516,11 @@ readpage_ok:
 	btrfs_io_bio_free_csum(io_bio);
 	bio_put(bio);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	if (found_cksumfailure && info) {
 		SynoAutoErrorFsBtrfsReport(info->fs_devices->fsid);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 }
 
 /*
@@ -3632,14 +3634,14 @@ static int submit_extent_page(unsigned int opf,
 		if (btrfs_bio_fits_in_stripe(page, page_size, bio, bio_flags))
 			can_merge = false;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LIMIT_WRITE_BIO_SIZE
 		/*
 		 * For latency, limit write bio maximum with 64k, avoid too much page
 		 * is marked as writeback.
 		 */
 		if (bio_op(bio) == REQ_OP_WRITE && bio->bi_iter.bi_size >= SZ_64K)
 			force_bio_submit = true;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LIMIT_WRITE_BIO_SIZE */
 
 		if (prev_bio_flags != bio_flags || !contig || !can_merge ||
 		    force_bio_submit ||
@@ -4013,10 +4015,10 @@ static noinline_for_stack int writepage_delalloc(struct btrfs_inode *inode,
 		 * nr_to_write.
 		 */
 		wbc->nr_to_write -= *nr_written;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_PERF_STATS
 		percpu_counter_add_batch(&inode->root->fs_info->data_write_pages,
 				     *nr_written, SZ_128M);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_PERF_STATS */
 		return 1;
 	}
 
@@ -4054,9 +4056,9 @@ static noinline_for_stack int __extent_writepage_io(struct btrfs_inode *inode,
 	int nr = 0;
 	const unsigned int write_flags = wbc_to_write_flags(wbc);
 	bool compressed;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_BTRFS_DEDUPE
 	bool deduped = false;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DEDUPE */
 
 	ret = btrfs_writepage_cow_fixup(page, start, page_end);
 	if (ret) {
@@ -4064,9 +4066,9 @@ static noinline_for_stack int __extent_writepage_io(struct btrfs_inode *inode,
 		redirty_page_for_writepage(wbc, page);
 		update_nr_written(wbc, nr_written);
 		unlock_page(page);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_PERF_STATS
 		percpu_counter_add_batch(&inode->root->fs_info->data_write_pages, nr_written, SZ_128M);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_PERF_STATS */
 		return 1;
 	}
 
@@ -4075,9 +4077,9 @@ static noinline_for_stack int __extent_writepage_io(struct btrfs_inode *inode,
 	 * so we update the mapping writeback index now
 	 */
 	update_nr_written(wbc, nr_written + 1);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_PERF_STATS
 	percpu_counter_add_batch(&inode->root->fs_info->data_write_pages, nr_written + 1, SZ_128M);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_PERF_STATS */
 
 	end = page_end;
 	blocksize = inode->vfs_inode.i_sb->s_blocksize;
@@ -4107,9 +4109,9 @@ static noinline_for_stack int __extent_writepage_io(struct btrfs_inode *inode,
 		offset = em->block_start + extent_offset;
 		block_start = em->block_start;
 		compressed = test_bit(EXTENT_FLAG_COMPRESSED, &em->flags);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_BTRFS_DEDUPE
 		deduped = test_bit(EXTENT_FLAG_DEDUPED, &em->flags);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DEDUPE */
 		free_extent_map(em);
 		em = NULL;
 
@@ -4118,9 +4120,9 @@ static noinline_for_stack int __extent_writepage_io(struct btrfs_inode *inode,
 		 * paths in the FS
 		 */
 		if (compressed || block_start == EXTENT_MAP_HOLE ||
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_BTRFS_DEDUPE
 			deduped ||
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DEDUPE */
 		    block_start == EXTENT_MAP_INLINE) {
 			if (compressed)
 				nr++;
@@ -4464,9 +4466,9 @@ static noinline_for_stack int write_one_eb(struct extent_buffer *eb,
 	u64 offset = eb->start;
 	u32 nritems;
 	int i, num_pages;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 	unsigned long bio_flags = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 	unsigned long start, end;
 	unsigned int write_flags = wbc_to_write_flags(wbc) | REQ_META;
 	int ret = 0;
@@ -4475,10 +4477,10 @@ static noinline_for_stack int write_one_eb(struct extent_buffer *eb,
 	num_pages = num_extent_pages(eb);
 	atomic_set(&eb->io_pages, num_pages);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 	if (btrfs_header_owner(eb) == BTRFS_TREE_LOG_OBJECTID)
 		bio_flags = EXTENT_BIO_TREE_LOG;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 
 	/* set btree blocks beyond nritems with 0 to avoid stale content. */
 	nritems = btrfs_header_nritems(eb);
@@ -4505,15 +4507,15 @@ static noinline_for_stack int write_one_eb(struct extent_buffer *eb,
 					 p, offset, PAGE_SIZE, 0,
 					 &epd->bio,
 					 end_bio_extent_buffer_writepage,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 					 0, epd->bio_flags, bio_flags, false);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 					 0, 0, 0, false);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 		epd->bio_flags = bio_flags;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 		if (ret) {
 			set_btree_ioerr(p);
 			if (PageWriteback(p))
@@ -4527,9 +4529,9 @@ static noinline_for_stack int write_one_eb(struct extent_buffer *eb,
 		update_nr_written(wbc, 1);
 		unlock_page(p);
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_PERF_STATS
 	percpu_counter_add_batch(&eb->fs_info->meta_write_pages, num_pages, SZ_128M);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_PERF_STATS */
 
 	if (unlikely(ret)) {
 		for (; i < num_pages; i++) {
@@ -4550,9 +4552,9 @@ int btree_write_cache_pages(struct address_space *mapping,
 		.bio = NULL,
 		.extent_locked = 0,
 		.sync_io = wbc->sync_mode == WB_SYNC_ALL,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 		.bio_flags = 0,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 	};
 	struct btrfs_fs_info *fs_info = BTRFS_I(mapping->host)->root->fs_info;
 	int ret = 0;
@@ -4874,9 +4876,9 @@ int extent_write_full_page(struct page *page, struct writeback_control *wbc)
 		.bio = NULL,
 		.extent_locked = 0,
 		.sync_io = wbc->sync_mode == WB_SYNC_ALL,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 		.bio_flags = 0,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 	};
 
 	ret = __extent_writepage(page, wbc, &epd);
@@ -4904,9 +4906,9 @@ int extent_write_locked_range(struct inode *inode, u64 start, u64 end,
 		.bio = NULL,
 		.extent_locked = 1,
 		.sync_io = mode == WB_SYNC_ALL,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 		.bio_flags = 0,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 	};
 	struct writeback_control wbc_writepages = {
 		.sync_mode	= mode,
@@ -4950,9 +4952,9 @@ int extent_writepages(struct address_space *mapping,
 		.bio = NULL,
 		.extent_locked = 0,
 		.sync_io = wbc->sync_mode == WB_SYNC_ALL,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 		.bio_flags = 0,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 	};
 
 	ret = extent_write_cache_pages(mapping, wbc, &epd);
@@ -5028,6 +5030,8 @@ static int try_release_extent_state(struct extent_io_tree *tree,
 	u64 start = page_offset(page);
 	u64 end = start + PAGE_SIZE - 1;
 	int ret = 1;
+	u32 clear_bits = ~(EXTENT_LOCKED | EXTENT_NODATASUM |
+			   EXTENT_DELALLOC_NEW | EXTENT_CTLBITS);
 
 	if (test_range_bit(tree, start, end, EXTENT_LOCKED, 0, NULL)) {
 		ret = 0;
@@ -5038,20 +5042,19 @@ static int try_release_extent_state(struct extent_io_tree *tree,
 		 * The delalloc new bit will be cleared by ordered extent
 		 * completion.
 		 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 		/*
 		 * The qgroup reserved bit should be kept for ordered extent,
 		 * or quota reservation would be leaked.
 		 */
 		ret = __clear_extent_bit(tree, start, end,
-			 ~(EXTENT_LOCKED | EXTENT_NODATASUM | EXTENT_DELALLOC_NEW |
-			   EXTENT_QGROUP_RESERVED),
+			 clear_bits & ~EXTENT_QGROUP_RESERVED,
 			 0, 0, NULL, mask, NULL);
 #else
 		ret = __clear_extent_bit(tree, start, end,
-			 ~(EXTENT_LOCKED | EXTENT_NODATASUM | EXTENT_DELALLOC_NEW),
+			 clear_bits,
 			 0, 0, NULL, mask, NULL);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 		/* if clear_extent_bit failed for enomem reasons,
 		 * we can't allow the release to continue.
@@ -5167,9 +5170,9 @@ static struct extent_map *get_extent_skip_holes(struct btrfs_inode *inode,
 		len = last - offset;
 		if (len == 0)
 			break;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE
 		len = min_t(u64, len, SZ_256M);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE */
 		len = ALIGN(len, sectorsize);
 		em = btrfs_get_extent_fiemap(inode, offset, len);
 		if (IS_ERR_OR_NULL(em))
@@ -5180,7 +5183,7 @@ static struct extent_map *get_extent_skip_holes(struct btrfs_inode *inode,
 			return em;
 
 		/* this is a hole, advance to the next extent */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE
 		/* we only check that delalloc is SZ_256M after offset,
 		 * so when the hole exceeds 256M, we have to limit it
 		 * to only increase 256M at most once.
@@ -5190,15 +5193,15 @@ static struct extent_map *get_extent_skip_holes(struct btrfs_inode *inode,
 		else
 			offset = U64_MAX;
 		offset = min(offset, extent_map_end(em));
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE */
 		offset = extent_map_end(em);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE */
 		free_extent_map(em);
 		if (offset >= last)
 			break;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE
 		cond_resched();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE */
 	}
 	return NULL;
 }
@@ -5260,13 +5263,13 @@ static int emit_fiemap_extent(struct fiemap_extent_info *fieinfo,
 	 */
 	if (cache->offset + cache->len  == offset &&
 	    cache->phys + cache->len == phys  &&
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_FIEMAP_RESULT_NOT_CORRECTED
 	    (cache->flags & ~(FIEMAP_EXTENT_LAST|FIEMAP_EXTENT_SHARED)) ==
 			(flags & ~(FIEMAP_EXTENT_LAST|FIEMAP_EXTENT_SHARED))) {
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_FIX_FIEMAP_RESULT_NOT_CORRECTED */
 	    (cache->flags & ~FIEMAP_EXTENT_LAST) ==
 			(flags & ~FIEMAP_EXTENT_LAST)) {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_FIEMAP_RESULT_NOT_CORRECTED */
 		cache->len += len;
 		cache->flags |= flags;
 		goto try_submit_last;
@@ -5320,7 +5323,7 @@ static int emit_last_fiemap_cache(struct fiemap_extent_info *fieinfo,
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_FIEMAP_RESULT_NOT_CORRECTED
 /**
  * Return: 0 if extent is not shared, 1 if it is shared, < 0 on error.
  */
@@ -5434,7 +5437,7 @@ out:
 	btrfs_free_path(path);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_FIEMAP_RESULT_NOT_CORRECTED */
 
 int extent_fiemap(struct btrfs_inode *inode, struct fiemap_extent_info *fieinfo,
 		  u64 start, u64 len)
@@ -5460,9 +5463,9 @@ int extent_fiemap(struct btrfs_inode *inode, struct fiemap_extent_info *fieinfo,
 	u64 em_start = 0;
 	u64 em_len = 0;
 	u64 em_end = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE
 	u64 last_for_user_wanted = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE */
 
 	if (len == 0)
 		return -EINVAL;
@@ -5532,19 +5535,19 @@ int extent_fiemap(struct btrfs_inode *inode, struct fiemap_extent_info *fieinfo,
 		last_for_get_extent = isize;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE
 	last_for_user_wanted = min(start + len, last_for_get_extent);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE */
 
 	lock_extent_bits(&inode->io_tree, start, start + len - 1,
 			 &cached_state);
 
 	em = get_extent_skip_holes(inode, start
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE
 				   , last_for_user_wanted
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE */
 				   , last_for_get_extent
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE */
 				   );
 	if (!em)
 		goto out;
@@ -5601,11 +5604,11 @@ int extent_fiemap(struct btrfs_inode *inode, struct fiemap_extent_info *fieinfo,
 			flags |= (FIEMAP_EXTENT_DELALLOC |
 				  FIEMAP_EXTENT_UNKNOWN);
 		} else if (fieinfo->fi_extents_max) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_FIEMAP_RESULT_NOT_CORRECTED
 			ret = extent_map_check_shared(inode, em->start,
 						      extent_map_end(em) - 1,
 						      roots, tmp_ulist);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_FIX_FIEMAP_RESULT_NOT_CORRECTED */
 			u64 bytenr = em->block_start -
 				(em->start - em->orig_start);
 
@@ -5618,7 +5621,7 @@ int extent_fiemap(struct btrfs_inode *inode, struct fiemap_extent_info *fieinfo,
 			 */
 			ret = btrfs_check_shared(root, btrfs_ino(inode),
 						 bytenr, roots, tmp_ulist);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_FIEMAP_RESULT_NOT_CORRECTED */
 			if (ret < 0)
 				goto out_free;
 			if (ret)
@@ -5640,23 +5643,23 @@ int extent_fiemap(struct btrfs_inode *inode, struct fiemap_extent_info *fieinfo,
 
 		/* now scan forward to see if this is really the last extent. */
 		em = get_extent_skip_holes(inode, off
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE
 					   , last_for_user_wanted
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE */
 					   , last_for_get_extent
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE */
 					   );
 		if (IS_ERR(em)) {
 			ret = PTR_ERR(em);
 			goto out;
 		}
 		if (!em) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE
 			if (last_for_user_wanted >= last_for_get_extent)
 				flags |= FIEMAP_EXTENT_LAST;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE */
 			flags |= FIEMAP_EXTENT_LAST;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_IMPROVE_FIEMAP_FOR_LARGE_SPARSE_FILE */
 			end = 1;
 		}
 		ret = emit_fiemap_extent(fieinfo, &cache, em_start, disko,
@@ -5789,13 +5792,13 @@ __alloc_extent_buffer(struct btrfs_fs_info *fs_info, u64 start,
 	eb->write_locks = 0;
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	eb->nr_retry = 0;
 	eb->read_mirror = 1;
 	memset(eb->prev_bad_csum, 0, sizeof(eb->prev_bad_csum));
 	eb->parent_transid = 0;
 	eb->prev_bad_transid = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	return eb;
 }
 
@@ -5946,15 +5949,15 @@ struct extent_buffer *find_extent_buffer(struct btrfs_fs_info *fs_info,
 			spin_unlock(&eb->refs_lock);
 		}
 		mark_extent_buffer_accessed(eb, NULL);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_PERF_STATS
 		percpu_counter_add_batch(&fs_info->eb_hit, 1, SZ_128M);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_PERF_STATS */
 		return eb;
 	}
 	rcu_read_unlock();
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_PERF_STATS
 	percpu_counter_add_batch(&fs_info->eb_miss, 1, SZ_128M);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_PERF_STATS */
 
 	return NULL;
 }
@@ -6119,9 +6122,9 @@ again:
 	 * live buffer and won't free them prematurely.
 	 */
 	for (i = 0; i < num_pages; i++) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		ClearPageChecked(eb->pages[i]);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		unlock_page(eb->pages[i]);
 	}
 	return eb;
@@ -6310,18 +6313,18 @@ void set_extent_buffer_uptodate(struct extent_buffer *eb)
 		SetPageUptodate(page);
 	}
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 enum syno_extent_bio_data_correction_type {
 	SYNO_EXTENT_BIO_DEFAULT,
 	SYNO_EXTENT_BIO_ABORT,
 	SYNO_EXTENT_BIO_RETRY,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 int read_extent_buffer_pages(struct extent_buffer *eb, int wait, int mirror_num
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 			     , bool *can_retry, u64 parent_transid
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 			     )
 {
 	int i;
@@ -6334,10 +6337,10 @@ int read_extent_buffer_pages(struct extent_buffer *eb, int wait, int mirror_num
 	unsigned long num_reads = 0;
 	struct bio *bio = NULL;
 	unsigned long bio_flags = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	bool do_correction = false;
 	enum syno_extent_bio_data_correction_type bio_type = SYNO_EXTENT_BIO_DEFAULT;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	if (test_bit(EXTENT_BUFFER_UPTODATE, &eb->bflags))
 		return 0;
@@ -6354,7 +6357,7 @@ int read_extent_buffer_pages(struct extent_buffer *eb, int wait, int mirror_num
 		locked_pages++;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	eb->can_retry = *can_retry;
 	if (parent_transid)
 		eb->parent_transid = parent_transid;
@@ -6373,7 +6376,7 @@ int read_extent_buffer_pages(struct extent_buffer *eb, int wait, int mirror_num
 		eb->can_retry = false;
 		*can_retry = false;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	/*
 	 * We need to firstly lock all pages to make sure that
 	 * the uptodate bit of our pages won't be affected by
@@ -6382,9 +6385,9 @@ int read_extent_buffer_pages(struct extent_buffer *eb, int wait, int mirror_num
 	for (i = 0; i < num_pages; i++) {
 		page = eb->pages[i];
 		if (!PageUptodate(page)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		    && (!PageChecked(page) || !eb->can_retry)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		    ) {
 			num_reads++;
 			all_uptodate = 0;
@@ -6394,26 +6397,26 @@ int read_extent_buffer_pages(struct extent_buffer *eb, int wait, int mirror_num
 		set_bit(EXTENT_BUFFER_UPTODATE, &eb->bflags);
 		goto unlock_exit;
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	else if (unlikely(eb->nr_retry == 1 && eb->can_retry))
 		correction_get_locked_record(eb->fs_info, eb->start);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_STATISTICS
 	atomic64_inc(&eb->fs_info->syno_meta_statistics.eb_disk_read);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_STATISTICS */
 	clear_bit(EXTENT_BUFFER_READ_ERR, &eb->bflags);
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	eb->read_mirror = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	atomic_set(&eb->io_pages, num_reads);
 	/*
 	 * It is possible for releasepage to clear the TREE_REF bit before we
 	 * set io_pages. See check_buffer_tree_ref for a more detailed comment.
 	 */
 	check_buffer_tree_ref(eb);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	clear_bit(EXTENT_BUFFER_RETRY_ERR, &eb->bflags);
 	if (unlikely(eb->nr_retry && eb->can_retry)) {
 		do_correction = true;
@@ -6422,14 +6425,14 @@ int read_extent_buffer_pages(struct extent_buffer *eb, int wait, int mirror_num
 		else
 			bio_type = SYNO_EXTENT_BIO_RETRY;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 	for (i = 0; i < num_pages; i++) {
 		page = eb->pages[i];
 
 		if (!PageUptodate(page)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		    && (!do_correction || !PageChecked(page))
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		    ) {
 			if (ret) {
 				atomic_dec(&eb->io_pages);
@@ -6442,7 +6445,7 @@ int read_extent_buffer_pages(struct extent_buffer *eb, int wait, int mirror_num
 					 page, page_offset(page), PAGE_SIZE, 0,
 					 &bio, end_bio_extent_readpage,
 					 mirror_num, 0, 0, false);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 			if (!err && do_correction) {
 				if (unlikely(bio_type == SYNO_EXTENT_BIO_RETRY))
 					bio_set_flag(bio, BIO_CORRECTION_RETRY);
@@ -6452,7 +6455,7 @@ int read_extent_buffer_pages(struct extent_buffer *eb, int wait, int mirror_num
 				err = submit_one_bio(bio, mirror_num, bio_flags);
 				bio = NULL;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 			if (err) {
 				/*
 				 * We failed to submit the bio so it's the
@@ -6468,10 +6471,10 @@ int read_extent_buffer_pages(struct extent_buffer *eb, int wait, int mirror_num
 			unlock_page(page);
 		}
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	if (do_correction && ret)
 		correction_put_locked_record(eb->fs_info, eb->start);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	if (bio) {
 		err = submit_one_bio(bio, mirror_num, bio_flags);
@@ -6489,7 +6492,7 @@ int read_extent_buffer_pages(struct extent_buffer *eb, int wait, int mirror_num
 			ret = -EIO;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	/*
 	 * We need this since someone may find the good one and set extent_buffer uptodate
 	 * before we resume running from wait_on_page_locked() and thus no one do the repair.
@@ -6498,7 +6501,7 @@ int read_extent_buffer_pages(struct extent_buffer *eb, int wait, int mirror_num
 	 */
 	if (unlikely(test_bit(EXTENT_BUFFER_SHOULD_REPAIR, &eb->bflags) && *can_retry))
 		ret = -EIO;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	return ret;
 
@@ -6606,7 +6609,7 @@ int read_extent_buffer_to_user_nofault(const struct extent_buffer *eb,
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CASELESS_STAT
 /* We don't want to check in while loop, so copy from memcmp_extent_buffer(). */
 int memcmp_caseless_extent_buffer(const struct extent_buffer *eb,
 				  const void *ptrv,
@@ -6652,7 +6655,7 @@ int memcmp_caseless_extent_buffer(const struct extent_buffer *eb,
 
 	return syno_utf8_strcmp((const char *)ptrv, buf, len_ptrv, len_copy, 0);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 
 int memcmp_extent_buffer(const struct extent_buffer *eb, const void *ptrv,
 			 unsigned long start, unsigned long len)
@@ -7114,9 +7117,9 @@ void btrfs_readahead_tree_block(struct btrfs_fs_info *fs_info,
 {
 	struct extent_buffer *eb;
 	int ret;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	bool can_retry = false;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 	eb = btrfs_find_create_tree_block(fs_info, bytenr, owner_root, level);
 	if (IS_ERR(eb))
@@ -7128,9 +7131,9 @@ void btrfs_readahead_tree_block(struct btrfs_fs_info *fs_info,
 	}
 
 	ret = read_extent_buffer_pages(eb, WAIT_NONE, 0
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 			, &can_retry, 0
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 			);
 	if (ret < 0)
 		free_extent_buffer_stale(eb);

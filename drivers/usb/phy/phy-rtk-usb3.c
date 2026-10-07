@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  phy-rtk-usb3.c RTK usb3.0 phy driver
@@ -115,10 +112,10 @@ static int __get_phy_parameter_by_efuse(struct rtk_usb_phy_s *rtk_phy,
 	} else {
 		unsigned char *buf;
 		size_t buf_size;
-#if defined(MY_ABC_HERE)
-#else /* MY_ABC_HERE */
+#if defined(CONFIG_SYNO_RTD1619B)
+#else /* CONFIG_SYNO_RTD1619B */
 		int value_size = 4;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 
 		buf = nvmem_cell_read(cell, &buf_size);
 

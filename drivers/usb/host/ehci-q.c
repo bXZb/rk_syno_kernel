@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2001-2004 by David Brownell
@@ -36,7 +33,7 @@
 
 /* fill a qtd, returning how much of the buffer we were able to queue up */
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 extern int RTK_ohci_force_suspend(const char *func);
 
@@ -64,7 +61,7 @@ int check_and_restore_async_list(struct ehci_hcd *ehci, const char *func, int li
 #endif // CONFIG_USB_PATCH_ON_RTK
 
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 static int
 qtd_fill(struct ehci_hcd *ehci, struct ehci_qtd *qtd, dma_addr_t buf,
 		  size_t len, int token, int maxpacket)
@@ -984,13 +981,13 @@ done:
 
 static void enable_async(struct ehci_hcd *ehci)
 {
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	/* Add Workaround to fixed EHCI/OHCI Wrapper can't work simultaneously */
 	check_and_restore_async_list(ehci, __func__, __LINE__);
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	if (ehci->async_count++)
 		return;
 
@@ -1004,13 +1001,13 @@ static void enable_async(struct ehci_hcd *ehci)
 
 static void disable_async(struct ehci_hcd *ehci)
 {
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	/* Add Workaround to fixed EHCI/OHCI Wrapper can't work simultaneously */
 	check_and_restore_async_list(ehci, __func__, __LINE__);
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	if (--ehci->async_count)
 		return;
 
@@ -1029,14 +1026,14 @@ static void qh_link_async (struct ehci_hcd *ehci, struct ehci_qh *qh)
 	__hc32		dma = QH_NEXT(ehci, qh->qh_dma);
 	struct ehci_qh	*head;
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	/* Add Workaround to fixed EHCI/OHCI Wrapper can't work simultaneously */
 	/* When EHCI schedule actived, force suspend OHCI*/
 	check_and_restore_async_list(ehci, __func__, __LINE__);
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	/* Don't link a QH if there's a Clear-TT-Buffer pending */
 	if (unlikely(qh->clearing_tt))
 		return;
@@ -1165,14 +1162,14 @@ submit_async (
 	int			rc;
 
 	epnum = urb->ep->desc.bEndpointAddress;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #ifdef CONFIG_USB_OHCI_RTK
 	/* Add Workaround to fixed EHCI/OHCI Wrapper can't work simultaneously */
 	RTK_ohci_force_suspend(__func__);
 #endif
 #endif // CONFIG_USB_PATCH_ON_RTK
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 
 #ifdef EHCI_URB_TRACE
 	{
@@ -1333,13 +1330,13 @@ static void single_unlink_async(struct ehci_hcd *ehci, struct ehci_qh *qh)
 	prev->qh_next = qh->qh_next;
 	if (ehci->qh_scan_next == qh)
 		ehci->qh_scan_next = qh->qh_next.qh;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	/* Add Workaround to fixed EHCI/OHCI Wrapper can't work simultaneously */
 	check_and_restore_async_list(ehci, __func__, __LINE__);
 #endif // CONFIG_USB_PATCH_ON_RTK
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 }
 
 static void start_iaa_cycle(struct ehci_hcd *ehci)
@@ -1369,13 +1366,13 @@ static void end_iaa_cycle(struct ehci_hcd *ehci)
 		ehci_writel(ehci, (u32) ehci->async->qh_dma,
 			    &ehci->regs->async_next);
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	/* Add Workaround to fixed EHCI/OHCI Wrapper can't work simultaneously */
 	check_and_restore_async_list(ehci, __func__, __LINE__);
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	/* The current IAA cycle has ended */
 	ehci->iaa_in_progress = false;
 

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2007 Red Hat.  All rights reserved.
@@ -148,7 +145,7 @@ int btrfs_setxattr(struct btrfs_trans_handle *trans, struct inode *inode,
 			goto out;
 		}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_XATTR_EXTENSION_ENOSPC
 		/*
 		 * If overflow when replaced by extension, we need to change
 		 * the size to the extension size and insert again, otherwise
@@ -189,7 +186,7 @@ int btrfs_setxattr(struct btrfs_trans_handle *trans, struct inode *inode,
 				}
 			}
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_XATTR_EXTENSION_ENOSPC */
 	} else if (ret == -EEXIST) {
 		ret = 0;
 		di = btrfs_match_dir_item_name(fs_info, path, name, name_len);
@@ -405,14 +402,14 @@ ssize_t btrfs_listxattr(struct dentry *dentry, char *buffer, size_t size)
 			read_extent_buffer(leaf, buffer, name_ptr, name_len);
 			buffer[name_len] = '\0';
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_XATTR
 			/* Conceal the syno prefix from user space. Please refer to DSM#69101 */
 			if (!strncmp(buffer, XATTR_SYNO_PREFIX, XATTR_SYNO_PREFIX_LEN) ||
 					!strncmp(buffer, XATTR_BTRFS_PREFIX, XATTR_BTRFS_PREFIX_LEN)) {
 				total_size -= name_len + 1;
 				goto next;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_XATTR */
 
 			size_left -= name_len + 1;
 			buffer += name_len + 1;
@@ -479,7 +476,7 @@ static int btrfs_xattr_handler_set_prop(const struct xattr_handler *handler,
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ARCHIVE_BIT
 int btrfs_xattr_syno_set_archive_bit(struct btrfs_trans_handle *trans,
 		struct inode *inode, const void *value, size_t size,
 		int flags, bool lock)
@@ -508,9 +505,9 @@ out:
 		mutex_unlock(&inode->i_archive_bit_mutex);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ARCHIVE_BIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CREATE_TIME
 int btrfs_xattr_syno_set_crtime(struct btrfs_trans_handle *trans,
 		struct inode *inode, struct btrfs_timespec *crtime, int flags)
 {
@@ -534,9 +531,9 @@ int btrfs_xattr_syno_set_crtime(struct btrfs_trans_handle *trans,
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CREATE_TIME */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_XATTR
 static int btrfs_xattr_handler_set_syno(const struct xattr_handler *handler,
 					struct dentry *unused, struct inode *inode,
 					const char *name, const void *buffer,
@@ -544,7 +541,7 @@ static int btrfs_xattr_handler_set_syno(const struct xattr_handler *handler,
 {
 	name = xattr_full_name(handler, name);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ARCHIVE_VERSION
 	if (!strcmp(name, XATTR_SYNO_ARCHIVE_VERSION)) {
 		/* inode's archive version would be updated every time when
 		 * it's created or modified as super block's archive version +1.
@@ -554,9 +551,9 @@ static int btrfs_xattr_handler_set_syno(const struct xattr_handler *handler,
 		 */
 		return 0;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ARCHIVE_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ARCHIVE_BIT
 	if (!strcmp(name, XATTR_SYNO_ARCHIVE_BIT)) {
 		/* inode->i_archive_bit_mutex isn't hold to avoid deadlock
 		 * from syno_archive_bit_modify()
@@ -564,9 +561,9 @@ static int btrfs_xattr_handler_set_syno(const struct xattr_handler *handler,
 		return btrfs_xattr_syno_set_archive_bit(NULL, inode,
 			buffer, size, flags, false);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ARCHIVE_BIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CREATE_TIME
 	if (!strcmp(name, XATTR_SYNO_CREATE_TIME)) {
 		if (size != sizeof(struct btrfs_timespec))
 			return -EINVAL;
@@ -574,12 +571,12 @@ static int btrfs_xattr_handler_set_syno(const struct xattr_handler *handler,
 		return btrfs_xattr_syno_set_crtime(NULL, inode,
 			(struct btrfs_timespec *)buffer, flags);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CREATE_TIME */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 	if (!strcmp(name, XATTR_SYNO_LOCKER))
 		return btrfs_xattr_syno_set_locker(inode, buffer, size);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 
 	return btrfs_setxattr_trans(inode, name, buffer, size, flags);
 }
@@ -602,7 +599,7 @@ const struct xattr_handler btrfs_xattr_syno_handler = {
 	.get = btrfs_xattr_handler_get,
 	.set = btrfs_xattr_handler_set_syno,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_XATTR */
 
 static const struct xattr_handler btrfs_security_xattr_handler = {
 	.prefix = XATTR_SECURITY_PREFIX,
@@ -628,9 +625,9 @@ static const struct xattr_handler btrfs_btrfs_xattr_handler = {
 	.set = btrfs_xattr_handler_set_prop,
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_WINACL
 extern const struct xattr_handler btrfs_xattr_synoacl_access_handler;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_WINACL */
 
 const struct xattr_handler *btrfs_xattr_handlers[] = {
 	&btrfs_security_xattr_handler,
@@ -638,12 +635,12 @@ const struct xattr_handler *btrfs_xattr_handlers[] = {
 	&posix_acl_access_xattr_handler,
 	&posix_acl_default_xattr_handler,
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_WINACL
 	&btrfs_xattr_synoacl_access_handler,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_WINACL */
+#ifdef CONFIG_SYNO_BTRFS_XATTR
 	&btrfs_xattr_syno_handler,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_XATTR */
 	&btrfs_trusted_xattr_handler,
 	&btrfs_user_xattr_handler,
 	&btrfs_btrfs_xattr_handler,

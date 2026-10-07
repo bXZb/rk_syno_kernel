@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * AMD 10Gb Ethernet driver
  *
@@ -160,6 +157,9 @@ MODULE_PARM_DESC(ecc_ded_period, " ECC detected error period (in seconds)");
 static int xgbe_one_poll(struct napi_struct *, int);
 static int xgbe_all_poll(struct napi_struct *, int);
 static void xgbe_stop(struct xgbe_prv_data *);
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+static void xgbe_wait_mailbox_idle(struct xgbe_prv_data *);
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 static void *xgbe_alloc_node(size_t size, int node)
 {
@@ -632,11 +632,11 @@ static irqreturn_t xgbe_dma_isr(int irq, void *data)
 			disable_irq_nosync(channel->dma_irq);
 
 		/* Turn on polling */
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 		__napi_schedule(&channel->napi);
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 		__napi_schedule_irqoff(&channel->napi);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	}
 
 	/* Clear Tx/Rx signals */
@@ -1210,6 +1210,10 @@ int xgbe_powerdown(struct net_device *netdev, unsigned int caller)
 	xgbe_stop_timers(pdata);
 	flush_workqueue(pdata->dev_workqueue);
 
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+	xgbe_wait_mailbox_idle(pdata);
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
+
 	hw_if->powerdown_tx(pdata);
 	hw_if->powerdown_rx(pdata);
 
@@ -1381,6 +1385,52 @@ err_napi:
 	return ret;
 }
 
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+/* Wait for any in-flight firmware mailbox command to finish before we
+ * hard-disable the MAC.  If the MAC is shut down (TE=0) while firmware
+ * is processing a rate-change command, the firmware can get stuck with
+ * STATUS=1 permanently, leading to an unrecoverable rx_reset loop that
+ * destabilises the entire SoC.
+ */
+static void xgbe_wait_mailbox_idle(struct xgbe_prv_data *pdata)
+{
+	unsigned int wait = 500;  /* same as XGBE_RATECHANGE_COUNT, ~0.5-1s */
+
+	if (!pdata->xprop_regs) {
+		return;
+	}
+
+	if (!XP_IOREAD_BITS(pdata, XP_DRIVER_INT_RO, STATUS)) {
+		return;
+	}
+
+	netif_notice(pdata, drv, pdata->netdev,
+		     "firmware mailbox busy during stop — "
+		     "waiting for in-flight ratechange to finish\n");
+
+	while (wait--) {
+		if (!XP_IOREAD_BITS(pdata, XP_DRIVER_INT_RO, STATUS)) {
+			netif_notice(pdata, drv, pdata->netdev,
+				     "firmware mailbox idle, safe to proceed "
+				     "(waited ~%u ms)\n",
+				     (500 - wait));
+			return;
+		}
+		usleep_range(1000, 2000);
+	}
+
+	netif_warn(pdata, drv, pdata->netdev,
+		   "firmware mailbox still busy after ~500ms — "
+		   "proceeding with stop (INT_RO=0x%x INT_REQ=0x%x)\n",
+		   XP_IOREAD(pdata, XP_DRIVER_INT_RO),
+		   XP_IOREAD(pdata, XP_DRIVER_INT_REQ));
+
+	/* Best-effort: deassert REQUEST so firmware has a chance to finish */
+	XP_IOWRITE_BITS(pdata, XP_DRIVER_INT_REQ, REQUEST, 0);
+	usleep_range(10000, 20000);
+}
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
+
 static void xgbe_stop(struct xgbe_prv_data *pdata)
 {
 	struct xgbe_hw_if *hw_if = &pdata->hw_if;
@@ -1401,6 +1451,15 @@ static void xgbe_stop(struct xgbe_prv_data *pdata)
 
 	xgbe_stop_timers(pdata);
 	flush_workqueue(pdata->dev_workqueue);
+
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+	/* Ensure firmware mailbox is idle before disabling MAC.
+	 * flush_workqueue above guarantees no new phy_status will be
+	 * queued, but the firmware may still be executing the command
+	 * that the last phy_status triggered.
+	 */
+	xgbe_wait_mailbox_idle(pdata);
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 	xgbe_vxlan_unset_port(netdev, 0, 0, NULL);
 
@@ -2095,7 +2154,7 @@ static int xgbe_change_mtu(struct net_device *netdev, int mtu)
 	return 0;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 static int xgbe_tx_poll(struct xgbe_channel *channel);
 
 static int syno_xgbe_fake_tx_timeout_check(struct net_device *netdev)
@@ -2131,23 +2190,65 @@ static int syno_xgbe_fake_tx_timeout_check(struct net_device *netdev)
 	}
 	return 0;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
+
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+static void xgbe_dump_tx_queue(struct xgbe_prv_data *pdata, unsigned int queue,
+			       const char *tag)
+{
+	struct xgbe_ring *ring;
+	struct netdev_queue *txq;
+	unsigned int tx_status, trcsts, txqsts, pending;
+	unsigned int xmit_stopped = 0;
+
+	if (queue >= pdata->channel_count || !pdata->channel[queue] ||
+	    !pdata->channel[queue]->tx_ring) {
+		return;
+	}
+
+	ring = pdata->channel[queue]->tx_ring;
+	tx_status = XGMAC_MTL_IOREAD(pdata, queue, MTL_Q_TQDR);
+	trcsts = XGMAC_GET_BITS(tx_status, MTL_Q_TQDR, TRCSTS);
+	txqsts = XGMAC_GET_BITS(tx_status, MTL_Q_TQDR, TXQSTS);
+
+	if (queue < pdata->netdev->num_tx_queues) {
+		txq = netdev_get_tx_queue(pdata->netdev, queue);
+		xmit_stopped = netif_xmit_stopped(txq) ? 1 : 0;
+	}
+
+	pending = (ring->cur - ring->dirty) & (ring->rdesc_count - 1);
+
+	netdev_warn(pdata->netdev,
+		    "%s: queue=%u TQDR=0x%08x TRCSTS=%u TXQSTS=%u "
+		    "cur=%u dirty=%u pending=%u/%u%s%s xmit_stopped=%u\n",
+		    tag, queue, tx_status, trcsts, txqsts,
+		    ring->cur, ring->dirty, pending, ring->rdesc_count,
+		    (pending == 0) ? " EMPTY" : "",
+		    (pending == ring->rdesc_count - 1) ? " FULL" : "",
+		    xmit_stopped);
+}
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 static void xgbe_tx_timeout(struct net_device *netdev, unsigned int txqueue)
 {
 	struct xgbe_prv_data *pdata = netdev_priv(netdev);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 	int ret = 0;
+	unsigned int q;
+
+	for (q = 0; q < pdata->tx_q_count; q++) {
+		xgbe_dump_tx_queue(pdata, q, "tx_timeout pre-restart");
+	}
 
 	ret = syno_xgbe_fake_tx_timeout_check(netdev);
 	if (ret) {
 		netdev_warn(netdev, "tx timeout, device restarting\n");
 		schedule_work(&pdata->restart_work);
 	}
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	netdev_warn(netdev, "tx timeout, device restarting\n");
 	schedule_work(&pdata->restart_work);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 }
 
 static void xgbe_get_stats64(struct net_device *netdev,
@@ -2162,7 +2263,7 @@ static void xgbe_get_stats64(struct net_device *netdev,
 
 	s->rx_packets = pstats->rxframecount_gb;
 	s->rx_bytes = pstats->rxoctetcount_gb;
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	s->rx_errors = (pstats->rxframecount_gb > (pstats->rxbroadcastframes_g +
 	                                           pstats->rxmulticastframes_g +
 	                                           pstats->rxunicastframes_g))? \
@@ -2170,29 +2271,29 @@ static void xgbe_get_stats64(struct net_device *netdev,
 	                    pstats->rxbroadcastframes_g -
 	                    pstats->rxmulticastframes_g -
 	                    pstats->rxunicastframes_g) : 0;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	s->rx_errors = pstats->rxframecount_gb -
 		       pstats->rxbroadcastframes_g -
 		       pstats->rxmulticastframes_g -
 		       pstats->rxunicastframes_g;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	s->multicast = pstats->rxmulticastframes_g;
 	s->rx_length_errors = pstats->rxlengtherror;
 	s->rx_crc_errors = pstats->rxcrcerror;
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	/* Don't update RX FIFO overflow error */
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	s->rx_fifo_errors = pstats->rxfifooverflow;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 	s->tx_packets = pstats->txframecount_gb;
 	s->tx_bytes = pstats->txoctetcount_gb;
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	s->tx_errors = (pstats->txframecount_gb > pstats->txframecount_g)? \
 	               pstats->txframecount_gb - pstats->txframecount_g : 0;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	s->tx_errors = pstats->txframecount_gb - pstats->txframecount_g;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	s->tx_dropped = netdev->stats.tx_dropped;
 
 	DBGPR("<--%s\n", __func__);

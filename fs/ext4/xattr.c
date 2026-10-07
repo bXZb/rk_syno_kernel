@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * linux/fs/ext4/xattr.c
@@ -92,16 +89,16 @@ static const struct xattr_handler * const ext4_xattr_handler_map[] = {
 	[EXT4_XATTR_INDEX_POSIX_ACL_ACCESS]  = &posix_acl_access_xattr_handler,
 	[EXT4_XATTR_INDEX_POSIX_ACL_DEFAULT] = &posix_acl_default_xattr_handler,
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_WINACL
 	[EXT4_XATTR_INDEX_SYNO_ACL_ACCESS]   = &ext4_xattr_synoacl_access_handler,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_WINACL */
 	[EXT4_XATTR_INDEX_TRUSTED]	     = &ext4_xattr_trusted_handler,
 #ifdef CONFIG_EXT4_FS_SECURITY
 	[EXT4_XATTR_INDEX_SECURITY]	     = &ext4_xattr_security_handler,
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_XATTR
 	[EXT4_XATTR_INDEX_SYNO]		     = &ext4_xattr_syno_handler,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_XATTR */
 	[EXT4_XATTR_INDEX_HURD]		     = &ext4_xattr_hurd_handler,
 };
 
@@ -112,15 +109,15 @@ const struct xattr_handler *ext4_xattr_handlers[] = {
 	&posix_acl_access_xattr_handler,
 	&posix_acl_default_xattr_handler,
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_WINACL
 	&ext4_xattr_synoacl_access_handler,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_WINACL */
 #ifdef CONFIG_EXT4_FS_SECURITY
 	&ext4_xattr_security_handler,
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_XATTR
 	&ext4_xattr_syno_handler,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_XATTR */
 	&ext4_xattr_hurd_handler,
 	NULL
 };
@@ -3154,16 +3151,16 @@ void ext4_xattr_destroy_cache(struct mb_cache *cache)
 		mb_cache_destroy(cache);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_XATTR
 
 static const char * const ext4_excluded_syno_xattrs[] = {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_BIT
 	XATTR_SYNO_ARCHIVE_BIT_SUFFIX,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_VERSION
 	XATTR_SYNO_ARCHIVE_VERSION_SUFFIX,
 	XATTR_SYNO_ARCHIVE_VERSION_VOLUME_SUFFIX,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_VERSION */
 };
 
 #define ext4_excluded_syno_xattrs_num ARRAY_SIZE(ext4_excluded_syno_xattrs)
@@ -3225,4 +3222,4 @@ const struct xattr_handler ext4_xattr_syno_handler = {
 	.get    = ext4_xattr_syno_get,
 	.set    = ext4_xattr_syno_set,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_XATTR */

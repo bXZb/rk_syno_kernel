@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  *	Linux INET6 implementation
@@ -486,12 +483,12 @@ static inline bool __ipv6_addr_needs_scope_id(int type)
 		(type & (IPV6_ADDR_LOOPBACK|IPV6_ADDR_LINKLOCAL)));
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_IPV6_LINKLOCAL)
 static inline bool __ipv6_addr_is_link_local(int type)
 {
 	return type & IPV6_ADDR_LINKLOCAL;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_IPV6_LINKLOCAL */
 
 static inline __u32 ipv6_iface_scope_id(const struct in6_addr *addr, int iface)
 {

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  *   fs/cifs/readdir.c
  *
@@ -317,9 +314,9 @@ cifs_dir_info_to_fattr(struct cifs_fattr *fattr, FILE_DIRECTORY_INFO *info,
 {
 	__dir_info_to_fattr(fattr, info);
 	cifs_fill_common_info(fattr, cifs_sb);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_INIT_NLINK
 	fattr->cf_nlink = 1;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_INIT_NLINK */
 }
 
 static void cifs_fulldir_info_to_fattr(struct cifs_fattr *fattr,
@@ -332,9 +329,9 @@ static void cifs_fulldir_info_to_fattr(struct cifs_fattr *fattr,
 	if (fattr->cf_cifsattrs & ATTR_REPARSE)
 		fattr->cf_cifstag = le32_to_cpu(info->EaSize);
 	cifs_fill_common_info(fattr, cifs_sb);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_INIT_NLINK
 	fattr->cf_nlink = 1;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_INIT_NLINK */
 }
 
 static void

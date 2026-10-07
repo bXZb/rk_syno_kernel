@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * xHCI host controller driver PCI Bus Glue.
@@ -186,11 +183,11 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
 		xhci->quirks |= XHCI_U2_DISABLE_WAKE;
 
 	if (pdev->vendor == PCI_VENDOR_ID_INTEL) {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_INTEL_XHC_LPM_DISABLE
 		xhci->quirks &= ~XHCI_LPM_SUPPORT;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_USB_INTEL_XHC_LPM_DISABLE */
 		xhci->quirks |= XHCI_LPM_SUPPORT;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_INTEL_XHC_LPM_DISABLE */
 		xhci->quirks |= XHCI_INTEL_HOST;
 		xhci->quirks |= XHCI_AVOID_BEI;
 	}
@@ -354,9 +351,9 @@ static int xhci_pci_setup(struct usb_hcd *hcd)
 	if (retval)
 		return retval;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_POWER_RESET
 	hcd->power_control_support = 1;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_POWER_RESET */
 
 	if (!usb_hcd_is_primary_hcd(hcd))
 		return 0;

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/kernel/printk.c
@@ -50,9 +47,9 @@
 #include <linux/sched/clock.h>
 #include <linux/sched/debug.h>
 #include <linux/sched/task_stack.h>
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
 #include <linux/serial.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 
 #include <linux/uaccess.h>
 #include <asm/sections.h>
@@ -2147,6 +2144,9 @@ static bool suppress_message_printing(int level) { return false; }
 
 #ifdef CONFIG_EARLY_PRINTK
 struct console *early_console;
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
+struct console *oob_early_console;
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 
 asmlinkage __visible void early_printk(const char *fmt, ...)
 {
@@ -2162,6 +2162,10 @@ asmlinkage __visible void early_printk(const char *fmt, ...)
 	va_end(ap);
 
 	early_console->write(early_console, buf, n);
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
+	if (oob_early_console)
+		oob_early_console->write(oob_early_console, buf, n);
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 }
 #endif
 
@@ -2681,17 +2685,36 @@ static int __init keep_bootcon_setup(char *str)
 
 early_param("keep_bootcon", keep_bootcon_setup);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
+static int syno_is_oob_console(struct console *newcon)
+{
+	int ret = 0;
+	if (0 == strcmp(newcon->name, "ttyS") && SYNO_OOB_TTY == newcon->index) {
+		ret = 1;
+	}
+	return ret;
+}
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
+
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 static int syno_setup_console(struct console *newcon)
 {
 	int ret = -1;
 	short console_index = 0;
 	struct console *bcon = NULL;
 
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
+	if ((0 == strcmp(newcon->name, "ttyS") && console_index == newcon->index) || syno_is_oob_console(newcon)) {
+#else /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 	if (0 == strcmp(newcon->name, "ttyS") && console_index == newcon->index) {
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 		console_lock();
 		for_each_console(bcon) {
+#ifdef CONFIG_SYNO_TTY_DTS_INFO
+			if ((bcon->flags & CON_BOOT) && bcon->deinit && bcon->index == newcon->index)
+#else /* CONFIG_SYNO_TTY_DTS_INFO */
 			if ((bcon->flags & CON_BOOT) && bcon->deinit)
+#endif /* CONFIG_SYNO_TTY_DTS_INFO */
 				bcon->deinit();
 		}
 		ret = newcon->setup(newcon, NULL);
@@ -2702,7 +2725,7 @@ static int syno_setup_console(struct console *newcon)
 
 	return ret;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 
 /*
  * This is called by register_console() to try to match
@@ -2739,7 +2762,11 @@ static int try_enable_new_console(struct console *newcon, bool user_specified)
 				return 0;
 
 			if (newcon->setup &&
+#ifdef CONFIG_SYNO_TTY_DTS_INFO
+			    (err = syno_setup_console(newcon)) != 0) 
+#else /* CONFIG_SYNO_TTY_DTS_INFO */
 			    (err = newcon->setup(newcon, c->options)) != 0)
+#endif /* CONFIG_SYNO_TTY_DTS_INFO */
 				return err;
 		}
 		newcon->flags |= CON_ENABLED;
@@ -2760,17 +2787,6 @@ static int try_enable_new_console(struct console *newcon, bool user_specified)
 
 	return -ENOENT;
 }
-
-#ifdef MY_DEF_HERE
-static int syno_is_oob_console(struct console *newcon)
-{
-	int ret = 0;
-	if (0 == strcmp(newcon->name, "ttyS") && SYNO_OOB_TTY == newcon->index) {
-		ret = 1;
-	}
-	return ret;
-}
-#endif /* MY_DEF_HERE */
 
 /*
  * The console driver calls this routine during kernel initialization
@@ -2828,19 +2844,21 @@ void register_console(struct console *newcon)
 	 *	didn't select a console we take the first one
 	 *	that registers here.
 	 */
-#ifdef MY_DEF_HERE
-	if (!has_preferred_console && (!syno_is_oob_console(newcon))) {
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
+	if (syno_is_oob_console(newcon)) {
+		newcon->flags |= CON_CONSDEV;
+	} else if (!has_preferred_console || SYNO_OOB_TTY == preferred_console) {
 #else
 	if (!has_preferred_console) {
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 		if (newcon->index < 0)
 			newcon->index = 0;
 		if (newcon->setup == NULL ||
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 		    syno_setup_console(newcon) == 0) {
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 		    newcon->setup(newcon, NULL) == 0) {
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 			newcon->flags |= CON_ENABLED;
 			if (newcon->device) {
 				newcon->flags |= CON_CONSDEV;
@@ -2860,6 +2878,17 @@ void register_console(struct console *newcon)
 	if (err || newcon->flags & CON_BRL)
 		return;
 
+#ifdef CONFIG_SYNO_TTY_DTS_INFO
+	// Check if we have a bootconsole, and are switching to a real console
+	if (console_drivers) {
+		for_each_console(bcon) {
+			if (bcon->flags & CON_BOOT && bcon->index == newcon->index) {
+				break;
+			}
+		}
+	}
+#endif /* CONFIG_SYNO_TTY_DTS_INFO */
+
 	/*
 	 * If we have a bootconsole, and are switching to a real console,
 	 * don't print everything out again, since when the boot console, and
@@ -2874,7 +2903,11 @@ void register_console(struct console *newcon)
 	 *	preferred driver at the head of the list.
 	 */
 	console_lock();
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
+	if (((newcon->flags & CON_CONSDEV) && preferred_console == newcon->index) || console_drivers == NULL) {
+#else /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 	if ((newcon->flags & CON_CONSDEV) || console_drivers == NULL) {
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 		newcon->next = console_drivers;
 		console_drivers = newcon;
 		if (newcon->next)
@@ -2928,14 +2961,18 @@ void register_console(struct console *newcon)
 		/* We need to iterate through all boot consoles, to make
 		 * sure we print everything out, before we unregister them.
 		 */
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
+		unregister_console(bcon);
+#else /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 		for_each_console(bcon)
 			if (bcon->flags & CON_BOOT)
 				unregister_console(bcon);
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 	}
 }
 EXPORT_SYMBOL(register_console);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 static void __ref pci_console_unmap_memory(void __iomem *addr, u32 size)
 {
 	if (!addr || !size)
@@ -2944,7 +2981,7 @@ static void __ref pci_console_unmap_memory(void __iomem *addr, u32 size)
 	else
 		early_iounmap(addr, size);
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 
 int unregister_console(struct console *console)
 {
@@ -2992,11 +3029,11 @@ int unregister_console(struct console *console)
 	console->flags &= ~CON_ENABLED;
 	console_unlock();
 	console_sysfs_notify();
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 	if (console->pcimapaddress) {
 		pci_console_unmap_memory(console->pcimapaddress, console->pcimapsize);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 
 	if (console->exit)
 		res = console->exit(console);
@@ -3542,3 +3579,18 @@ void kmsg_dump_rewind(struct kmsg_dumper *dumper)
 EXPORT_SYMBOL_GPL(kmsg_dump_rewind);
 
 #endif
+
+#ifdef CONFIG_SYNO_PRINTK_DEADLOCK_HANG
+void syno_console_sem_force_reset(void)
+{
+	/* Force reset console semaphore */
+	sema_init(&console_sem, 1);
+	/* Force reset console locked state */
+	console_locked = 0;
+	console_may_schedule = 0;
+	/* Force reset console owner */
+	raw_spin_lock_init(&console_owner_lock);
+	console_owner = NULL;
+}
+EXPORT_SYMBOL(syno_console_sem_force_reset);
+#endif /* CONFIG_SYNO_PRINTK_DEADLOCK_HANG */

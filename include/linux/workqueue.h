@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * workqueue.h --- work queue handling for Linux.
@@ -101,10 +98,10 @@ enum {
 	/* maximum string length for set_worker_desc() */
 	WORKER_DESC_LEN		= 24,
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_KWORK_STAT
 	/* maximum string length for workqueue name */
 	WQ_NAME_LEN		= 64,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_KWORK_STAT */
 };
 
 struct work_struct {
@@ -673,10 +670,10 @@ int workqueue_online_cpu(unsigned int cpu);
 int workqueue_offline_cpu(unsigned int cpu);
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_KWORK_STAT
 extern void update_kwork_io_stat_ratelimited(struct task_struct *p, gfp_t gfp);
 extern void account_workqueue_time(struct task_struct *p, u64 us, gfp_t gfp);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_KWORK_STAT */
 
 void __init workqueue_init_early(void);
 void __init workqueue_init(void);

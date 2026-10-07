@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  *   fs/cifs/transport.c
  *
@@ -241,7 +238,7 @@ smb_send_kvec(struct TCP_Server_Info *server, struct msghdr *smb_msg,
 		 * reconnect which may clear the network problem.
 		 */
 		rc = sock_sendmsg(ssocket, smb_msg);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_RECONNECT
 		if (rc == -EAGAIN || rc == -EINTR) {
 			retries++;
 			if (!server->noblocksnd && (retries > 2)) {
@@ -258,7 +255,7 @@ smb_send_kvec(struct TCP_Server_Info *server, struct msghdr *smb_msg,
 			msleep(1 << retries);
 			continue;
 		}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_CIFS_RECONNECT */
 		if (rc == -EAGAIN) {
 			retries++;
 			if (retries >= 14 ||
@@ -270,7 +267,7 @@ smb_send_kvec(struct TCP_Server_Info *server, struct msghdr *smb_msg,
 			msleep(1 << retries);
 			continue;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_RECONNECT */
 
 		if (rc < 0)
 			return rc;
@@ -465,14 +462,14 @@ unmask:
 		 * be taken as the remainder of this one. We need to kill the
 		 * socket so the server throws away the partial SMB
 		 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_COVERITY
 		// CID 45292: Data race condition. tcpstatus only set without lock here.
 		spin_lock(&GlobalMid_Lock);
 		server->tcpStatus = CifsNeedReconnect;
 		spin_unlock(&GlobalMid_Lock);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_CIFS_COVERITY */
 		server->tcpStatus = CifsNeedReconnect;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_COVERITY */
 		trace_smb3_partial_send_reconnect(server->CurrentMid,
 						  server->hostname);
 	}
@@ -1297,7 +1294,7 @@ SendReceive2(const unsigned int xid, struct cifs_ses *ses,
 	struct kvec s_iov[CIFS_MAX_IOV_SIZE], *new_iov;
 	int rc;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_SMB_OPS
 	if (&synocifs_values == ses->server->values) {
 		if (SMB20_PROT_ID > ses->server->dialect) {
 			struct smb_hdr *hdr = iov->iov_base;
@@ -1325,7 +1322,7 @@ SendReceive2(const unsigned int xid, struct cifs_ses *ses,
 			}
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_SMB_OPS */
 	if (n_vec + 1 > CIFS_MAX_IOV_SIZE) {
 		new_iov = kmalloc_array(n_vec + 1, sizeof(struct kvec),
 					GFP_KERNEL);
@@ -1396,7 +1393,7 @@ SendReceive(const unsigned int xid, struct cifs_ses *ses,
 	if (rc)
 		return rc;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_SMB_OPS
 	if (&synocifs_values == ses->server->values) {
 		if (SMB20_PROT_ID <= ses->server->dialect) {
 			if (0xFF == in_buf->Protocol[0]) {
@@ -1419,7 +1416,7 @@ SendReceive(const unsigned int xid, struct cifs_ses *ses,
 			return -EAGAIN;
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_SMB_OPS */
 	/* make sure that we sign in the same order that we send on this socket
 	   and avoid races inside tcp sendmsg code that could cause corruption
 	   of smb data */
@@ -1491,7 +1488,7 @@ out:
 
 	return rc;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_SMB_OPS
 int
 SendReceiveSyno(const unsigned int xid, struct cifs_ses *ses,
 	    struct smb_hdr *in_buf, struct kvec *out_buf,
@@ -1604,7 +1601,7 @@ out:
 
 	return rc;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_SMB_OPS */
 
 /* We send a LOCKINGX_CANCEL_LOCK to cause the Windows
    blocking lock to return. */

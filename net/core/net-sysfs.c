@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * net-sysfs.c - network device class and attributes
@@ -26,11 +23,11 @@
 #include <linux/of.h>
 #include <linux/of_net.h>
 #include <linux/cpu.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 #include <linux/pci.h>
 #include <linux/synolib.h>
 #include <linux/platform_device.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
 #include "net-sysfs.h"
 
@@ -337,7 +334,7 @@ static ssize_t carrier_down_count_show(struct device *dev,
 }
 static DEVICE_ATTR_RO(carrier_down_count);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
 static void syno_pciepath_enum(struct device *dev, char *buf) {
 	struct pci_dev *pdev = NULL;
@@ -386,7 +383,7 @@ static ssize_t syno_eth_info_show(struct device *dev,
 	return sprintf(buf, "%s\n", szDevPath);
 }
 static DEVICE_ATTR_RO(syno_eth_info);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
 /* read-write attributes */
 
@@ -629,9 +626,9 @@ static struct attribute *net_class_attrs[] __ro_after_init = {
 	&dev_attr_proto_down.attr,
 	&dev_attr_carrier_up_count.attr,
 	&dev_attr_carrier_down_count.attr,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 	&dev_attr_syno_eth_info.attr,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 	NULL,
 };
 ATTRIBUTE_GROUPS(net_class);

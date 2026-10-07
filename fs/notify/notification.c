@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *  Copyright (C) 2008 Red Hat, Inc., Eric Paris <eparis@redhat.com>
@@ -36,9 +33,9 @@
 #include <linux/atomic.h>
 
 #include <linux/fsnotify_backend.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 #include <linux/ratelimit.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 #include "fsnotify.h"
 
@@ -114,9 +111,9 @@ int fsnotify_add_event(struct fsnotify_group *group,
 			return ret;
 		}
 		event = group->overflow_event;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 		printk_ratelimited(KERN_WARNING "fsnotify get overflow, max queue size is %d\n", group->max_events);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 		goto queue;
 	}
 
@@ -133,20 +130,21 @@ queue:
 	list_add_tail(&event->list, list);
 	spin_unlock(&group->notification_lock);
 
-#ifdef MY_ABC_HERE
-	// fetch_path() may sleep so we can't do it in notification_lock.
-	if (group->ops->fetch_path) {
-		ret = group->ops->fetch_path(event, group);
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
+	// handle_path() may sleep so we can't do it in notification_lock.
+	if (group->ops->handle_path) {
+		int err;
 
-		if (ret < 0) {
+		err = group->ops->handle_path(event, group);
+		if (err < 0) {
 			spin_lock(&group->notification_lock);
 			group->q_len--;
 			list_del_init(&event->list);
 			spin_unlock(&group->notification_lock);
-			return ret;
+			return ret ? ret : err;
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	wake_up(&group->notification_waitq);
 	kill_fasync(&group->fsn_fa, SIGIO, POLL_IN);

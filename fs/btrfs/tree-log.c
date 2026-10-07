@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2008 Oracle.  All rights reserved.
@@ -599,9 +596,9 @@ static noinline int replay_one_extent(struct btrfs_trans_handle *trans,
 	struct inode *inode = NULL;
 	unsigned long size;
 	int ret = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 	int syno_usage;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 
 	item = btrfs_item_ptr(eb, slot, struct btrfs_file_extent_item);
 	found_type = btrfs_file_extent_type(eb, item);
@@ -701,7 +698,7 @@ static noinline int replay_one_extent(struct btrfs_trans_handle *trans,
 		ins.type = BTRFS_EXTENT_ITEM_KEY;
 		offset = key->offset - btrfs_file_extent_offset(eb, item);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #else
 		/*
 		 * Manually record dirty extent, as here we did a shallow
@@ -717,7 +714,7 @@ static noinline int replay_one_extent(struct btrfs_trans_handle *trans,
 				GFP_NOFS);
 		if (ret < 0)
 			goto out;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 		if (ins.objectid > 0) {
 			struct btrfs_ref ref = { 0 };
@@ -738,11 +735,11 @@ static noinline int replay_one_extent(struct btrfs_trans_handle *trans,
 				btrfs_init_data_ref(&ref,
 						root->root_key.objectid,
 						key->objectid, offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 						, btrfs_syno_usage_ref_check(root, key->objectid, key->offset)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 						);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 				if (test_bit(BTRFS_FS_SYNO_QUOTA_V1_ENABLED, &fs_info->flags) &&
 						!btrfs_root_disable_quota(root)) {
 					struct quota_check qc = {
@@ -763,7 +760,7 @@ static noinline int replay_one_extent(struct btrfs_trans_handle *trans,
 					ref.inode = inode;
 					ref.ram_bytes = btrfs_file_extent_ram_bytes(eb, item);
 				}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				ret = btrfs_inc_extent_ref(trans, &ref);
 				if (ret)
 					goto out;
@@ -775,13 +772,13 @@ static noinline int replay_one_extent(struct btrfs_trans_handle *trans,
 				ret = btrfs_alloc_logged_file_extent(trans,
 						root->root_key.objectid,
 						key->objectid, offset, &ins
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 						, inode
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				      );
 				if (ret)
 					goto out;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 				syno_usage = btrfs_syno_usage_ref_check(root, key->objectid, key->offset);
 				btrfs_release_path(path);
 				if (syno_usage == 1) {
@@ -791,7 +788,7 @@ static noinline int replay_one_extent(struct btrfs_trans_handle *trans,
 				} else if (syno_usage == 2) {
 					ret = btrfs_syno_extent_usage_add(trans, SYNO_USAGE_TYPE_RO_SNAPSHOT, ins.objectid, ins.offset, 0);
 				}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 			}
 			btrfs_release_path(path);
 
@@ -893,17 +890,21 @@ static noinline int replay_one_extent(struct btrfs_trans_handle *trans,
 		goto out;
 
 update_inode:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	down_read(&root->rescan_lock);
 	btrfs_update_inode_bytes(BTRFS_I(inode), nbytes, drop_args.bytes_found);
 	btrfs_qgroup_syno_accounting(BTRFS_I(inode),
 			nbytes, drop_args.bytes_found, UPDATE_QUOTA);
 	btrfs_usrquota_syno_accounting(BTRFS_I(inode),
 			nbytes, drop_args.bytes_found, UPDATE_QUOTA);
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+	btrfs_qgroup_deduped_zero_update(BTRFS_I(inode),
+			0, drop_args.deduped_zero_found);
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
 	up_read(&root->rescan_lock);
 #else
 	btrfs_update_inode_bytes(BTRFS_I(inode), nbytes, drop_args.bytes_found);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 	ret = btrfs_update_inode(trans, root, inode);
 out:
 	if (inode)
@@ -2677,7 +2678,7 @@ static int replay_one_buffer(struct btrfs_root *log, struct extent_buffer *eb,
 							 BTRFS_I(inode),
 							 &drop_args);
 				if (!ret) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 					down_read(&root->rescan_lock);
 					inode_sub_bytes(inode,
 							drop_args.bytes_found);
@@ -2685,11 +2686,15 @@ static int replay_one_buffer(struct btrfs_root *log, struct extent_buffer *eb,
 						0, drop_args.bytes_found, UPDATE_QUOTA);
 					btrfs_usrquota_syno_accounting(BTRFS_I(inode),
 						0, drop_args.bytes_found, UPDATE_QUOTA);
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+					btrfs_qgroup_deduped_zero_update(BTRFS_I(inode),
+						0, drop_args.deduped_zero_found);
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
 					up_read(&root->rescan_lock);
 #else
 					inode_sub_bytes(inode,
 							drop_args.bytes_found);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 					/* Update the inode's nbytes. */
 					ret = btrfs_update_inode(wc->trans,
 								 root, inode);
@@ -3170,9 +3175,9 @@ int btrfs_sync_log(struct btrfs_trans_handle *trans,
 	 */
 	blk_start_plug(&plug);
 	ret = btrfs_write_marked_extents(fs_info, &log->dirty_log_pages, mark
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_COMMIT_STATS
 					 , NULL, NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_COMMIT_STATS */
 					 );
 	if (ret) {
 		blk_finish_plug(&plug);
@@ -3282,9 +3287,9 @@ int btrfs_sync_log(struct btrfs_trans_handle *trans,
 	ret = btrfs_write_marked_extents(fs_info,
 					 &log_root_tree->dirty_log_pages,
 					 EXTENT_DIRTY | EXTENT_NEW
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_COMMIT_STATS
 					 , NULL, NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_COMMIT_STATS */
 					 );
 	blk_finish_plug(&plug);
 	if (ret) {
@@ -4376,9 +4381,9 @@ static int log_one_extent(struct btrfs_trans_handle *trans,
 	btrfs_set_token_file_extent_compression(&token, fi, em->compress_type);
 	btrfs_set_token_file_extent_encryption(&token, fi, 0);
 	btrfs_set_token_file_extent_other_encoding(&token, fi, 0);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_BTRFS_FILE_EXTENT_SYNO_FLAG
 	btrfs_set_token_file_extent_syno_flag(&token, fi, 0);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FILE_EXTENT_SYNO_FLAG */
 	btrfs_mark_buffer_dirty(leaf);
 
 	btrfs_release_path(path);
@@ -5478,13 +5483,23 @@ log_extents:
 	btrfs_release_path(dst_path);
 	if (need_log_inode_item) {
 		err = log_inode_item(trans, log, dst_path, inode);
-		if (!err && !xattrs_logged) {
-			err = btrfs_log_all_xattrs(trans, root, inode, path,
-						   dst_path);
-			btrfs_release_path(path);
-		}
 		if (err)
 			goto out_unlock;
+		/*
+		 * If we are doing a fast fsync and the inode was logged before
+		 * in this transaction, we don't need to log the xattrs because
+		 * they were logged before. If xattrs were added, changed or
+		 * deleted since the last time we logged the inode, then we have
+		 * already logged them because the inode had the runtime flag
+		 * BTRFS_INODE_COPY_EVERYTHING set.
+		 */
+		if (!xattrs_logged && inode->logged_trans < trans->transid) {
+			err = btrfs_log_all_xattrs(trans, root, inode, path,
+						   dst_path);
+			if (err)
+				goto out_unlock;
+			btrfs_release_path(path);
+		}
 	}
 	if (fast_search) {
 		ret = btrfs_log_changed_extents(trans, root, inode, dst_path,

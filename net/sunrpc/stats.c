@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * linux/net/sunrpc/stats.c
@@ -316,14 +313,14 @@ svc_proc_register(struct net *net, struct svc_stat *statp, const struct proc_ops
 }
 EXPORT_SYMBOL_GPL(svc_proc_register);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 struct proc_dir_entry *
 svc_proc_register_name(struct net *net, const char *name, struct svc_stat *statp, const struct proc_ops *proc_ops)
 {
 	return do_register(net, name, statp, proc_ops);
 }
 EXPORT_SYMBOL(svc_proc_register_name);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 void
 svc_proc_unregister(struct net *net, const char *name)

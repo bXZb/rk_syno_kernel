@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *	TCP over IPv6
@@ -210,7 +207,7 @@ static int tcp_v6_connect(struct sock *sk, struct sockaddr *uaddr,
 			sk->sk_bound_dev_if = usin->sin6_scope_id;
 		}
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_IPV6_LINKLOCAL)
 		if (__ipv6_addr_is_link_local(addr_type) && !sk->sk_bound_dev_if) {
 			struct net_device *dev = NULL;
 			for_each_netdev(sock_net(sk), dev) {
@@ -222,7 +219,7 @@ static int tcp_v6_connect(struct sock *sk, struct sockaddr *uaddr,
 				}
 			}
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_IPV6_LINKLOCAL */
 
 		/* Connect to link-local address requires an interface */
 		if (!sk->sk_bound_dev_if)

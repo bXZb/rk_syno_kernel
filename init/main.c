@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/init/main.c
@@ -848,9 +845,9 @@ void __init __weak arch_call_rest_init(void)
 	rest_init();
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DEFAULT_EXTEND_IPCNMI
 extern int __init ipc_mni_extend(char *str);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DEFAULT_EXTEND_IPCNMI */
 asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 {
 	char *command_line;
@@ -895,9 +892,9 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	if (!IS_ERR_OR_NULL(after_dashes))
 		parse_args("Setting init args", after_dashes, NULL, 0, -1, -1,
 			   NULL, set_init_arg);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DEFAULT_EXTEND_IPCNMI
 	ipc_mni_extend("");
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DEFAULT_EXTEND_IPCNMI */
 	if (extra_init_args)
 		parse_args("Setting extra init args", extra_init_args,
 			   NULL, 0, -1, -1, NULL, set_init_arg);

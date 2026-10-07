@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Contiguous Memory Allocator
@@ -41,15 +38,15 @@
 
 struct cma cma_areas[MAX_CMA_AREAS];
 unsigned cma_area_count;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #if defined(CONFIG_ION_RTK_DHC_HEAP)
 DEFINE_MUTEX(cma_mutex);
 #else
 static DEFINE_MUTEX(cma_mutex);
 #endif
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LSP_RTD1619B */
 static DEFINE_MUTEX(cma_mutex);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 
 phys_addr_t cma_get_base(const struct cma *cma)
 {

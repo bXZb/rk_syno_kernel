@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // Copyright (c) 2000-2014 Synology Inc. All rights reserved.
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -12,12 +9,12 @@
 #include <linux/device.h>
 #include <linux/slab.h>
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ATEMGA1608_FEATURES
 #include <linux/of.h>
 #include <linux/syno_fdt.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ATEMGA1608_FEATURES */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_TRIGGER
 
 typedef struct _tag_SYNO_LED_TRIGGER_TIMER {
 	struct timer_list Timer;
@@ -34,11 +31,11 @@ EXPORT_SYMBOL(syno_led_trigger_name);
 
 static int num_of_led_trigger = 0;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ATEMGA1608_FEATURES
 #define SYNO_MAX_LED 255
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_ATEMGA1608_FEATURES */
 #define SYNO_MAX_LED 16
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ATEMGA1608_FEATURES */
 
 int *gpGreenLedMap, *gpOrangeLedMap = NULL; //mapping disk index to disk led; must be initialized before used
 EXPORT_SYMBOL(gpGreenLedMap);
@@ -113,13 +110,13 @@ static int __init syno_ledtrig_init(void)
 	int err = 0;
 	SYNO_LED_TRIGGER_TIMER *pTriggerTimer = NULL;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ATEMGA1608_FEATURES
 	if (of_root) {
 		if (of_find_property(of_root, "number_of_led_trigger", NULL)) {
 			of_property_read_u32_index(of_root, "number_of_led_trigger", 0, &num_of_led_trigger);
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ATEMGA1608_FEATURES */
 
 	if (0 == num_of_led_trigger) {
 		num_of_led_trigger = SYNO_MAX_LED;
@@ -170,4 +167,4 @@ static void __exit syno_ledtrig_exit(void)
 }
 module_exit(syno_ledtrig_exit);
 
-#endif // MY_ABC_HERE
+#endif // CONFIG_SYNO_LEDS_TRIGGER

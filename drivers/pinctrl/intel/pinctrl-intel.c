@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Intel pinctrl/GPIO core driver.
@@ -1431,13 +1428,13 @@ static int intel_pinctrl_pm_init(struct intel_pinctrl *pctrl)
 	return 0;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PINCTRL_LEWISBURG
 int intel_pinctrl_probe(struct platform_device *pdev,
 			       const struct intel_pinctrl_soc_data *soc_data)
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_PINCTRL_LEWISBURG */
 static int intel_pinctrl_probe(struct platform_device *pdev,
 			       const struct intel_pinctrl_soc_data *soc_data)
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PINCTRL_LEWISBURG */
 {
 	struct intel_pinctrl *pctrl;
 	int i, ret, irq;
@@ -1524,9 +1521,9 @@ static int intel_pinctrl_probe(struct platform_device *pdev,
 
 	return 0;
 }
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PINCTRL_LEWISBURG
 EXPORT_SYMBOL_GPL(intel_pinctrl_probe);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PINCTRL_LEWISBURG */
 
 int intel_pinctrl_probe_by_hid(struct platform_device *pdev)
 {

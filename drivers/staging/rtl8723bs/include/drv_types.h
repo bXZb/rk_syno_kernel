@@ -476,6 +476,8 @@ struct sdio_data intf_data;
 static inline struct device *dvobj_to_dev(struct dvobj_priv *dvobj)
 {
 	/* todo: get interface type from dvobj and the return the dev accordingly */
+#ifdef RTW_DVOBJ_CHIP_HW_TYPE
+#endif
 
 	return &dvobj->intf_data.func->dev;
 }

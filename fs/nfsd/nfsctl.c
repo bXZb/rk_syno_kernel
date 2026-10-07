@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Syscall interface to knfsd.
@@ -29,9 +26,9 @@
 #include "netns.h"
 #include "pnfs.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 #include "syno_io_stat.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 /*
  *	We have a single directory with several nodes in it.
@@ -62,32 +59,32 @@ enum {
 	NFSD_RecoveryDir,
 	NFSD_V4EndGrace,
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDP_PACKET
 	NFSD_UDP_Size,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_UDP_PACKET */
+#ifdef CONFIG_SYNO_NFSD_UNIX_PRI
 	NFSD_UNIX_PRI,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_UNIX_PRI */
+#ifdef CONFIG_SYNO_NFSD_SYNO_FILE_STATS
 	NFSD_SYNO_FILE_STATS,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_SYNO_FILE_STATS */
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	NFSD_SYNO_IO_STATS,
 	NFSD_SYNO_CLIENT_CTL,
 	NFSD_SYNO_CLIENT_EXPIRE_TIME,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 	NFSD_SYNO_TOTAL_CONNECTION_STAT,
 	NFSD_SYNO_TOTAL_CONNECTION_RESET,
 	NFSD_SYNO_MAX_CONNECTION,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 	NFSD_SYNO_LATENCY_HISTOGRAM,
 	NFSD_SYNO_TOTAL_ERROR,
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 	NFSD_Pool_Hint,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 	NFSD_MaxReserved
 };
 
@@ -109,28 +106,28 @@ static ssize_t write_gracetime(struct file *file, char *buf, size_t size);
 static ssize_t write_recoverydir(struct file *file, char *buf, size_t size);
 static ssize_t write_v4_end_grace(struct file *file, char *buf, size_t size);
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDP_PACKET
 static ssize_t set_udp_size(struct file *file, char *buf, size_t size);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_UDP_PACKET */
+#ifdef CONFIG_SYNO_NFSD_UNIX_PRI
 static ssize_t set_unix_enable(struct file *file, char *buf, size_t size);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_UNIX_PRI */
+#ifdef CONFIG_SYNO_NFSD_SYNO_FILE_STATS
 static ssize_t set_syno_file_stats(struct file *file, char *buf, size_t size);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_SYNO_FILE_STATS */
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 static ssize_t control_syno_nfsd_client(struct file *file, char *buf,
 					size_t size);
 static ssize_t set_syno_nfsd_client_expire_time(struct file *file, char *buf,
 						size_t size);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 static ssize_t reset_syno_total_connection(struct file *file, char *buf, size_t size);
 static ssize_t syno_max_connection(struct file *file, char *buf, size_t size);
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 static ssize_t write_pool_hint(struct file *file, char *buf, size_t size);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 
 static ssize_t (*const write_op[])(struct file *, char *, size_t) = {
 	[NFSD_Fh] = write_filehandle,
@@ -148,26 +145,26 @@ static ssize_t (*const write_op[])(struct file *, char *, size_t) = {
 	[NFSD_RecoveryDir] = write_recoverydir,
 	[NFSD_V4EndGrace] = write_v4_end_grace,
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDP_PACKET
 	[NFSD_UDP_Size] = set_udp_size,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_UDP_PACKET */
+#ifdef CONFIG_SYNO_NFSD_UNIX_PRI
 	[NFSD_UNIX_PRI] = set_unix_enable,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_UNIX_PRI */
+#ifdef CONFIG_SYNO_NFSD_SYNO_FILE_STATS
 	[NFSD_SYNO_FILE_STATS] = set_syno_file_stats,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_SYNO_FILE_STATS */
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	[NFSD_SYNO_CLIENT_CTL] = control_syno_nfsd_client,
 	[NFSD_SYNO_CLIENT_EXPIRE_TIME] = set_syno_nfsd_client_expire_time,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 	[NFSD_SYNO_TOTAL_CONNECTION_RESET] = reset_syno_total_connection,
 	[NFSD_SYNO_MAX_CONNECTION] = syno_max_connection,
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 	[NFSD_Pool_Hint] = write_pool_hint,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 };
 
 static ssize_t nfsctl_transaction_write(struct file *file, const char __user *buf, size_t size, loff_t *pos)
@@ -303,24 +300,24 @@ static const struct file_operations reply_cache_stats_operations = {
 	.release	= single_release,
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 static const struct file_operations syno_io_stat_ops = {
 	.open		= syno_nfsd_io_total_stat_open,
 	.read		= seq_read,
 	.llseek		= seq_lseek,
 	.release	= single_release,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 static const struct file_operations syno_total_connection_stat_ops = {
 	.open		= syno_nfsd_total_connection_stat_open,
 	.read		= seq_read,
 	.llseek		= seq_lseek,
 	.release	= single_release,
 };
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 static const struct file_operations syno_latency_histogram_ops = {
 	.open		= syno_nfsd_latency_histogram_open,
 	.read		= seq_read,
@@ -334,7 +331,7 @@ static const struct file_operations syno_total_error_ops = {
 	.llseek		= seq_lseek,
 	.release	= single_release,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 /*----------------------------------------------------------------------------*/
 /*
  * payload - write methods
@@ -647,7 +644,7 @@ out_free:
 	return rv;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDP_PACKET
 u32 nfs_udp_f_rtpref;
 u32 nfs_udp_f_wtpref;
 
@@ -682,9 +679,9 @@ End:
 	else
 		return scnprintf(buf, SIMPLE_TRANSACTION_LIMIT, "rsize=%d,wsize=%d\n", nfs_udp_f_rtpref, nfs_udp_f_wtpref);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDP_PACKET */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UNIX_PRI
 u32 bl_unix_pri_enable;
 
 static ssize_t set_unix_enable(struct file *file, char *buf, size_t size)
@@ -716,9 +713,9 @@ End:
 	else
 		return scnprintf(buf, SIMPLE_TRANSACTION_LIMIT, "%u\n", bl_unix_pri_enable);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UNIX_PRI */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_SYNO_FILE_STATS
 struct syno_file_stats *syno_file_stats;
 
 /**
@@ -963,9 +960,9 @@ static ssize_t set_syno_file_stats(struct file *file, char *buf, size_t size)
 	mutex_unlock(&nfsd_mutex);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_SYNO_FILE_STATS */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 static struct task_struct *g_syno_nfsd_client_manager_kthread = NULL;
 
 struct nfsd_net *syno_nfsd_net_get(void)
@@ -1022,9 +1019,9 @@ out:
 	mutex_unlock(&nfsd_mutex);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 static ssize_t syno_max_connection(struct file *file, char *buf, size_t size)
 {
 	ssize_t ret;
@@ -1065,7 +1062,7 @@ out:
 	mutex_unlock(&nfsd_mutex);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
 
 static ssize_t
 nfsd_print_version_support(struct nfsd_net *nn, char *buf, int remaining,
@@ -1672,7 +1669,7 @@ static ssize_t write_v4_end_grace(struct file *file, char *buf, size_t size)
 
 #endif
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 static int __write_pool_hint(struct svc_serv *nfsd_serv, char *buf, size_t size)
 {
 	struct svc_pool_hint *pool_hint = NULL;
@@ -1770,7 +1767,7 @@ out:
 	mutex_unlock(&nfsd_mutex);
 	return (ret < 0)? ret : rv;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 
 /*----------------------------------------------------------------------------*/
 /*
@@ -1778,10 +1775,10 @@ out:
  */
 
 /* Basically copying rpc_get_inode. */
-#ifdef MY_ABC_HERE
-#elif /* defined(MY_ABC_HERE) */
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
+#elif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 static
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 struct inode *nfsd_get_inode(struct super_block *sb, umode_t mode)
 {
 	struct inode *inode = new_inode(sb);
@@ -2003,33 +2000,33 @@ static int nfsd_fill_super(struct super_block *sb, struct fs_context *fc)
 		[NFSD_RecoveryDir] = {"nfsv4recoverydir", &transaction_ops, S_IWUSR|S_IRUSR},
 		[NFSD_V4EndGrace] = {"v4_end_grace", &transaction_ops, S_IWUSR|S_IRUGO},
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDP_PACKET
 		[NFSD_UDP_Size] = {"udppacketsize", &transaction_ops, S_IWUSR|S_IRUGO},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_UDP_PACKET */
+#ifdef CONFIG_SYNO_NFSD_UNIX_PRI
 		[NFSD_UNIX_PRI] = {"unix_privilege_enable", &transaction_ops, S_IWUSR|S_IRUGO},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_UNIX_PRI */
+#ifdef CONFIG_SYNO_NFSD_SYNO_FILE_STATS
 		[NFSD_SYNO_FILE_STATS] = {"syno_file_stats", &transaction_ops, S_IWUSR|S_IRUGO},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_SYNO_FILE_STATS */
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 		[NFSD_SYNO_IO_STATS] = {"syno_io_stat", &syno_io_stat_ops, S_IRUGO},
 		[NFSD_SYNO_CLIENT_CTL] = {"syno_client_ctl", &transaction_ops, S_IWUSR},
 		[NFSD_SYNO_CLIENT_EXPIRE_TIME] = {"syno_client_expire_time", &transaction_ops, S_IWUSR|S_IRUGO},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 		[NFSD_SYNO_TOTAL_CONNECTION_STAT] = {"syno_total_connection_stat",
 				&syno_total_connection_stat_ops, S_IRUGO},
 		[NFSD_SYNO_TOTAL_CONNECTION_RESET] = {"syno_total_connection_reset", &transaction_ops, S_IWUSR},
 		[NFSD_SYNO_MAX_CONNECTION] = {"syno_max_connection", &transaction_ops, S_IWUSR|S_IRUGO},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 		[NFSD_SYNO_LATENCY_HISTOGRAM] = {"syno_latency_histogram", &syno_latency_histogram_ops, S_IRUGO},
 		[NFSD_SYNO_TOTAL_ERROR] = {"syno_total_error", &syno_total_error_ops, S_IRUGO},
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 		[NFSD_Pool_Hint] = {"pool_hint", &transaction_ops, S_IWUSR|S_IRUSR},
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 		/* last one */ {""}
 	};
 
@@ -2040,12 +2037,12 @@ static int nfsd_fill_super(struct super_block *sb, struct fs_context *fc)
 	if (IS_ERR(dentry))
 		return PTR_ERR(dentry);
 	nn->nfsd_client_dir = dentry;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	dentry = nfsd_mkdir(sb->s_root, NULL, "syno_clients");
 	if (IS_ERR(dentry))
 		return PTR_ERR(dentry);
 	nn->nfsd_syno_client_dir = dentry;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	return 0;
 }
 
@@ -2176,25 +2173,25 @@ static int __init init_nfsd(void)
 	int retval;
 	printk(KERN_INFO "Installing knfsd (copyright (C) 1996 okir@monad.swb.de).\n");
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDP_PACKET
 	/* initial default udp packet size */
 	nfs_udp_f_rtpref = CONFIG_SYNO_NFSD_UDP_DEF_PACKET_SIZE;
 	nfs_udp_f_wtpref = CONFIG_SYNO_NFSD_UDP_DEF_PACKET_SIZE;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_UDP_PACKET */
+#ifdef CONFIG_SYNO_NFSD_UNIX_PRI
 	bl_unix_pri_enable = 1;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_UNIX_PRI */
+#ifdef CONFIG_SYNO_NFSD_SYNO_FILE_STATS
 	syno_file_stats = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_SYNO_FILE_STATS */
 
 	retval = register_cld_notifier();
 	if (retval)
 		return retval;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 	syno_nfsd_connection_init();
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	syno_nfsd_io_total_stat_init();
 
 	g_syno_nfsd_client_manager_kthread =
@@ -2205,10 +2202,10 @@ static int __init init_nfsd(void)
 		g_syno_nfsd_client_manager_kthread = NULL;
 		goto out_unregister_notifier;
 	}
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 	syno_nfsd_udc_stat_init();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 	retval = nfsd4_init_slabs();
 	if (retval)
 		goto out_unregister_notifier;
@@ -2245,29 +2242,29 @@ out_free_slabs:
 	nfsd4_free_slabs();
 out_unregister_notifier:
 	unregister_cld_notifier();
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	if (g_syno_nfsd_client_manager_kthread)
 		kthread_stop(g_syno_nfsd_client_manager_kthread);
 	g_syno_nfsd_client_manager_kthread = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	return retval;
 }
 
 static void __exit exit_nfsd(void)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_SYNO_FILE_STATS
 	free_syno_file_stats(syno_file_stats);
 	syno_file_stats = NULL;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_SYNO_FILE_STATS */
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	if (g_syno_nfsd_client_manager_kthread)
 		kthread_stop(g_syno_nfsd_client_manager_kthread);
 	g_syno_nfsd_client_manager_kthread = NULL;
 	syno_nfsd_io_total_stat_destroy();
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 	syno_nfsd_connection_destroy();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
 	unregister_pernet_subsys(&nfsd_net_ops);
 	nfsd_drc_slab_free();
 	remove_proc_entry("fs/nfs/exports", NULL);

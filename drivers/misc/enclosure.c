@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Enclosure Services
@@ -20,18 +17,18 @@
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/slab.h>
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO
 #include <scsi/scsi_device.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO */
 
 static LIST_HEAD(container_list);
 static DEFINE_MUTEX(container_list_lock);
 static struct class enclosure_class;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_FIX_ENCLOSURE_POWEROFF_WARNON
 // Add prototype here to avoid build fail
 static void enclosure_remove_links(struct enclosure_component *cdev);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_FIX_ENCLOSURE_POWEROFF_WARNON */
 
 /**
  * enclosure_find - find an enclosure given a parent device
@@ -174,39 +171,39 @@ static struct enclosure_component_callbacks enclosure_null_callbacks;
 void enclosure_unregister(struct enclosure_device *edev)
 {
 	int i;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_FIX_ENCLOSURE_POWEROFF_WARNON
 	struct enclosure_component *cdev = NULL;
-#endif /* MY_DEF_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_SAS_FIX_ENCLOSURE_POWEROFF_WARNON */
+#ifdef CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO
 	struct scsi_device *scsi_dev = NULL;
 	struct scsi_device *scsi_enc = NULL;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO */
 
 	mutex_lock(&container_list_lock);
 	list_del(&edev->node);
 	mutex_unlock(&container_list_lock);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_FIX_ENCLOSURE_POWEROFF_WARNON
 	for (i = 0; i < edev->components; i++) {
 		if (edev->component[i].number != -1) {
 			//======================================= Following part is copy from enclosure_remove_device ===================
 			cdev = &edev->component[i];
 			if (cdev->dev != NULL) {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO
 				if (ENCLOSURE_COMPONENT_ARRAY_DEVICE == cdev->type) {
 					scsi_dev = to_scsi_device(cdev->dev);
 					scsi_enc = to_scsi_device(edev->edev.parent);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 					printk(KERN_INFO "SCSI device (%s) with disk name (%s) removed from SLOT%02d of enclosure(%s), %.8s-%."SYNO_DISK_MODEL_LEN"s",
 							dev_name(cdev->dev), scsi_dev->syno_disk_name, cdev->number + 1, dev_name(&(edev->edev)),
 							scsi_enc->vendor, scsi_enc->model);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 					printk(KERN_INFO "SCSI device (%s) with disk name (%s) removed from SLOT%02d of enclosure(%s), %.8s-%.16s",
 							dev_name(cdev->dev), scsi_dev->syno_disk_name, cdev->number + 1, dev_name(&(edev->edev)),
 							scsi_enc->vendor, scsi_enc->model);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 				}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO */
 				enclosure_remove_links(cdev);
 				put_device(cdev->dev);
 				cdev->dev = NULL;
@@ -215,11 +212,11 @@ void enclosure_unregister(struct enclosure_device *edev)
 			device_unregister(&edev->component[i].cdev);
 		}
 	}
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_SAS_FIX_ENCLOSURE_POWEROFF_WARNON */
 	for (i = 0; i < edev->components; i++)
 		if (edev->component[i].number != -1)
 			device_unregister(&edev->component[i].cdev);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_FIX_ENCLOSURE_POWEROFF_WARNON */
 
 	/* prevent any callbacks into service user */
 	edev->cb = &enclosure_null_callbacks;
@@ -280,17 +277,17 @@ static void enclosure_release(struct device *cdev)
 
 static void enclosure_component_release(struct device *dev)
 {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_FIX_ENCLOSURE_POWEROFF_WARNON
 	// the reason of #40515 happen is because of the following code,
 	// unregister will remove sysfs structure, and remove links in release stage will trigger warn on
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_SAS_FIX_ENCLOSURE_POWEROFF_WARNON */
 	struct enclosure_component *cdev = to_enclosure_component(dev);
 
 	if (cdev->dev) {
 		enclosure_remove_links(cdev);
 		put_device(cdev->dev);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_FIX_ENCLOSURE_POWEROFF_WARNON */
 	put_device(dev->parent);
 }
 
@@ -419,9 +416,9 @@ int enclosure_add_device(struct enclosure_device *edev, int component,
 {
 	struct enclosure_component *cdev;
 	int err;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO
 	struct scsi_device *scsi_enc = NULL;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO */
 
 	if (!edev || component >= edev->components)
 		return -EINVAL;
@@ -437,20 +434,20 @@ int enclosure_add_device(struct enclosure_device *edev, int component,
 	}
 	cdev->dev = get_device(dev);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO
 	if (ENCLOSURE_COMPONENT_ARRAY_DEVICE == cdev->type) {
 		scsi_enc = to_scsi_device(edev->edev.parent);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 		printk(KERN_INFO "SCSI device (%s) plugged in SLOT%02d of enclosure(%s), %.8s-%."SYNO_DISK_MODEL_LEN"s",
 				dev_name(dev), cdev->number + 1, dev_name(&(edev->edev)),
 				scsi_enc->vendor, scsi_enc->model);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 		printk(KERN_INFO "SCSI device (%s) plugged in SLOT%02d of enclosure(%s), %.8s-%.16s",
 				dev_name(dev), cdev->number + 1, dev_name(&(edev->edev)),
 				scsi_enc->vendor, scsi_enc->model);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO */
 
 	err = enclosure_add_links(cdev);
 	if (err) {
@@ -472,10 +469,10 @@ EXPORT_SYMBOL_GPL(enclosure_add_device);
 int enclosure_remove_device(struct enclosure_device *edev, struct device *dev)
 {
 	struct enclosure_component *cdev;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO
 	struct scsi_device *scsi_dev = NULL;
 	struct scsi_device *scsi_enc = NULL;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO */
 	int i;
 
 	if (!edev || !dev)
@@ -484,21 +481,21 @@ int enclosure_remove_device(struct enclosure_device *edev, struct device *dev)
 	for (i = 0; i < edev->components; i++) {
 		cdev = &edev->component[i];
 		if (cdev->dev == dev) {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO
 			if (ENCLOSURE_COMPONENT_ARRAY_DEVICE == cdev->type) {
 				scsi_dev = to_scsi_device(dev);
 				scsi_enc = to_scsi_device(edev->edev.parent);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 				printk(KERN_INFO "SCSI device (%s) with disk name (%s) removed from SLOT%02d of enclosure(%s), %.8s-%."SYNO_DISK_MODEL_LEN"s",
 						dev_name(dev), scsi_dev->syno_disk_name, cdev->number + 1, dev_name(&(edev->edev)),
 						scsi_enc->vendor, scsi_enc->model);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 				printk(KERN_INFO "SCSI device (%s) with disk name (%s) removed from SLOT%02d of enclosure(%s), %.8s-%.16s",
 						dev_name(dev), scsi_dev->syno_disk_name, cdev->number + 1, dev_name(&(edev->edev)),
 						scsi_enc->vendor, scsi_enc->model);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 			}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SHOW_DISK_PHY_INFO */
 			enclosure_remove_links(cdev);
 			put_device(dev);
 			cdev->dev = NULL;

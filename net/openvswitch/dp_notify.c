@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2007-2012 Nicira, Inc.
@@ -72,7 +69,7 @@ static int dp_device_event(struct notifier_block *unused, unsigned long event,
 	if (!vport)
 		return NOTIFY_DONE;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OVS_MODE_REFINEMENT
 	if (dev->priv_flags & IFF_OVS_DATAPATH &&
 		(NETDEV_CHANGE == event ||
 		 NETDEV_UP == event ||
@@ -107,7 +104,7 @@ static int dp_device_event(struct notifier_block *unused, unsigned long event,
 
 		return NOTIFY_OK;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OVS_MODE_REFINEMENT */
 
 	if (event == NETDEV_UNREGISTER) {
 		/* upper_dev_unlink and decrement promisc immediately */

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/fcntl.c
@@ -33,14 +30,14 @@
 #include <asm/siginfo.h>
 #include <linux/uaccess.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_BIT
 #include <linux/mount.h>
 #include <uapi/linux/syno.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 #include "syno_acl.h"
 #define ACL_MASK_NONE 0
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 struct syno_archive_map {
         unsigned int syno_archive;      //syno archive
@@ -56,7 +53,7 @@ static struct syno_archive_map syno_archive_table[] = {
 	{S2_SMB_HIDDEN, false},              /* F_CLRSMB_HIDDEN */
 	{S2_SMB_SYSTEM, false},              /* F_CLRSMB_SYSTEM */
 	{S3_IARCHIVE, false},                /* F_CLEAR_S3_ARCHIVE */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	{S2_SMB_READONLY, false},            /* F_CLRSMB_READONLY */
 	{S2_SMB_READONLY, true},             /* F_SETSMB_READONLY */
 	{S2_SYNO_ACL_INHERIT, false},        /* F_CLRACL_INHERIT */
@@ -67,12 +64,12 @@ static struct syno_archive_map syno_archive_table[] = {
 	{S2_SYNO_ACL_SUPPORT, true},         /* F_SETACL_SUPPORT */
 	{S2_SYNO_ACL_IS_OWNER_GROUP, false}, /* F_CLRACL_OWNER_IS_GROUP */
 	{S2_SYNO_ACL_IS_OWNER_GROUP, true},  /* F_SETACL_OWNER_IS_GROUP */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	{S2_SMB_SPARSE, true},               /* F_SETSMB_SPARSE */
 	{S2_SMB_SPARSE, false},              /* F_CLRSMB_SPARSE */
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 const int syno_archive_acl_tag[] = {
 	PROTECT_BY_ACL,                     /* F_CLEAR_ARCHIVE */
 	PROTECT_BY_ACL,                     /* F_SETSMB_ARCHIVE */
@@ -140,7 +137,7 @@ static struct syno_archive_permission_mapping syno_archive_permission_table[] = 
 	{S2_SYNO_ACL_SUPPORT, MAY_WRITE_PERMISSION},
 	{0, -1}
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 long syno_archive_bit_set(struct dentry *dentry, unsigned int cmd)
 {
@@ -156,11 +153,11 @@ long syno_archive_bit_set(struct dentry *dentry, unsigned int cmd)
 		goto end;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (!IS_SYNOACL(dentry) && !inode_owner_or_capable(inode)) {
 #else
 	if (!inode_owner_or_capable(inode)) {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 		err = -EPERM;
 		goto end;
 	}
@@ -176,7 +173,7 @@ long syno_archive_bit_set(struct dentry *dentry, unsigned int cmd)
 		goto unlock;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(dentry)) {
 		err = synoacl_op_archive_bit_change_ok(dentry, cmd,
 				syno_archive_acl_tag[i],
@@ -184,9 +181,9 @@ long syno_archive_bit_set(struct dentry *dentry, unsigned int cmd)
 		if (err)
 			goto unlock;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (syno_archive_table[i].is_set_cmd) {
 		archive_bit |= syno_archive_table[i].syno_archive;
 		if (S2_SYNO_ACL_INHERIT == syno_archive_table[i].syno_archive) {
@@ -196,7 +193,7 @@ long syno_archive_bit_set(struct dentry *dentry, unsigned int cmd)
 #else
 	if (syno_archive_table[i].is_set_cmd)
 		archive_bit |= syno_archive_table[i].syno_archive;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 	else
 		archive_bit &= ~syno_archive_table[i].syno_archive;
@@ -213,10 +210,10 @@ long syno_archive_bit_overwrite(struct dentry *dentry, unsigned int flags)
 	struct inode *inode = dentry->d_inode;
 	int err = 0;
 	u32 archive_bit;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	int permission_check = 0;
 	int i = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 	if ((~ALL_ARCHIVE_BIT) & flags) {
 		err = -EINVAL;
@@ -228,7 +225,7 @@ long syno_archive_bit_overwrite(struct dentry *dentry, unsigned int flags)
 	if (err)
 		goto unlock;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(dentry)) {
 		for (i = 0; -1 != syno_archive_permission_table[i].permission; i++) {
 			if ((archive_bit & syno_archive_permission_table[i].syno_archive) == (flags & syno_archive_permission_table[i].syno_archive))
@@ -254,12 +251,12 @@ long syno_archive_bit_overwrite(struct dentry *dentry, unsigned int flags)
 			goto unlock;
 		}
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 	if (!inode_owner_or_capable(inode)) {
 		err = -EPERM;
 		goto unlock;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 	if (flags == archive_bit)
 		goto unlock;
@@ -270,15 +267,15 @@ unlock:
 end:
 	return err;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT */
 
 #define SETFL_MASK (O_APPEND | O_NONBLOCK | O_NDELAY | O_DIRECT | O_NOATIME)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 int setfl(int fd, struct file *filp, unsigned long arg)
 #else
 static int setfl(int fd, struct file * filp, unsigned long arg)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 {
 	struct inode * inode = file_inode(filp);
 	int error = 0;
@@ -310,10 +307,10 @@ static int setfl(int fd, struct file * filp, unsigned long arg)
 	if (filp->f_op->check_flags)
 		error = filp->f_op->check_flags(arg);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 	if (!error && filp->f_op->setfl)
 		error = filp->f_op->setfl(filp, arg);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 	if (error)
 		return error;
@@ -335,9 +332,9 @@ static int setfl(int fd, struct file * filp, unsigned long arg)
  out:
 	return error;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 EXPORT_SYMBOL_GPL(setfl);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 static void f_modown(struct file *filp, struct pid *pid, enum pid_type type,
                      int force)
@@ -681,7 +678,7 @@ static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
 	case F_SET_FILE_RW_HINT:
 		err = fcntl_rw_hint(filp, cmd, arg);
 		break;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_BIT
 	case SYNO_FCNTL_BASE ... SYNO_FCNTL_LAST:
 		err = mnt_want_write_file(filp);
 		if (err)
@@ -689,7 +686,7 @@ static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
 		err = syno_archive_bit_set(filp->f_path.dentry, cmd);
 		mnt_drop_write_file(filp);
 		break;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT */
 	default:
 		break;
 	}

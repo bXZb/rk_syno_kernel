@@ -27,6 +27,10 @@
 #include <linux/of.h>
 #include <linux/slab.h>
 #include <linux/sysfs.h>
+#ifdef CONFIG_SYNO_I2C_OF_PROBE
+#include <linux/syno_fdt.h>
+#include <linux/synolib.h>
+#endif /* CONFIG_SYNO_I2C_OF_PROBE */
 
 /* multiplexer per channel data */
 struct i2c_mux_priv {
@@ -287,6 +291,9 @@ int i2c_mux_add_adapter(struct i2c_mux_core *muxc,
 	struct i2c_mux_priv *priv;
 	char symlink_name[20];
 	int ret;
+#ifdef CONFIG_SYNO_I2C_OF_PROBE
+	struct i2c_client *client = NULL;
+#endif /* CONFIG_SYNO_I2C_OF_PROBE */
 
 	if (muxc->num_adapters >= muxc->max_adapters) {
 		dev_err(muxc->dev, "No room for more i2c-mux adapters\n");
@@ -397,6 +404,14 @@ int i2c_mux_add_adapter(struct i2c_mux_core *muxc,
 		acpi_preset_companion(&priv->adap.dev,
 				      ACPI_COMPANION(muxc->dev),
 				      chan_id);
+
+#ifdef CONFIG_SYNO_I2C_OF_PROBE
+	if (is_syno_i2c_bus_bind() && !force_nr) {
+		if (NULL != (client = i2c_verify_client(muxc->dev))) {
+			syno_of_i2c_mux_bus_match(client->adapter->nr, client->addr, chan_id, &force_nr);
+		}
+	}
+#endif /* CONFIG_SYNO_I2C_OF_PROBE */
 
 	if (force_nr) {
 		priv->adap.nr = force_nr;
