@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  *   fs/cifs/smb2misc.c
  *
@@ -883,12 +880,12 @@ smb311_update_preauth_hash(struct cifs_ses *ses, struct kvec *iov, int nvec)
 	/* neg prot are always taken */
 	if (hdr->Command == SMB2_NEGOTIATE)
 		goto ok;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_SMB_OPS
 	if (hdr->Command == SMB2_SESSION_SETUP && !server->secmech.hmacsha256) {
 		// SMB1 nego to SMB2.02 need to initial it
 		goto ok;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_SMB_OPS */
 
 	/*
 	 * If we process a command which wasn't a negprot it means the

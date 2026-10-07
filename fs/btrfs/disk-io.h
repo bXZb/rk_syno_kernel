@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
@@ -30,7 +27,7 @@ enum btrfs_wq_endio_type {
 	BTRFS_WQ_ENDIO_RAID56,
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_MOUNT_STATS
 struct syno_btrfs_mount_stats {
 	ktime_t start_time;
 	s64 read_chunk_tree_time;
@@ -46,7 +43,7 @@ struct syno_btrfs_mount_stats {
 	s64 orphan_cleanup_time;
 	s64 create_uuid_tree_time;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_MOUNT_STATS */
 
 static inline u64 btrfs_sb_offset(int mirror)
 {
@@ -56,14 +53,14 @@ static inline u64 btrfs_sb_offset(int mirror)
 	return BTRFS_SUPER_INFO_OFFSET;
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE)
 struct btrfs_new_fs_root_args {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 	/* Preallocated syno delalloc bytes */
 	struct percpu_counter *syno_delalloc_bytes;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 
 struct btrfs_device;
 struct btrfs_fs_devices;
@@ -81,11 +78,11 @@ struct extent_buffer *btrfs_find_create_tree_block(
 						int level);
 void btrfs_clean_tree_block(struct extent_buffer *buf);
 void btrfs_clear_oneshot_options(struct btrfs_fs_info *fs_info);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_MOUNT_STATS
 int btrfs_start_pre_rw_mount(struct btrfs_fs_info *fs_info, struct syno_btrfs_mount_stats *stats);
 #else
 int btrfs_start_pre_rw_mount(struct btrfs_fs_info *fs_info);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_MOUNT_STATS */
 int __cold open_ctree(struct super_block *sb,
 	       struct btrfs_fs_devices *fs_devices,
 	       char *options);
@@ -97,10 +94,10 @@ struct btrfs_super_block *btrfs_read_dev_one_super(struct block_device *bdev,
 int btrfs_commit_super(struct btrfs_fs_info *fs_info);
 struct btrfs_root *btrfs_read_tree_root(struct btrfs_root *tree_root,
 					struct btrfs_key *key);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE)
 void btrfs_free_new_fs_root_args(struct btrfs_new_fs_root_args *args);
 struct btrfs_new_fs_root_args *btrfs_alloc_new_fs_root_args(void);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 int btrfs_insert_fs_root(struct btrfs_fs_info *fs_info,
 			 struct btrfs_root *root);
 void btrfs_free_fs_roots(struct btrfs_fs_info *fs_info);
@@ -109,17 +106,17 @@ struct btrfs_root *btrfs_get_fs_root(struct btrfs_fs_info *fs_info,
 				     u64 objectid, bool check_ref);
 struct btrfs_root *btrfs_get_new_fs_root(struct btrfs_fs_info *fs_info,
 					 u64 objectid, dev_t anon_dev
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE)
 					 , struct btrfs_new_fs_root_args *new_fs_root_args
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 					 );
 struct btrfs_root *btrfs_get_fs_root_commit_root(struct btrfs_fs_info *fs_info,
 						 struct btrfs_path *path,
 						 u64 objectid);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 struct btrfs_root *btrfs_lookup_fs_root(struct btrfs_fs_info *fs_info,
 						u64 root_id);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 void btrfs_free_fs_info(struct btrfs_fs_info *fs_info);
 int btrfs_cleanup_fs_roots(struct btrfs_fs_info *fs_info);
@@ -130,10 +127,10 @@ void btrfs_drop_and_free_fs_root(struct btrfs_fs_info *fs_info,
 int btrfs_validate_metadata_buffer(struct btrfs_io_bio *io_bio, u64 phy_offset,
 				   struct page *page, u64 start, u64 end,
 				   int mirror);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 void btrfs_metadata_io_failed(struct extent_buffer *eb, struct page *page,
 			      int failed_mirror, int correction_err);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 blk_status_t btrfs_submit_metadata_bio(struct inode *inode, struct bio *bio,
 				       int mirror_num, unsigned long bio_flags);
 #ifdef CONFIG_BTRFS_FS_RUN_SANITY_TESTS
@@ -168,12 +165,12 @@ blk_status_t btrfs_wq_submit_bio(struct btrfs_fs_info *fs_info, struct bio *bio,
 			int mirror_num, unsigned long bio_flags,
 			u64 bio_offset, void *private_data,
 			extent_submit_bio_start_t *submit_bio_start);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_COW_ASYNC_THROTTLE
 blk_status_t btrfs_wq_submit_bio_throttle(struct btrfs_fs_info *fs_info, struct bio *bio,
 				 int mirror_num, unsigned long bio_flags,
 				 u64 bio_offset, void *private_data,
 				 extent_submit_bio_start_t *submit_bio_start);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_COW_ASYNC_THROTTLE */
 blk_status_t btrfs_submit_bio_done(void *private_data, struct bio *bio,
 			  int mirror_num);
 int btrfs_init_log_root_tree(struct btrfs_trans_handle *trans,

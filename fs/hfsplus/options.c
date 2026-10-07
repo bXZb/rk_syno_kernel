@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/hfsplus/options.c
@@ -54,7 +51,7 @@ void hfsplus_fill_defaults(struct hfsplus_sb_info *opts)
 	if (!opts)
 		return;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_REMOVE_DEFAULT_CR_TYPE
 /*
  * HFSPLUS_DEF_CR_TYPE come from linux kernel not
  * Apple hfs source.  If we set this default value,
@@ -65,10 +62,10 @@ void hfsplus_fill_defaults(struct hfsplus_sb_info *opts)
  */
 	opts->creator = 0;
 	opts->type = 0;
-#elif /* defined(MY_ABC_HERE) */
+#elif /* CONFIG_SYNO_HFSPLUS_REMOVE_DEFAULT_CR_TYPE */
 	opts->creator = HFSPLUS_DEF_CR_TYPE;
 	opts->type = HFSPLUS_DEF_CR_TYPE;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_REMOVE_DEFAULT_CR_TYPE */
 	opts->umask = current_umask();
 	opts->uid = current_uid();
 	opts->gid = current_gid();
@@ -251,9 +248,9 @@ int hfsplus_show_options(struct seq_file *seq, struct dentry *root)
 		seq_puts(seq, ",nodecompose");
 	if (test_bit(HFSPLUS_SB_NOBARRIER, &sbi->flags))
 		seq_puts(seq, ",nobarrier");
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_CASELESS
 	if (test_bit(HFSPLUS_SB_CASEFOLD, &sbi->flags))
 		seq_puts(seq, ",caseless");
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_CASELESS */
 	return 0;
 }

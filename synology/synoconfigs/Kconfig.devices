@@ -752,6 +752,11 @@ config SYNO_SAS_DEVICE_PREFIX
 	default "sas"
 	depends on SYNO_PORT_MAPPING_V2
 
+config SYNO_MULTIPATH_NATIVE_SAS_DEVICE_PREFIX
+	string "SAS Native Disk Name Prefix For Multipath Model"
+	default "nSas"
+	depends on SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME
+
 config SYNO_SAS_FIX_ENCLOSURE_POWEROFF_WARNON
 	bool "Avoid WARN ON message when plug off enclosure"
 	default y
@@ -800,6 +805,16 @@ config SYNO_SAS_SES_DIAGNOSTIC_PAGE_ENHANCE
 config SYNO_SAS_SATA_EARLY_WAKEUP
 	bool "Add sas_sata_standby_flag to indicate that start command should be sent when the device in hibernation mode"
 	depends on SCSI_MPT3SAS
+	default y
+
+config SYNO_MPT3_HBA_TEMPERATURE_READ
+	bool "Add an sysfs entry for reading HBA temperature"
+	depends on SCSI_MPT3SAS
+	default y
+
+config SYNO_FIX_TASK_ABORT_AND_SCSI_DONE_RACE_CONDITION
+	bool "Fix task abort and scsi done race condition"
+	depends on SYNO_SAS
 	default y
 
 endmenu #SAS
@@ -1066,6 +1081,11 @@ config SYNO_HWMON_AMD_K10TEMP
 	default n
 	depends on SENSORS_K10TEMP
 
+config SYNO_ADT7475_ATMEGA
+	bool "SYNO detect Atmega"
+	depends on SENSORS_ADT7475
+	default n
+
 endmenu #Hardware Monitor
 
 menu "Serial/TTYs"
@@ -1083,7 +1103,7 @@ config SYNO_TTY_FIX_TTYS_FUNCTIONS
 
 config SYNO_TTY_SHORT_TIME_STUCK_FIX
 	bool "Fix console stuck short time when 8250 probe"
-	depends on SYNO_GEMINILAKE
+	depends on MFD_INTEL_LPSS
 	default n
 
 config SYNO_TTY_MICROP_CTRL
@@ -1123,6 +1143,16 @@ config SYNO_EARLY_PRINTK_PCI_64
 	bool "Support early print PCI used over 4GB memory mapping address"
 	depends on EARLY_PRINTK
 	default n
+
+config SYNO_MICROP_COMMAND_V2
+	bool "uP command v2"
+	depends on SYNO_TTY_MICROP_CTRL
+	default y
+
+config SYNO_TTY_DISABLE
+	bool "Disable ttyS0 by default"
+	depends on SYNO_ICELAKED
+	default y
 
 endmenu #Serial/TTYs
 
@@ -1175,6 +1205,16 @@ config SYNO_I2C_I801_SUPPORT_RECOVERY
 	bool "support I2C_I801 recovery function"
 	default n
 
+config SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+	bool "support i2c_generic_scl_recovery by reading synology dts"
+	default n
+	depends on OF && ACPI
+
+config SYNO_I2C_GENERIC_RECOVERY_DIAG_TOOL
+	tristate "I2C recover pin toggle test tool"
+	depends on SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+	default n
+
 config SYNO_I2C_DW_FORCE_PROBE
 	bool "force probe I2C_DW driver"
 	depends on I2C_DESIGNWARE_PLATFORM
@@ -1184,6 +1224,11 @@ config SYNO_I2C_DW_CLK_FREQ_CUSTOM
 	bool "customize designware i2c clock frequency"
 	default n
 	depends on I2C_DESIGNWARE_PLATFORM && SYNO_HW_VERSION
+
+config SYNO_I2C_TIMEOUT_RETRY
+	bool "while i2c command is timeout, retry it"
+	default n
+	depends on I2C_DESIGNWARE_PLATFORM
 
 endmenu #I2C Hardware Bus support
 
@@ -1325,6 +1370,25 @@ config SYNO_PCI_EUNIT_I2C
 	depends on PCI && I2C && SYNO_PCI_EUNIT_SUPPORT
 	default n
 
+config SYNO_PCI_DEFAULT_HOTPLUG_MEM_SIZE_CUSTOMIZATION
+	bool "Customized default memory size for hotplug bridge"
+	depends on PCI
+	default n
+
+config SYNO_PCI_DEFAULT_HOTPLUG_MEM_SIZE
+	int "Customized default memory size for hotplug bridge"
+	depends on PCI && SYNO_PCI_DEFAULT_HOTPLUG_MEM_SIZE_CUSTOMIZATION
+
+config SYNO_PCI_DEEP_RETRY
+	bool "Supporting pci device to power reset recovery"
+	depends on PCI && SYNO_OF
+	default n
+
+config SYNO_PCI_DTS_LABEL
+	bool "PCI device label from device tree"
+	depends on PCI && SYNO_OF
+	default y
+
 endmenu #PCI
 
 menu "TRANSCODING"
@@ -1353,6 +1417,60 @@ config SYNO_DISK_POWER_MANAGER
 endmenu #POWER
 
 menu "Multipath"
+config SYNO_MULTIPATH_FEATURE
+	bool "Support Synology Multipath Feature"
+	depends on DM_MULTIPATH
+	default y
+
+config SYNO_MULTIPATH_RENAME_SAS_EXP_DISK_NAME
+	bool "Rename the SAS Expansion disk to avoid system using native device"
+	depends on SYNO_MULTIPATH_FEATURE && SYNO_SAS
+	default y
+
+config SYNO_MULTIPATH_RENAME_DM_AS_DISK
+	bool "Rename dm device to pretend as disk"
+	depends on SYNO_MULTIPATH_FEATURE
+	default y
+
+config SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD
+	bool "Forwarding the sysfs of low-level devices"
+	depends on SYNO_MULTIPATH_RENAME_DM_AS_DISK
+	default y
+
+config SYNO_MULTIPATH_DEVICE_HOTPLUG_NOTIFY
+	bool "Notify RAID that multipath device has changed"
+	default y
+	depends on SYNO_MD_DEVICE_HOTPLUG_NOTIFY && SYNO_MULTIPATH_RENAME_DM_AS_DISK
+
+config SYNO_MULTIPATH_DM_BAD_SECTOR_AUTO_REMAP
+	bool "Auto remap bad sector in MULTIPATH DM layer"
+	default y
+	depends on SYNO_MD_BAD_SECTOR_AUTO_REMAP && SYNO_MULTIPATH_RENAME_DM_AS_DISK
+
+config SYNO_MULTIPATH_NEW_TARGET_DEVICE_UEVENT
+	bool "Sending special uevent env when new target device is added"
+	default y
+	depends on SYNO_MULTIPATH_RENAME_DM_AS_DISK
+
+config SYNO_MULTIPATH_SLAVE_DISK_COHERENCE
+	bool "Enable multipath disk coherence"
+	default y
+	depends on SYNO_MULTIPATH_RENAME_DM_AS_DISK && SYNO_BLK_DEV_GENDISK_OPERATIONS
+
+config SYNO_MULTIPATH_DEBUGFS_FIX
+	bool "Fix multipath debugfs issues"
+	default y
+	depends on SYNO_MULTIPATH_FEATURE && DEBUG_FS
+
+config SYNO_MULTIPATH_BLOCK_UNBLOCK_OPERATIONS
+	bool "Support block/unblock operations for multipath device"
+	default y
+	depends on SYNO_MULTIPATH_FEATURE
+
+config SYNO_MULTIPATH_DEVICE_BLOCKED_DEADLOCK_FIX
+	bool "Fix circular dependency deadlock with dm-multipath"
+	default y
+	depends on SYNO_MULTIPATH_FEATURE
 
 endmenu #Multipath
 

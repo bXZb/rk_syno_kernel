@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * include/linux/serial.h
  *
@@ -15,12 +12,12 @@
 #include <asm/page.h>
 #include <uapi/linux/serial.h>
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
 #define SYNO_OOB_TTY                  2
 #define SYNO_TX_CHECK_COUNT           1000
 #define SYNO_TX_CHECK_THRESHOLD       800
 #define SYNO_CTS_CHECK_COUNT          10
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 
 /*
  * Counters of the input lines (CTS, DSR, RI, CD) interrupts

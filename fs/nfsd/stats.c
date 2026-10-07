@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * procfs-based user access to knfsd statistics
@@ -94,7 +91,7 @@ static const struct proc_ops nfsd_proc_ops = {
 	.proc_release	= single_release,
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 static int nfsd_lat_proc_show(struct seq_file *seq, void *v)
 {
 	struct svc_program *prog = nfsd_svcstats.program;
@@ -193,22 +190,22 @@ static const struct proc_ops nfsd_lat_proc_ops = {
 	.proc_lseek = seq_lseek,
 	.proc_release = single_release,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 void
 nfsd_stat_init(void)
 {
 	svc_proc_register(&init_net, &nfsd_svcstats, &nfsd_proc_ops);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	svc_proc_register_name(&init_net, "nfsd_lat", &nfsd_svcstats, &nfsd_lat_proc_ops);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 }
 
 void
 nfsd_stat_shutdown(void)
 {
 	svc_proc_unregister(&init_net, "nfsd");
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	svc_proc_unregister(&init_net, "nfsd_lat");
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 }

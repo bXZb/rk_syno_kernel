@@ -10,6 +10,10 @@
 #include <linux/module.h>
 #include <linux/pci.h>
 #include <linux/rational.h>
+#ifdef CONFIG_SYNO_TTY_DISABLE
+#include <linux/of.h>
+#include <linux/synolib.h>
+#endif /* CONFIG_SYNO_TTY_DISABLE */
 
 #include <linux/dma/hsu.h>
 #include <linux/8250_pci.h>
@@ -278,12 +282,40 @@ static int mid8250_dma_setup(struct mid8250 *mid, struct uart_8250_port *port)
 	return 0;
 }
 
+#ifdef CONFIG_SYNO_TTY_DISABLE
+extern int gSynoTtyS0Enable;
+extern int syno_compare_dts_pciepath(const struct pci_dev *pdev, const struct device_node *pDeviceNode);
+#endif /* CONFIG_SYNO_TTY_DISABLE */
+
 static int mid8250_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	struct uart_8250_port uart;
 	struct mid8250 *mid;
 	unsigned int bar;
 	int ret;
+
+#ifdef CONFIG_SYNO_TTY_DISABLE
+	if (of_property_read_bool(of_root, DT_TTY_DISABLE_CHECK) && !gSynoTtyS0Enable) {
+		struct device_node *node = NULL;
+		int index = -1;
+
+		for_each_child_of_node(of_root, node) {
+			if (!node->full_name ||
+			    1 != sscanf(node->full_name, "ttyS@%d", &index))
+				continue;
+			if (index == 0)
+				break;
+		}
+		if (node) {
+			int match = (0 == syno_compare_dts_pciepath(pdev, node));
+			of_node_put(node);
+			if (match) {
+				pci_info(pdev, "ttyS0 disabled (no ttyS0_enable boot arg), skipping probe\n");
+				return -ENODEV;
+			}
+		}
+	}
+#endif /* CONFIG_SYNO_TTY_DISABLE */
 
 	ret = pcim_enable_device(pdev);
 	if (ret)

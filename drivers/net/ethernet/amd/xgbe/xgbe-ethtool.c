@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * AMD 10Gb Ethernet driver
  *
@@ -283,6 +280,12 @@ static int xgbe_set_pauseparam(struct net_device *netdev,
 		return -EINVAL;
 	}
 
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
+	if (pause->rx_pause || pause->tx_pause) {
+		return -EINVAL;
+	}
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
+
 	pdata->phy.pause_autoneg = pause->autoneg;
 	pdata->phy.tx_pause = pause->tx_pause;
 	pdata->phy.rx_pause = pause->rx_pause;
@@ -303,8 +306,12 @@ static int xgbe_set_pauseparam(struct net_device *netdev,
 			XGBE_SET_ADV(lks, Asym_Pause);
 	}
 
-	if (netif_running(netdev))
+	if (netif_running(netdev)) {
 		ret = pdata->phy_if.phy_config_aneg(pdata);
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+		xgbe_restart_dev(pdata);
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
+	}
 
 	return ret;
 }
@@ -384,17 +391,17 @@ static int xgbe_set_link_ksettings(struct net_device *netdev,
 	}
 
 	ret = 0;
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	pdata->phy.autoneg = AUTONEG_ENABLE;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	pdata->phy.autoneg = cmd->base.autoneg;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	pdata->phy.speed = speed;
 	pdata->phy.duplex = cmd->base.duplex;
 	bitmap_copy(lks->link_modes.advertising, advertising,
 		    __ETHTOOL_LINK_MODE_MASK_NBITS);
 
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	XGBE_SET_ADV(lks, Autoneg);
 
 	if (cmd->base.autoneg == AUTONEG_DISABLE && speed == SPEED_1000) {
@@ -402,12 +409,12 @@ static int xgbe_set_link_ksettings(struct net_device *netdev,
 	} else {
 		pdata->phy_if.phy_impl.resume_autoneg(pdata);
 	}
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	if (cmd->base.autoneg == AUTONEG_ENABLE)
 		XGBE_SET_ADV(lks, Autoneg);
 	else
 		XGBE_CLR_ADV(lks, Autoneg);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 	if (netif_running(netdev))
 		ret = pdata->phy_if.phy_config_aneg(pdata);
@@ -829,7 +836,7 @@ out:
 	return 0;
 }
 
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 static void syno_xgbe_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 {
 	struct xgbe_prv_data *pdata = netdev_priv(dev);
@@ -852,7 +859,7 @@ static int syno_xgbe_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol
 
 	return 0;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 static const struct ethtool_ops xgbe_ethtool_ops = {
 	.supported_coalesce_params = ETHTOOL_COALESCE_RX_USECS |
@@ -882,10 +889,10 @@ static const struct ethtool_ops xgbe_ethtool_ops = {
 	.set_ringparam = xgbe_set_ringparam,
 	.get_channels = xgbe_get_channels,
 	.set_channels = xgbe_set_channels,
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	.get_wol = syno_xgbe_get_wol,
 	.set_wol = syno_xgbe_set_wol,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 };
 
 const struct ethtool_ops *xgbe_get_ethtool_ops(void)

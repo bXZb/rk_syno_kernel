@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * sysctl.c: General linux system control interface
@@ -107,29 +104,31 @@
 #include <linux/nmi.h>
 #endif
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_MAC_ADDRESS) || defined(CONFIG_SYNO_SATA_SPINUP_GROUP)
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MAC_ADDRESS || CONFIG_SYNO_SATA_SPINUP_GROUP */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SFP_UNSUPPORTED_NOTIFY
 #include <uapi/linux/syno.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SFP_UNSUPPORTED_NOTIFY */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 #include <linux/synobios.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */
 
 #if defined(CONFIG_SYSCTL)
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 char gszSynoTtyS0[50] = {0};
 EXPORT_SYMBOL(gszSynoTtyS0);
 char gszSynoTtyS1[50] = {0};
 EXPORT_SYMBOL(gszSynoTtyS1);
 char gszSynoTtyS2[50] = {0};
 EXPORT_SYMBOL(gszSynoTtyS2);
-#endif /* MY_DEF_HERE */
-#ifdef MY_DEF_HERE
+char gszSynoTtyS3[50] = {0};
+EXPORT_SYMBOL(gszSynoTtyS3);
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
+#ifdef CONFIG_SYNO_SATA_PWR_CTRL_SMBUS
 long g_smbus_hdd_powerctl = 0;
 EXPORT_SYMBOL(g_smbus_hdd_powerctl);
 char gSynoSmbusHddType[16];
@@ -160,36 +159,38 @@ int gSynoHostPresentReg = -1;
 EXPORT_SYMBOL(gSynoHostPresentReg);
 int gSynoHostPresentVal = -1;
 EXPORT_SYMBOL(gSynoHostPresentVal);
-#endif /* MY_DEF_HERE */
+int gSynoHostMicropMapping[SYNO_MAX_SMBUS_HDD_COUNT];
+EXPORT_SYMBOL(gSynoHostMicropMapping);
+#endif /* CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HW_VERSION
 char gszSynoHWVersion[16];
 EXPORT_SYMBOL(gszSynoHWVersion);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HW_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HW_REVISION
 char gszSynoHWRevision[4] = {'\0'};
 EXPORT_SYMBOL(gszSynoHWRevision);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HW_REVISION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_INTERNAL_HD_NUM
 int gSynoInternalHddNumber = 0;
 EXPORT_SYMBOL(gSynoInternalHddNumber);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_INTERNAL_HD_NUM */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SERIAL
 char gszSerialNum[32] = {'\0'};
 EXPORT_SYMBOL(gszSerialNum);
 char gszCustomSerialNum[32] = {'\0'};
 EXPORT_SYMBOL(gszCustomSerialNum);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SERIAL */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_MV1475_SGPIO_LED_CTRL
 int (*funcSYNOCtrlDiskLedBy1475)(unsigned short, unsigned short) = NULL;
 EXPORT_SYMBOL(funcSYNOCtrlDiskLedBy1475);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_MV1475_SGPIO_LED_CTRL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_INTERNAL_NETIF_NUM
 /*
  * Note: g_internal_netif_num only represents the number of internal netif in this model,
  *       user shouldn't regard it as ethernet numbering.
@@ -197,9 +198,9 @@ EXPORT_SYMBOL(funcSYNOCtrlDiskLedBy1475);
  */
 long g_internal_netif_num = -1;
 EXPORT_SYMBOL(g_internal_netif_num);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_INTERNAL_NETIF_NUM */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 /*
  * Note: OOB MAC address is stored in network card instead of synoboot vendor file,
  *       You shouldn't access OOB(eth99) MAC address from grgbLanMac.
@@ -212,14 +213,14 @@ static int iSynoMacMax = SYNO_MAC_MAX_NUMBER;
 static int iMacEntrySize = 16;
 char gszSkipVenderMacInterfaces[256] = {'\0'};
 EXPORT_SYMBOL(gszSkipVenderMacInterfaces);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS
 long g_is_sas_model = 0;
 EXPORT_SYMBOL(g_is_sas_model);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SPINUP_GROUP
 long unsigned int guiWakeupDisksNum = 1;
 EXPORT_SYMBOL(guiWakeupDisksNum);
 int gSynoHddPowerupSeq = 0;
@@ -245,9 +246,9 @@ int giSynoDSleepCurrentSpinupGroupDiskNum = 0;
 EXPORT_SYMBOL(giSynoDSleepCurrentSpinupGroupDiskNum);
 int giSynoDSleepCurrentPoweronDisks = 0;
 EXPORT_SYMBOL(giSynoDSleepCurrentPoweronDisks);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SPINUP_GROUP */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DISPLAY_CPUINFO
 unsigned int gSynoCPUInfoCore = 0;
 EXPORT_SYMBOL(gSynoCPUInfoCore);
 #ifdef CONFIG_SYNO_MULTI_CPU_NUM
@@ -256,65 +257,78 @@ EXPORT_SYMBOL(gSynoMultiCPUInfoCore);
 #endif /* CONFIG_SYNO_MULTI_CPU_NUM */
 char gSynoCPUInfoClock[16];
 EXPORT_SYMBOL(gSynoCPUInfoClock);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DISPLAY_CPUINFO */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PCI_MISSING_DEVICE
 int gSynoResetFlag = 0;
 EXPORT_SYMBOL(gSynoResetFlag);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PCI_MISSING_DEVICE */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_OPTIONAL_SLOT
 char gszPciAddrList[PCI_ADDR_NUM_MAX][PCI_ADDR_LEN_MAX] = {{0}};
 int gPciAddrNum = 0;
 EXPORT_SYMBOL(gszPciAddrList);
 EXPORT_SYMBOL(gPciAddrNum);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_OPTIONAL_SLOT */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_HOST_DISK_LED_CTRL
 int (*syno_valid_lsi3008_led)(SYNO_LED ledStatus);
 EXPORT_SYMBOL(syno_valid_lsi3008_led);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_HOST_DISK_LED_CTRL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_INSTALL_FLAG
 int gSynoInstallFlag = 0;
 EXPORT_SYMBOL(gSynoInstallFlag);
-#endif /*MY_ABC_HERE*/
+#endif /*CONFIG_SYNO_INSTALL_FLAG*/
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_FORBID
 int gSynoForbidUsb = 0;
 EXPORT_SYMBOL(gSynoForbidUsb);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_FORBID */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SERIAL_CONSOLE_FORBID
 int gSynoForbidConsole = 0;
 EXPORT_SYMBOL(gSynoForbidConsole);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SERIAL_CONSOLE_FORBID */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_CASTRATED_XHC
 char gSynoCastratedXhcAddr[CONFIG_SYNO_USB_NUM_CASTRATED_XHC][32] = {{0}};
 unsigned int gSynoCastratedXhcPortBitmap[CONFIG_SYNO_USB_NUM_CASTRATED_XHC] = {0};
 EXPORT_SYMBOL(gSynoCastratedXhcAddr);
 EXPORT_SYMBOL(gSynoCastratedXhcPortBitmap);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_CASTRATED_XHC */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AHCI_SWITCH
 char g_ahci_switch = '1';
 EXPORT_SYMBOL(g_ahci_switch);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AHCI_SWITCH */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_ERROR_REPORT
 LIST_HEAD(gSynoBiosEventHead);
 EXPORT_SYMBOL(gSynoBiosEventHead);
 DEFINE_SPINLOCK(syno_sata_error_lock);
 EXPORT_SYMBOL(syno_sata_error_lock);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_ERROR_REPORT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SYNOBIOS_EVENT
 int (*func_synobios_event_handler)(unsigned long long synobios_event_type, ...);
 EXPORT_SYMBOL(func_synobios_event_handler);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SYNOBIOS_EVENT */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+void (*func_synobios_microp_received)(void);
+EXPORT_SYMBOL(func_synobios_microp_received);
+
+int gSynoMicropSeries;
+EXPORT_SYMBOL(gSynoMicropSeries);
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
+
+#ifdef CONFIG_SYNO_MULTIPATH_FEATURE
+long gIsMultipathModel = 0;
+EXPORT_SYMBOL(gIsMultipathModel);
+#endif /* CONFIG_SYNO_MULTIPATH_FEATURE */
+
+#ifdef CONFIG_SYNO_SFP_UNSUPPORTED_NOTIFY
 
 #define SZ_IF_PREFIX "eth"
 #define SYNO_SFP_UNSUPPORT_NOTIFY_SIZE 64
@@ -342,9 +356,9 @@ err:
 }
 EXPORT_SYMBOL(SynoSfpUnsupportNotifySet);
 
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SFP_UNSUPPORTED_NOTIFY */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_BLK_DEV_WAIT_DISK_READY
 int gSynoDiskReadyCheck = 1;
 EXPORT_SYMBOL(gSynoDiskReadyCheck);
 extern int syno_scsi_disk_ready_check(void);
@@ -356,9 +370,9 @@ static int proc_dointvec_disk_ready_check(struct ctl_table *table, int write,
 	gSynoDiskReadyCheck = syno_scsi_disk_ready_check();
 	return proc_dointvec(table, write, buffer, lenp, ppos);
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_BLK_DEV_WAIT_DISK_READY */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 int gSynoUsbEunitCheck = 1;
 EXPORT_SYMBOL(gSynoUsbEunitCheck);
 extern int syno_usb_eunit_ready_check(void);
@@ -370,26 +384,26 @@ static int proc_dointvec_usb_eunit_check(struct ctl_table *table, int write,
 	gSynoUsbEunitCheck = syno_usb_eunit_ready_check();
 	return proc_dointvec(table, write, buffer, lenp, ppos);
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SAMPLE_SEQ_IO
 unsigned int SynoDiskSeqValidBytesThreshold = (1024 * 1024);
 EXPORT_SYMBOL(SynoDiskSeqValidBytesThreshold);
 unsigned int SynoDiskSeqValidSkipBytes = (64 * 1024);
 EXPORT_SYMBOL(SynoDiskSeqValidSkipBytes);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SAMPLE_SEQ_IO */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_DEBUG_FLAG
 int gSynoAtaDebug = 0;
 EXPORT_SYMBOL(gSynoAtaDebug);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_DEBUG_FLAG */
 
 /* Constants used for minimum and  maximum */
 #ifdef CONFIG_LOCKUP_DETECTOR
 static int sixty = 60;
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 void (*funcSynoLP3943Mutex)(bool) = NULL;
 EXPORT_SYMBOL(funcSynoLP3943Mutex);
 void SYNOLP3943I2CMutex (bool lock)
@@ -399,14 +413,14 @@ void SYNOLP3943I2CMutex (bool lock)
 	}
 }
 EXPORT_SYMBOL(SYNOLP3943I2CMutex);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
 int g_syno_dpm_debug_level = 0;
 bool g_support_syno_dpm = false;
 EXPORT_SYMBOL(g_syno_dpm_debug_level);
 EXPORT_SYMBOL(g_support_syno_dpm);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
 
 static int __maybe_unused neg_one = -1;
 static int __maybe_unused two = 2;
@@ -423,9 +437,9 @@ static int ten_thousand = 10000;
 #ifdef CONFIG_PERF_EVENTS
 static int six_hundred_forty_kb = 640 * 1024;
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MULTI_KSWAPD
 static int max_kswapd_threads = MAX_KSWAPD_THREADS;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MULTI_KSWAPD */
 
 /* this is needed for the proc_doulongvec_minmax of vm_dirty_bytes */
 static unsigned long dirty_bytes_min = 2 * PAGE_SIZE;
@@ -448,9 +462,9 @@ static unsigned long hung_task_timeout_max = (LONG_MAX/HZ);
 #ifdef CONFIG_INOTIFY_USER
 #include <linux/inotify.h>
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 #include <linux/synotify.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 #ifdef CONFIG_PROC_SYSCTL
 
@@ -1268,7 +1282,7 @@ int proc_dointvec_minmax(struct ctl_table *table, int write,
 				do_proc_dointvec_minmax_conv, &param);
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_HARDLOCKUP_PANIC_ENHANCE
 extern void watchdog_hrtimer_inc(void);
 static int proc_dointvec_minmax_hardlockup_panic(struct ctl_table *table, int write,
 		  void __user *buffer, size_t *lenp, loff_t *ppos)
@@ -1279,7 +1293,7 @@ static int proc_dointvec_minmax_hardlockup_panic(struct ctl_table *table, int wr
 	}
 	return proc_dointvec_minmax(table , write, buffer, lenp, ppos);
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_HARDLOCKUP_PANIC_ENHANCE */
 
 /**
  * struct do_proc_douintvec_minmax_conv_param - proc_douintvec_minmax() range checking structure
@@ -1866,7 +1880,7 @@ int proc_do_large_bitmap(struct ctl_table *table, int write,
 	return err;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 /**
  * Notice: In order to call this handler, the input array of strings
  * must be in continuous memory allocation
@@ -1939,9 +1953,9 @@ int syno_proc_do_string_vector(struct ctl_table *table, int write,
 
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SFP_UNSUPPORTED_NOTIFY
 /**
  * Read:
  * The first element is the total length of array. ex:
@@ -2047,7 +2061,7 @@ out:
 	*ppos += *lenp;
 	return err;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SFP_UNSUPPORTED_NOTIFY */
 
 #else /* CONFIG_PROC_SYSCTL */
 
@@ -2117,21 +2131,21 @@ int proc_do_large_bitmap(struct ctl_table *table, int write,
 	return -ENOSYS;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 int syno_proc_do_string_vector(struct ctl_table *table, int write,
 			void *buffer, size_t *lenp, loff_t *ppos)
 {
     return -ENOSYS;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SFP_UNSUPPORTED_NOTIFY
 int syno_proc_do_int_vector(struct ctl_table *table, int write,
 			void __user *buffer, size_t *lenp, loff_t *ppos)
 {
     return -ENOSYS;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SFP_UNSUPPORTED_NOTIFY */
 
 #endif /* CONFIG_PROC_SYSCTL */
 
@@ -2166,10 +2180,10 @@ int proc_do_static_key(struct ctl_table *table, int write,
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SWAP_FLAG
 int gSynoSwapFlag = 0;
 EXPORT_SYMBOL(gSynoSwapFlag);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SWAP_FLAG */
 
 static struct ctl_table kern_table[] = {
 	{
@@ -2866,11 +2880,11 @@ static struct ctl_table kern_table[] = {
 		.data		= &hardlockup_panic,
 		.maxlen		= sizeof(int),
 		.mode		= 0644,
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_HARDLOCKUP_PANIC_ENHANCE
 		.proc_handler	= proc_dointvec_minmax_hardlockup_panic,
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_HARDLOCKUP_PANIC_ENHANCE */
 		.proc_handler	= proc_dointvec_minmax,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_HARDLOCKUP_PANIC_ENHANCE */
 		.extra1		= SYSCTL_ZERO,
 		.extra2		= SYSCTL_ONE,
 	},
@@ -3043,7 +3057,7 @@ static struct ctl_table kern_table[] = {
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &neg_one,
 	},
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HUNG_TASK_ADJUSTMENT
 	{
 		.procname	= "hung_task_warnings_default",
 		.data		= &sysctl_hung_task_warnings_default,
@@ -3060,7 +3074,7 @@ static struct ctl_table kern_table[] = {
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &neg_one,
 	},
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HUNG_TASK_ADJUSTMENT */
 #endif
 #ifdef CONFIG_RT_MUTEXES
 	{
@@ -3203,7 +3217,7 @@ static struct ctl_table kern_table[] = {
 		.extra2		= SYSCTL_ONE,
 	},
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HW_VERSION
 	{
 		.procname       = "syno_hw_version",
 		.data           = gszSynoHWVersion,
@@ -3211,8 +3225,8 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0444,
 		.proc_handler   = proc_dostring,
 	},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_HW_VERSION */
+#ifdef CONFIG_SYNO_HW_REVISION
 	{
 		.procname		= "syno_hw_revision",
 		.data			= gszSynoHWRevision,
@@ -3220,8 +3234,8 @@ static struct ctl_table kern_table[] = {
 		.mode			= 0444,
 		.proc_handler		= proc_dostring,
 	},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_HW_REVISION */
+#ifdef CONFIG_SYNO_SERIAL
 	{
 		.procname       = "syno_serial",
 		.data           = &gszSerialNum,
@@ -3236,8 +3250,8 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0444,
 		.proc_handler   = proc_dostring,
 	},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SERIAL */
+#ifdef CONFIG_SYNO_INTERNAL_NETIF_NUM
 	{
 		.procname		= "syno_internal_netif_num",
 		.data			= &g_internal_netif_num,
@@ -3245,8 +3259,8 @@ static struct ctl_table kern_table[] = {
 		.mode			= 0644,
 		.proc_handler	= proc_dointvec,
 	},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_INTERNAL_NETIF_NUM */
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 	{
 		.procname		= "syno_mac_address1",
 		.data			= &grgbLanMac[0],
@@ -3298,8 +3312,8 @@ static struct ctl_table kern_table[] = {
 		.mode			= 0444,
 		.proc_handler	= proc_dointvec,
 	},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
+#ifdef CONFIG_SYNO_SATA_SPINUP_GROUP
 	{
 		.procname	= "syno_internal_hd_num",
 		.data		= &g_syno_hdd_powerup_seq,
@@ -3328,8 +3342,8 @@ static struct ctl_table kern_table[] = {
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec,
 	},
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_SATA_SPINUP_GROUP */
+#ifdef CONFIG_SYNO_SAS
     {
         .procname       = "syno_is_sas_model",
         .data           = &g_is_sas_model,
@@ -3337,8 +3351,8 @@ static struct ctl_table kern_table[] = {
         .mode           = 0644,
         .proc_handler   = proc_dointvec,
     },
-#endif /* MY_DEF_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SAS */
+#ifdef CONFIG_SYNO_DISPLAY_CPUINFO
         {
             .procname       = "syno_CPU_info_core",
             .data           = &gSynoCPUInfoCore,
@@ -3346,7 +3360,7 @@ static struct ctl_table kern_table[] = {
             .mode           = 0644,
             .proc_handler   = proc_dointvec,
         },
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PURLEY
         {
             .procname       = "syno_CPU_info_multicore_1",
             .data           = &gSynoMultiCPUInfoCore[0],
@@ -3361,7 +3375,7 @@ static struct ctl_table kern_table[] = {
             .mode           = 0644,
             .proc_handler   = proc_dointvec,
         },
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PURLEY */
         {
             .procname       = "syno_CPU_info_clock",
             .data           = &gSynoCPUInfoClock,
@@ -3369,8 +3383,8 @@ static struct ctl_table kern_table[] = {
             .mode           = 0644,
             .proc_handler   = proc_dostring,
         },
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_DISPLAY_CPUINFO */
+#ifdef CONFIG_SYNO_SFP_UNSUPPORTED_NOTIFY
 	{
 		.procname       = "syno_unsupported_sfp_notify",
 		.data           = &gSynoSfpUnsupportNotify,
@@ -3378,8 +3392,8 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0644,
 		.proc_handler   = syno_proc_do_int_vector,
 	},
-#endif /* MY_DEF_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SFP_UNSUPPORTED_NOTIFY */
+#ifdef CONFIG_SYNO_SWAP_FLAG
 	{
 		.procname       = "syno_swap_flag",
 		.data           = &gSynoSwapFlag,
@@ -3387,8 +3401,8 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0644,
 		.proc_handler   = proc_dointvec,
 	},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SWAP_FLAG */
+#ifdef CONFIG_SYNO_PCI_MISSING_DEVICE
 	{
 		.procname       = "syno_reset_flag",
 		.data           = &gSynoResetFlag,
@@ -3396,8 +3410,8 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0444,
 		.proc_handler   = proc_dointvec,
 	},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_PCI_MISSING_DEVICE */
+#ifdef CONFIG_SYNO_INSTALL_FLAG
 	{
 		.procname       = "syno_install_flag",
 		.data           = &gSynoInstallFlag,
@@ -3405,8 +3419,8 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0644,
 		.proc_handler   = proc_dointvec,
 	},
-#endif /*MY_ABC_HERE*/
-#ifdef MY_ABC_HERE
+#endif /*CONFIG_SYNO_INSTALL_FLAG*/
+#ifdef CONFIG_SYNO_SERIAL_CONSOLE_FORBID
 	{
 		.procname       = "syno_forbid_console",
 		.data           = &gSynoForbidConsole,
@@ -3414,8 +3428,8 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0644,
 		.proc_handler   = proc_dointvec,
 	},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SERIAL_CONSOLE_FORBID */
+#ifdef CONFIG_SYNO_USB_FORBID
 	{
 		.procname       = "syno_forbid_usb",
 		.data           = &gSynoForbidUsb,
@@ -3423,8 +3437,8 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0644,
 		.proc_handler   = proc_dointvec,
 	},
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_USB_FORBID */
+#ifdef CONFIG_SYNO_BLK_DEV_WAIT_DISK_READY
 	{
 		.procname	= "syno_disk_ready_check",
 		.data		= &gSynoDiskReadyCheck,
@@ -3432,8 +3446,8 @@ static struct ctl_table kern_table[] = {
 		.mode		= 0444,
 		.proc_handler	= proc_dointvec_disk_ready_check,
 	},
-#endif /* MY_DEF_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_BLK_DEV_WAIT_DISK_READY */
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	{
 		.procname	= "syno_usb_eunit_check",
 		.data		= &gSynoUsbEunitCheck,
@@ -3441,8 +3455,8 @@ static struct ctl_table kern_table[] = {
 		.mode		= 0444,
 		.proc_handler	= proc_dointvec_usb_eunit_check,
 	},
-#endif /* MY_DEF_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
+#ifdef CONFIG_SYNO_SATA_SAMPLE_SEQ_IO
 	{
 		.procname       = "syno_disk_seq_valid_bytes_threshold",
 		.data           = &SynoDiskSeqValidBytesThreshold,
@@ -3457,8 +3471,8 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0644,
 		.proc_handler   = proc_dointvec,
 	},
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SATA_SAMPLE_SEQ_IO */
+#ifdef CONFIG_SYNO_SATA_DEBUG_FLAG
 	{
 		.procname       = "syno_ata_debug",
 		.data           = &gSynoAtaDebug,
@@ -3466,7 +3480,16 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0644,
 		.proc_handler   = proc_dointvec,
 	},
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_DEBUG_FLAG */
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+	{
+		.procname       = "syno_microp_series",
+		.data           = &gSynoMicropSeries,
+		.maxlen         = sizeof (int),
+		.mode           = 0444,
+		.proc_handler   = proc_dointvec,
+	},
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 	{ }
 };
 
@@ -3710,7 +3733,7 @@ static struct ctl_table vm_table[] = {
 		.extra1		= SYSCTL_ONE,
 		.extra2		= &one_thousand,
 	},
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MULTI_KSWAPD
 	{
 		.procname	= "kswapd_threads",
 		.data		= &kswapd_threads,
@@ -3720,7 +3743,7 @@ static struct ctl_table vm_table[] = {
 		.extra1		= SYSCTL_ONE,
 		.extra2		= &max_kswapd_threads,
 	},
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MULTI_KSWAPD */
 	{
 		.procname	= "percpu_pagelist_fraction",
 		.data		= &percpu_pagelist_fraction,
@@ -4065,13 +4088,13 @@ static struct ctl_table fs_table[] = {
 		.child		= inotify_table,
 	},
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	{
 		.procname       = "synotify",
 		.mode           = 0555,
 		.child          = synotify_table,
 	},
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 #ifdef CONFIG_EPOLL
 	{
 		.procname	= "epoll",
@@ -4246,7 +4269,7 @@ EXPORT_SYMBOL(proc_doulongvec_minmax);
 EXPORT_SYMBOL(proc_doulongvec_ms_jiffies_minmax);
 EXPORT_SYMBOL(proc_do_large_bitmap);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HW_VERSION
 int syno_is_hw_version(const char *hw_version)
 {
 	if (NULL == hw_version) {
@@ -4266,9 +4289,9 @@ char* syno_get_hw_version(void)
 	return gszSynoHWVersion;
 }
 EXPORT_SYMBOL(syno_get_hw_version);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HW_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HW_REVISION
 int syno_is_hw_revision(const char *hw_revision)
 {
        if (NULL == hw_revision) {
@@ -4288,9 +4311,9 @@ char* syno_get_hw_revision(void)
        return gszSynoHWRevision;
 }
 EXPORT_SYMBOL(syno_get_hw_revision);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HW_REVISION */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ADT7490_FEATURES
 int (*funcSYNOReadAdtPeci)(struct _SynoCpuTemp *) = NULL;
 EXPORT_SYMBOL(funcSYNOReadAdtPeci);
 int (*funcSYNOReadAdtFanSpeedRpm)(struct _SYNO_HWMON_SENSOR_TYPE *) = NULL;
@@ -4348,4 +4371,4 @@ int syno_get_adt_fan_speed_rpm_by_order(struct _SYNO_HWMON_SENSOR_TYPE *FanSpeed
 	return ret;
 }
 EXPORT_SYMBOL(syno_get_adt_fan_speed_rpm_by_order);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ADT7490_FEATURES */

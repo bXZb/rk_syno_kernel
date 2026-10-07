@@ -12,10 +12,6 @@ probe_modules() # $@: module list
 	done
 }
 
-# load synobios
-modprobe synobios system_mode=1
-/bin/mknod /dev/synobios c 201 0 2>/dev/null
-
 # load usbhid for bromolow
 if check_feature "support_dual_head"; then
 	probe_modules usblp hid usbhid hid-generic

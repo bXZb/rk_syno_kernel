@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2008 Oracle.  All rights reserved.
@@ -59,13 +56,13 @@
 
 static struct btrfs_lockdep_keyset {
 	u64			id;		/* root objectid */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE
 	/* Longest entry: btrfs-block-group-cache-00 */
 	char			names[BTRFS_MAX_LEVEL][27];
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE */
 	/* Longest entry: btrfs-free-space-00 */
 	char			names[BTRFS_MAX_LEVEL][20];
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE */
 	struct lock_class_key	keys[BTRFS_MAX_LEVEL];
 } btrfs_lockdep_keysets[] = {
 	{ .id = BTRFS_ROOT_TREE_OBJECTID,	DEFINE_NAME("root")	},
@@ -74,28 +71,28 @@ static struct btrfs_lockdep_keyset {
 	{ .id = BTRFS_DEV_TREE_OBJECTID,	DEFINE_NAME("dev")	},
 	{ .id = BTRFS_CSUM_TREE_OBJECTID,	DEFINE_NAME("csum")	},
 	{ .id = BTRFS_QUOTA_TREE_OBJECTID,	DEFINE_NAME("quota")	},
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	{ .id = BTRFS_SYNO_QUOTA_V2_TREE_OBJECTID,	DEFINE_NAME("syno-v2-quota") },
 	{ .id = BTRFS_SYNO_USRQUOTA_V2_TREE_OBJECTID,	DEFINE_NAME("syno-v2-usrquota") },
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 	{ .id = BTRFS_TREE_LOG_OBJECTID,	DEFINE_NAME("log")	},
 	{ .id = BTRFS_TREE_RELOC_OBJECTID,	DEFINE_NAME("treloc")	},
 	{ .id = BTRFS_DATA_RELOC_TREE_OBJECTID,	DEFINE_NAME("dreloc")	},
 	{ .id = BTRFS_UUID_TREE_OBJECTID,	DEFINE_NAME("uuid")	},
 	{ .id = BTRFS_FREE_SPACE_TREE_OBJECTID,	DEFINE_NAME("free-space") },
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_HINT_TREE
 	{ .id = BTRFS_BLOCK_GROUP_HINT_TREE_OBJECTID,	DEFINE_NAME("block-group-hint") },
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_HINT_TREE */
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE
 	{ .id = BTRFS_BLOCK_GROUP_CACHE_TREE_OBJECTID,	DEFINE_NAME("block-group-cache") },
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE */
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 	{ .id = BTRFS_SYNO_USAGE_TREE_OBJECTID,	DEFINE_NAME("syno-usage") },
 	{ .id = BTRFS_SYNO_EXTENT_USAGE_TREE_OBJECTID,	DEFINE_NAME("syno-extent-usage") },
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_TREE
 	{ .id = BTRFS_SYNO_FEATURE_TREE_OBJECTID,	DEFINE_NAME("syno-feat-tree") },
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_TREE */
 	{ .id = 0,				DEFINE_NAME("tree")	},
 };
 

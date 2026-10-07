@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
   FUSE: Filesystem in Userspace
   Copyright (C) 2001-2008  Miklos Szeredi <miklos@szeredi.hu>
@@ -1135,7 +1132,7 @@ static ssize_t fuse_send_write_pages(struct fuse_io_args *ia,
 	return err;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RECVFILE
 static ssize_t fuse_perform_write_page(struct file *file,
 				struct address_space *mapping,
 				loff_t pos, unsigned len, struct page *page)
@@ -1201,7 +1198,7 @@ end:
 	kfree(ap->pages);
 	return res > 0 ? res : err;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RECVFILE */
 
 static ssize_t fuse_fill_write_pages(struct fuse_io_args *ia,
 				     struct address_space *mapping,
@@ -2314,9 +2311,9 @@ static int fuse_write_begin(struct file *file, struct address_space *mapping,
 	loff_t fsize;
 	int err = -ENOMEM;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RECVFILE
 	if (!(flags & AOP_FLAG_RECVFILE)) /* Don't trigger WARN_ON if caller is recvfile() */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RECVFILE */
 	WARN_ON(!fc->writeback_cache);
 
 	page = grab_cache_page_write_begin(mapping, index, flags);
@@ -2357,7 +2354,7 @@ static int fuse_write_end(struct file *file, struct address_space *mapping,
 		struct page *page, void *fsdata)
 {
 	struct inode *inode = page->mapping->host;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RECVFILE
 	struct fuse_conn *fc = get_fuse_conn(file_inode(file));
 
 	/*
@@ -2367,7 +2364,7 @@ static int fuse_write_end(struct file *file, struct address_space *mapping,
 	 */
 	if (!fc->writeback_cache)
 		return fuse_perform_write_page(file, mapping, pos, len, page);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RECVFILE */
 
 	/* Haven't copied anything?  Skip zeroing, size extending, dirtying. */
 	if (!copied)

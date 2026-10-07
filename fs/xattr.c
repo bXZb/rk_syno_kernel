@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
   File: fs/xattr.c
@@ -28,9 +25,9 @@
 
 #include <linux/uaccess.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 #include <linux/syno_acl.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 static const char *
 strcmp_prefix(const char *a, const char *a_prefix)
@@ -89,15 +86,15 @@ xattr_resolve_name(struct inode *inode, const char **name)
  * Check permissions for extended attribute access.  This is a bit complicated
  * because different namespaces have very different rules.
  */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 static int
 xattr_permission(struct dentry *dentry, const char *name, int mask)
 #else
 static int
 xattr_permission(struct inode *inode, const char *name, int mask)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	struct inode *inode = d_inode(dentry);
 	/*
 	 * For synoacl getxattr setxattr
@@ -142,7 +139,7 @@ xattr_permission(struct inode *inode, const char *name, int mask)
 			mask |= MAY_WRITE_ATTR;
 		return synoacl_op_permission(dentry, mask);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 	/*
 	 * We can never set or remove an extended attribute on a read-only
@@ -190,13 +187,13 @@ xattr_permission(struct inode *inode, const char *name, int mask)
 			return -EPERM;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(dentry)) {
 		// ACL file but not the syno key.
 		// still need to check mask permission with ACL
 		return synoacl_op_permission(dentry, mask);
 	} else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	return inode_permission(inode, mask);
 }
 
@@ -317,11 +314,11 @@ __vfs_setxattr_locked(struct dentry *dentry, const char *name,
 	struct inode *inode = dentry->d_inode;
 	int error;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	error = xattr_permission(dentry, name, MAY_WRITE);
 #else
 	error = xattr_permission(inode, name, MAY_WRITE);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	if (error)
 		return error;
 
@@ -406,11 +403,11 @@ vfs_getxattr_alloc(struct dentry *dentry, const char *name, char **xattr_value,
 	char *value = *xattr_value;
 	int error;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	error = xattr_permission(dentry, name, MAY_READ);
 #else
 	error = xattr_permission(inode, name, MAY_READ);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	if (error)
 		return error;
 
@@ -434,9 +431,9 @@ vfs_getxattr_alloc(struct dentry *dentry, const char *name, char **xattr_value,
 	*xattr_value = value;
 	return error;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 EXPORT_SYMBOL_GPL(vfs_getxattr_alloc);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 ssize_t
 __vfs_getxattr(struct dentry *dentry, struct inode *inode, const char *name,
@@ -459,11 +456,11 @@ vfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size)
 	struct inode *inode = dentry->d_inode;
 	int error;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	error = xattr_permission(dentry, name, MAY_READ);
 #else
 	error = xattr_permission(inode, name, MAY_READ);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	if (error)
 		return error;
 
@@ -471,7 +468,7 @@ vfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size)
 	if (error)
 		return error;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (name) {
 		if (!strcmp(name, SYNO_ACL_XATTR_INHERIT)) {
 			return synoacl_op_acl_xattr_get(dentry, SYNO_ACL_INHERITED, value, size);
@@ -480,7 +477,7 @@ vfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size)
 			return synoacl_op_acl_xattr_get(dentry, SYNO_ACL_PSEUDO_INHERIT_ONLY, value, size);
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 	if (!strncmp(name, XATTR_SECURITY_PREFIX,
 				XATTR_SECURITY_PREFIX_LEN)) {
@@ -550,11 +547,11 @@ __vfs_removexattr_locked(struct dentry *dentry, const char *name,
 	struct inode *inode = dentry->d_inode;
 	int error;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	error = xattr_permission(dentry, name, MAY_WRITE);
 #else
 	error = xattr_permission(inode, name, MAY_WRITE);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	if (error)
 		return error;
 

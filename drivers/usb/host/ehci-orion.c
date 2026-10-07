@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * drivers/usb/host/ehci-orion.c
@@ -218,10 +215,10 @@ static int ehci_orion_drv_probe(struct platform_device *pdev)
 	int irq, err;
 	enum orion_ehci_phy_ver phy_version;
 	struct orion_ehci_hcd *priv;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_POWER_RESET
 	struct device_node *node = pdev->dev.of_node;
 	u32 vbus_gpio_pin = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_POWER_RESET */
 
 	if (usb_disabled())
 		return -ENODEV;
@@ -257,7 +254,7 @@ static int ehci_orion_drv_probe(struct platform_device *pdev)
 		goto err;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_POWER_RESET
 	if (node) {
 		if (of_property_read_bool(node, "power-control-capable")) {
 			hcd->power_control_support = 1;
@@ -276,7 +273,7 @@ static int ehci_orion_drv_probe(struct platform_device *pdev)
 			dev_warn(&pdev->dev, "failed to get Vbus gpio\n");
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_POWER_RESET */
 
 	hcd->rsrc_start = res->start;
 	hcd->rsrc_len = resource_size(res);
@@ -329,11 +326,11 @@ static int ehci_orion_drv_probe(struct platform_device *pdev)
 		dev_warn(&pdev->dev, "USB phy version isn't supported.\n");
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_POWER_RESET
 	dev_info(&pdev->dev, "USB2 Vbus gpio %d\n", hcd->vbus_gpio_pin);
 	dev_info(&pdev->dev, "power control %s\n", hcd->power_control_support ?
 			"enabled" : "disabled");
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_POWER_RESET */
 
 	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
 	if (err)

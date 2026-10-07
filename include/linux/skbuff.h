@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  *	Definitions for the 'struct sk_buff' memory handlers.
@@ -2877,7 +2874,7 @@ void napi_consume_skb(struct sk_buff *skb, int budget);
 void __kfree_skb_flush(void);
 void __kfree_skb_defer(struct sk_buff *skb);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DEV_ALLOC_PAGES
 static inline struct page *___dev_alloc_pages(gfp_t gfp_mask,
 					     unsigned int order)
 {
@@ -2897,7 +2894,7 @@ static inline struct page *__dev_alloc_pages_wo_memalloc(unsigned int order)
 {
 	return ___dev_alloc_pages(GFP_ATOMIC | __GFP_NOWARN, order);
 }
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_DEV_ALLOC_PAGES */
 /**
  * __dev_alloc_pages - allocate page for network Rx
  * @gfp_mask: allocation priority. Set __GFP_NOMEMALLOC if not for network Rx
@@ -2922,7 +2919,7 @@ static inline struct page *__dev_alloc_pages(gfp_t gfp_mask,
 
 	return alloc_pages_node(NUMA_NO_NODE, gfp_mask, order);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DEV_ALLOC_PAGES */
 
 static inline struct page *dev_alloc_pages(unsigned int order)
 {

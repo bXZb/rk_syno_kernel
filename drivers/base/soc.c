@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) ST-Ericsson SA 2011
@@ -24,15 +21,15 @@ static DEFINE_IDA(soc_ida);
 static ssize_t soc_info_show(struct device *dev, struct device_attribute *attr,
 			     char *buf);
 
-#if defined(MY_ABC_HERE)
-#else /* MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
+#else /* CONFIG_SYNO_LSP_RTD1619B */
 struct soc_device {
 	struct device dev;
 	struct soc_device_attribute *attr;
 	int soc_dev_num;
 };
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 static struct bus_type soc_bus_type = {
 	.name  = "soc",
 };

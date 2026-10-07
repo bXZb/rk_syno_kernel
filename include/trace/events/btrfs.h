@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #undef TRACE_SYSTEM
 #define TRACE_SYSTEM btrfs
@@ -33,9 +30,9 @@ struct btrfs_qgroup;
 struct extent_io_tree;
 struct prelim_ref;
 struct btrfs_space_info;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_STATISTICS
 struct btrfs_key;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_STATISTICS */
 
 #define show_ref_type(type)						\
 	__print_symbolic(type,						\
@@ -2154,7 +2151,7 @@ DEFINE_EVENT(btrfs__space_info_update, update_bytes_pinned,
 	TP_ARGS(fs_info, sinfo, old, diff)
 );
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_STATISTICS
 DECLARE_EVENT_CLASS(btrfs__syno_meta_statistics,
 
 	TP_PROTO(struct btrfs_fs_info *fs_info, struct btrfs_root *root, const struct btrfs_key *key),
@@ -2229,7 +2226,7 @@ TRACE_EVENT(btrfs_syno_meta_statistics_eb_disk_read,
 		  show_root_type(__entry->owner),
 		  __entry->objectid, __entry->type, __entry->offset)
 );
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_STATISTICS */
 
 #endif /* _TRACE_BTRFS_H */
 

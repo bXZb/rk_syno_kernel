@@ -1,10 +1,7 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 #ifndef _UAPI_LINUX_SYNOTIFY_H
 #define _UAPI_LINUX_SYNOTIFY_H
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 #include <linux/types.h>
 
 /* the following events that user-space can register for */
@@ -70,6 +67,6 @@ struct synotify_event_v2 {
 
 	char		name[0];	/* stub for possible name (full path, actually) */
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 #endif /* _UAPI_LINUX_SYNOTIFY_H */

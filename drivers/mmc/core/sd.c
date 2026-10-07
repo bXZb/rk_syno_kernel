@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/drivers/mmc/core/sd.c
@@ -29,7 +26,7 @@
 #include "sd.h"
 #include "sd_ops.h"
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_MMC_RTK_SDMMC
 
 int mmc_runtime_resume_flag=0;
@@ -47,7 +44,7 @@ void set_mmc_runtime_resume_flag(int flag)
 EXPORT_SYMBOL(set_mmc_runtime_resume_flag);
 #endif /* CONFIG_MMC_RTK_SDMMC */
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 static const unsigned int tran_exp[] = {
 	10000,		100000,		1000000,	10000000,
 	0,		0,		0,		0
@@ -1332,7 +1329,7 @@ static int mmc_sd_runtime_resume(struct mmc_host *host)
 	int err;
 
 	err = _mmc_sd_resume(host);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 
 #ifdef CONFIG_MMC_RTK_SDMMC
 	if (err && err != -ENOMEDIUM) {
@@ -1341,11 +1338,13 @@ static int mmc_sd_runtime_resume(struct mmc_host *host)
 			mmc_hostname(host), err);
 	}
 #else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	if (err && err != -ENOMEDIUM)
 		pr_err("%s: error %d doing runtime resume\n",
 			mmc_hostname(host), err);
-#endif /* MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
+#endif /* CONFIG_MMC_RTK_SDMMC */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 
 	return 0;
 }

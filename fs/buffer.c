@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/fs/buffer.c
@@ -3017,7 +3014,7 @@ static int submit_bh_wbc(int op, int op_flags, struct buffer_head *bh,
 	BUG_ON(!buffer_locked(bh));
 	BUG_ON(!buffer_mapped(bh));
 	BUG_ON(!bh->b_end_io);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_BH_FLAGS_WARNING
 	if (WARN_ON(buffer_delay(bh)))
 		clear_buffer_delay(bh);
 	if (WARN_ON(buffer_unwritten(bh)))
@@ -3025,7 +3022,7 @@ static int submit_bh_wbc(int op, int op_flags, struct buffer_head *bh,
 #else
 	BUG_ON(buffer_delay(bh));
 	BUG_ON(buffer_unwritten(bh));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_BH_FLAGS_WARNING */
 
 	/*
 	 * Only clear out a write error when rewriting

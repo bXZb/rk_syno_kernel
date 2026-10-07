@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2014 Facebook.  All rights reserved.
@@ -14,10 +11,10 @@
 #include <linux/kobject.h>
 #include "ulist.h"
 #include "delayed-ref.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #include <linux/btrfs_tree.h>
 #include "ctree.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 /*
  * Btrfs qgroup overview
@@ -209,7 +206,7 @@ struct btrfs_qgroup {
 	u64 lim_flags;	/* which limits are set */
 	u64 max_rfer;
 	u64 max_excl;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	union {
 		u64 soft_rfer;
 		u64 rsv_rfer;
@@ -221,7 +218,7 @@ struct btrfs_qgroup {
 #else
 	u64 rsv_rfer;
 	u64 rsv_excl;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	/*
 	 * reservation tracking
@@ -247,12 +244,20 @@ struct btrfs_qgroup {
 	 * Sysfs kobjectid
 	 */
 	struct kobject kobj;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	bool need_rescan;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+	u64 deduped_zero;
+	/* Set when deduped_zero changed and needs to be persisted on next run_qgroups(). */
+	bool deduped_zero_dirty;
+	bool deduped_zero_valid;
+	bool deduped_zero_rescan_running;
+	u64 deduped_zero_rescan_seq;
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
+#ifdef CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT
 	int last_sent;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT */
 };
 
 static inline u64 btrfs_qgroup_subvolid(u64 qgroupid)
@@ -267,13 +272,13 @@ static inline u64 btrfs_qgroup_subvolid(u64 qgroupid)
 #define QGROUP_RELEASE		(1<<1)
 #define QGROUP_FREE		(1<<2)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 int btrfs_quota_enable(struct btrfs_fs_info *fs_info, u64 cmd);
 int btrfs_quota_unload(struct btrfs_fs_info *fs_info);
 int btrfs_quota_remove_v1(struct btrfs_fs_info *fs_info);
 #else
 int btrfs_quota_enable(struct btrfs_fs_info *fs_info);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 int btrfs_quota_disable(struct btrfs_fs_info *fs_info);
 int btrfs_qgroup_rescan(struct btrfs_fs_info *fs_info);
 void btrfs_qgroup_rescan_resume(struct btrfs_fs_info *fs_info);
@@ -460,7 +465,7 @@ int btrfs_qgroup_trace_subtree_after_cow(struct btrfs_trans_handle *trans,
 void btrfs_qgroup_destroy_extent_records(struct btrfs_transaction *trans);
 bool btrfs_check_quota_leak(struct btrfs_fs_info *fs_info);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 enum syno_quota_rescan_progress_update_type {
 	SYNO_QUOTA_PROGRESS_REMOVE_SCANNING,
 	SYNO_QUOTA_PROGRESS_REMOVE_QUEUED,
@@ -490,6 +495,14 @@ struct syno_quota_rescan_ctx {
 	 */
 	int end_path[BTRFS_MAX_LEVEL][2];
 	int current_path[BTRFS_MAX_LEVEL][2];
+
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+	/*
+	 * Subvolumes whose general quota v2 rescan finished and still need a
+	 * deduped_zero_only pass before deduped_zero can be published as valid.
+	 */
+	struct ulist *dz_fixup_ulist;
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
 };
 
 /*
@@ -509,8 +522,14 @@ struct syno_quota_rescan_item_updater {
 	u64 end_inode;
 	u64 tree_size;
 	u64 next_root;
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+	u64 deduped_zero;
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
 
 	bool enable; // Are we from btrfs_quota_enable()?
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+	bool deduped_zero_valid;
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
 } __attribute__ ((__packed__));
 
 static inline void syno_quota_rescan_item_init(struct syno_quota_rescan_item_updater *updater)
@@ -523,17 +542,23 @@ static inline void syno_quota_rescan_item_init(struct syno_quota_rescan_item_upd
 		*iter = SYNO_QUOTA_RESCAN_ITEM_SKIP;
 
 	updater->enable = false;
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+	updater->deduped_zero_valid = false;
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
 }
 
 static inline bool syno_quota_rescan_item_check(struct syno_quota_rescan_item_updater *updater)
 {
-	u64 *iter = (u64 *)updater;
-	char *end = (char *)updater + offsetof(struct syno_quota_rescan_item_updater, enable);
-
-	for (; (char *)iter < end; iter++) {
-		if (*iter == SYNO_QUOTA_RESCAN_ITEM_SKIP)
-			return 1;
-	}
+	/* Only mandatory base fields must be set for new-item creation.
+	 * Optional extension fields (e.g. deduped_zero) may remain SKIP
+	 * and will be written as 0 by the on-disk item zeroed init. */
+	if (updater->flags == SYNO_QUOTA_RESCAN_ITEM_SKIP ||
+	    updater->version == SYNO_QUOTA_RESCAN_ITEM_SKIP ||
+	    updater->rescan_inode == SYNO_QUOTA_RESCAN_ITEM_SKIP ||
+	    updater->end_inode == SYNO_QUOTA_RESCAN_ITEM_SKIP ||
+	    updater->tree_size == SYNO_QUOTA_RESCAN_ITEM_SKIP ||
+	    updater->next_root == SYNO_QUOTA_RESCAN_ITEM_SKIP)
+		return 1;
 	return 0;
 }
 
@@ -560,6 +585,36 @@ int btrfs_add_update_syno_quota_rescan_item(struct btrfs_trans_handle *trans,
 			struct syno_quota_rescan_item_updater *updater);
 void btrfs_remove_queued_syno_rescan(struct btrfs_trans_handle *trans, u64 subvol_id);
 
+#ifdef CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT
+void btrfs_qgroup_deduped_zero_update(struct btrfs_inode *b_inode,
+			u64 add_bytes, u64 del_bytes);
+void btrfs_qgroup_get_deduped_zero_for_snapshot(struct btrfs_root *root,
+			u64 *deduped_zero, bool *deduped_zero_valid);
+int btrfs_syno_quota_set_deduped_zero_ready(struct btrfs_root *root);
+int btrfs_syno_quota_rescan_deduped_zero_only(struct btrfs_root *root);
+
+/*
+ * Account deduped-zero decrement during truncate / extent removal.
+ * Checks SHAREABLE + deduped-zero conditions internally, takes rescan_lock.
+ * Caller does NOT need to hold rescan_lock.
+ */
+static inline void btrfs_deduped_zero_account_drop(
+		struct btrfs_root *root, struct btrfs_inode *inode, u64 extent_start,
+		int syno_flag, u64 num_bytes)
+{
+	if (extent_start != 0)
+		return;
+	if (!(syno_flag & BTRFS_FILE_EXTENT_DEDUPED))
+		return;
+	if (!test_bit(BTRFS_ROOT_SHAREABLE, &root->state))
+		return;
+
+	down_read(&root->rescan_lock);
+	btrfs_qgroup_deduped_zero_update(inode, 0, num_bytes);
+	up_read(&root->rescan_lock);
+}
+#endif /* CONFIG_SYNO_BTRFS_DEDUPED_ZERO_ACCOUNT */
+
 // Return true if need to account quota.
 static inline bool btrfs_quota_rescan_check(struct btrfs_root *root, u64 ino)
 {
@@ -568,17 +623,17 @@ static inline bool btrfs_quota_rescan_check(struct btrfs_root *root, u64 ino)
 	else
 		return false;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QGROUP_QUERY
 int btrfs_qgroup_query(struct btrfs_root *root,
                         struct btrfs_ioctl_qgroup_query_args *qqa);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QGROUP_QUERY */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT
 extern u64 qgroup_soft_limit;
 int __init qgroup_netlink_init(void);
 void qgroup_netlink_exit(void);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT */
 
 #endif

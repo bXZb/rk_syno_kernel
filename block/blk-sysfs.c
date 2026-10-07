@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Functions related to sysfs handling
@@ -207,7 +204,7 @@ static ssize_t queue_discard_max_store(struct request_queue *q,
 
 static ssize_t queue_discard_zeroes_data_show(struct request_queue *q, char *page)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_TRIM_DISCARD_ZEROES_DATA_ALWAYS_TRUE
 	return queue_var_show(1, page);
 #else
 	return queue_var_show(0, page);
@@ -555,12 +552,12 @@ static ssize_t queue_dax_show(struct request_queue *q, char *page)
 	return queue_var_show(blk_queue_dax(q), page);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 static ssize_t queue_unused_hint_show(struct request_queue *q, char *page)
 {
 	return sprintf(page, "%u\n", test_bit(QUEUE_FLAG_UNUSED_HINT, &q->queue_flags));
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 
 #define QUEUE_RO_ENTRY(_prefix, _name)			\
 static struct queue_sysfs_entry _prefix##_entry = {	\
@@ -618,9 +615,9 @@ QUEUE_RW_ENTRY(queue_wb_lat, "wbt_lat_usec");
 #ifdef CONFIG_BLK_DEV_THROTTLING_LOW
 QUEUE_RW_ENTRY(blk_throtl_sample_time, "throttle_sample_time");
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 QUEUE_RO_ENTRY(queue_unused_hint, "syno_unused_hint");
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 
 /* legacy alias for logical_block_size: */
 static struct queue_sysfs_entry queue_hw_sector_size_entry = {
@@ -676,9 +673,9 @@ static struct attribute *queue_attrs[] = {
 #ifdef CONFIG_BLK_DEV_THROTTLING_LOW
 	&blk_throtl_sample_time_entry.attr,
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 	&queue_unused_hint_entry.attr,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 	NULL,
 };
 
@@ -827,6 +824,8 @@ static void blk_release_queue(struct kobject *kobj)
 	if (queue_is_mq(q))
 		blk_mq_release(q);
 
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+#else /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 	blk_trace_shutdown(q);
 	mutex_lock(&q->debugfs_mutex);
 	debugfs_remove_recursive(q->debugfs_dir);
@@ -834,6 +833,7 @@ static void blk_release_queue(struct kobject *kobj)
 
 	if (queue_is_mq(q))
 		blk_mq_debugfs_unregister(q);
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 
 	bioset_exit(&q->bio_split);
 
@@ -979,15 +979,35 @@ void blk_unregister_queue(struct gendisk *disk)
 	if (queue_is_mq(q))
 		blk_mq_unregister_dev(disk_to_dev(disk), q);
 
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+#else /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 	kobject_uevent(&q->kobj, KOBJ_REMOVE);
 	kobject_del(&q->kobj);
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 	blk_trace_remove_sysfs(disk_to_dev(disk));
 
 	mutex_lock(&q->sysfs_lock);
 	if (q->elevator)
 		elv_unregister_queue(q);
 	mutex_unlock(&q->sysfs_lock);
+
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+	/* Now that we've deleted all child objects, we can delete the queue. */
+	kobject_uevent(&q->kobj, KOBJ_REMOVE);
+	kobject_del(&q->kobj);
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
+
 	mutex_unlock(&q->sysfs_dir_lock);
+
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+	blk_trace_shutdown(q);
+	mutex_lock(&q->debugfs_mutex);
+	debugfs_remove_recursive(q->debugfs_dir);
+	q->debugfs_dir = NULL;
+	q->sched_debugfs_dir = NULL;
+	q->rqos_debugfs_dir = NULL;
+	mutex_unlock(&q->debugfs_mutex);
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 
 	kobject_put(&disk_to_dev(disk)->kobj);
 }

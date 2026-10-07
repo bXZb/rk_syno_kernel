@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0+
 /*
  *  Universal/legacy driver for 8250/16550-type serial ports
@@ -45,20 +42,21 @@
 
 #include "8250.h"
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 #include <linux/pci_regs.h>
 #include <asm/pci-direct.h>
 #include <linux/pci.h>
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_DTS_INFO
 #include <linux/synolib.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_DTS_INFO */
 
 extern char gszSynoTtyS0[50];
 extern char gszSynoTtyS1[50];
 extern char gszSynoTtyS2[50];
+extern char gszSynoTtyS3[50];
 
 static unsigned long syno_parse_ttys_port(char* s);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 
 /*
  * Configuration:
@@ -109,6 +107,153 @@ struct irq_info {
 static struct hlist_head irq_lists[NR_IRQ_HASH];
 static DEFINE_MUTEX(hash_mutex);	/* Used to walk the hash */
 
+#ifdef CONFIG_SYNO_TTY_DTS_INFO
+
+#define DT_TTY_NODE "ttyS"
+extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
+extern int syno_compare_dts_pciepath(const struct pci_dev *pdev, const struct device_node *pDeviceNode);
+
+/**
+ * lookup_internal_slot - lookup device tree to find corresponding internal slot of the ata_port
+ * @ap [IN]: query ata_port
+ *
+ * return  1: match
+ *         0: slot not found
+ */
+int pcipath_uart_port_match(char* str, const struct uart_port *port)
+{
+	int ret = 0;
+	char sztemp[SYNO_DTS_PROPERTY_CONTENT_LENGTH] = {'\0'};
+
+	if (NULL == str || NULL == port) {
+		goto END;
+	}
+
+	if (*str == ',')
+        ++str;
+
+	if (-1 == syno_pciepath_dts_pattern_get(to_pci_dev(port->dev), sztemp, sizeof(sztemp))) {
+		goto END;
+	}
+
+	if (0 == strncmp(str, sztemp, strlen(sztemp))) {
+		ret = 1;
+	}
+
+END:
+	return ret;
+}
+
+bool dts_uart_port_match(struct uart_port *port, const int uart_index)
+{
+	bool ret = false;
+	int index = -1;
+	struct device_node *pSlotNode = NULL;
+	const char *addr_type = NULL;
+	int err = 0;
+	u32 base_addr = 0;
+	const char *dts_dev_name = NULL;
+
+	if (NULL == of_root) {
+		goto END;
+	}
+	for_each_child_of_node(of_root, pSlotNode) {
+		// get index number of tty, e.g. /ttyS@2 --> 2
+		if (!pSlotNode->full_name || 1 != sscanf(pSlotNode->full_name, DT_TTY_NODE"@%d", &index)) {
+			continue;
+		}
+		if (uart_index == index) {
+			break;
+		}
+	}
+
+	if (NULL == pSlotNode) {
+		goto END;
+	}
+
+	err = of_property_read_string(pSlotNode, "addr_type", &addr_type);
+	if (err < 0) {
+		of_node_put(pSlotNode);
+		goto END;
+	}
+
+	if (!strcmp(addr_type, "pcie")) {
+		ret = (0 == syno_compare_dts_pciepath(to_pci_dev(port->dev), pSlotNode) ? true : false);
+	} else if (!strcmp(addr_type, "io")){
+		of_property_read_u32(pSlotNode, "base", &base_addr);
+		ret = (port->iobase == base_addr? true : false);
+	} else if (!strcmp(addr_type, "mmio")){
+		of_property_read_u32(pSlotNode, "base", &base_addr);
+		ret = ((virt_to_phys((volatile void *)port->mapbase) & 0xffffffff) == base_addr? true : false);
+	} else if (!strcmp(addr_type, DT_TTY_TYPE_DEV_NAME)) {
+		of_property_read_string(pSlotNode, DT_TTY_TYPE_DEV_NAME, &dts_dev_name);
+		if (0 == strncmp(dev_name(port->dev), dts_dev_name, strlen(dev_name(port->dev)))) {
+			ret = true;
+		} else {
+			ret = false;
+		}
+	} else {
+		// unknown type
+		ret = false;
+	}
+
+	//
+	// TODO: Uart port is found
+	//       Set uart configs if there are some settings in dts.
+	//
+	//if (ret) {
+		// Set configs
+	//}
+
+	of_node_put(pSlotNode);
+
+END:
+	return ret;
+}
+
+bool dts_uart_port_get(unsigned long *ulIoBase, const int uart_index)
+{
+	int iRet = -1;
+	int index = -1;
+	struct device_node *pSlotNode = NULL;
+	const char *addr_type = NULL;
+	int err = 0;
+	u32 base_addr = 0;
+
+	if (NULL == of_root || NULL == ulIoBase) {
+		goto END;
+	}
+	for_each_child_of_node(of_root, pSlotNode) {
+		// get index number of tty, e.g. /ttyS@2 --> 2
+		if (!pSlotNode->full_name || 1 != sscanf(pSlotNode->full_name, DT_TTY_NODE"@%d", &index)) {
+			continue;
+		}
+		if (uart_index == index) {
+			break;
+		}
+	}
+
+	if (NULL == pSlotNode) {
+		goto END;
+	}
+
+	err = of_property_read_string(pSlotNode, DT_TTY_ADDR_TYPE, &addr_type);
+	if (err < 0) {
+		of_node_put(pSlotNode);
+		goto END;
+	}
+
+	if (!strcmp(addr_type, DT_TTY_TYPE_IO)){
+		of_property_read_u32(pSlotNode, DT_TTY_BASE, &base_addr);
+		*ulIoBase = base_addr;
+		iRet = 0;
+	}
+	of_node_put(pSlotNode);
+
+END:
+	return iRet;
+}
+#endif /* CONFIG_SYNO_TTY_DTS_INFO */
 /*
  * This is the serial driver's interrupt routine.
  *
@@ -515,6 +660,9 @@ static void __init serial8250_isa_init_ports(void)
 	struct uart_8250_port *up;
 	static int first = 1;
 	int i, irqflag = 0;
+#ifdef CONFIG_SYNO_TTY_DTS_INFO
+	unsigned long ulIoBase = 0;
+#endif /* CONFIG_SYNO_TTY_DTS_INFO */
 
 	if (!first)
 		return;
@@ -556,7 +704,7 @@ static void __init serial8250_isa_init_ports(void)
 	     i < ARRAY_SIZE(old_serial_port) && i < nr_uarts;
 	     i++, up++) {
 		struct uart_port *port = &up->port;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 		//If ttyS is serial we have to replace the port here, cause there is no
 		//additional driver will fill the serial8250_ports.
 		char *str;
@@ -589,9 +737,14 @@ static void __init serial8250_isa_init_ports(void)
 				port->iobase = old_serial_port[i].port;
 			}
 		}
-#else /* MY_DEF_HERE */
+#ifdef CONFIG_SYNO_TTY_DTS_INFO
+		else if (0 == dts_uart_port_get(&ulIoBase, i)) {
+			port->iobase = ulIoBase;
+		}
+#endif /* CONFIG_SYNO_TTY_DTS_INFO */
+#else /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 		port->iobase   = old_serial_port[i].port;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 		port->irq      = irq_canonicalize(old_serial_port[i].irq);
 		port->irqflags = 0;
 		port->uartclk  = old_serial_port[i].baud_base * 16;
@@ -628,7 +781,7 @@ serial8250_register_ports(struct uart_driver *drv, struct device *dev)
 	}
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_TTY_MICROP_CTRL
 void syno_uart_write(struct tty_port *port, char *buf, int size)
 {
 	struct uart_state *state = container_of(port, struct uart_state, port);
@@ -640,7 +793,7 @@ void syno_uart_write(struct tty_port *port, char *buf, int size)
 	}
 }
 EXPORT_SYMBOL(syno_uart_write);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_TTY_MICROP_CTRL */
 
 #ifdef CONFIG_SERIAL_8250_CONSOLE
 
@@ -747,7 +900,7 @@ static struct console univ8250_console = {
 	.data		= &serial8250_reg,
 };
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
 struct console kt_console = {
 	.name		= "ttyS",
 	.write		= univ8250_console_write,
@@ -765,16 +918,16 @@ void kt_console_init(void)
 	register_console(&kt_console);
 	univ8250_console_setup(&kt_console, NULL);
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 
 static int __init univ8250_console_init(void)
 {
 	if (nr_uarts == 0)
 		return -ENODEV;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 	return -ENODEV;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 
 	serial8250_isa_init_ports();
 	register_console(&univ8250_console);
@@ -1005,7 +1158,7 @@ static struct platform_device *serial8250_isa_devs;
  */
 static DEFINE_MUTEX(serial_mutex);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 static unsigned long syno_parse_ttys_port(char* s)
 {
 	unsigned long Ret = 0;
@@ -1115,114 +1268,13 @@ static bool syno_compare_tty_pci(char *str1, char *str2)
 End:
 	return bRet;
 }
-#endif /* MY_DEF_HERE */
-
-#ifdef MY_DEF_HERE
-
-#define DT_TTY_NODE "ttyS"
-extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
-extern int syno_compare_dts_pciepath(const struct pci_dev *pdev, const struct device_node *pDeviceNode);
-
-/**
- * lookup_internal_slot - lookup device tree to find corresponding internal slot of the ata_port
- * @ap [IN]: query ata_port
- *
- * return  1: match
- *         0: slot not found
- */
-int pcipath_uart_port_match(char* str, const struct uart_port *port)
-{
-	int ret = 0;
-	char sztemp[SYNO_DTS_PROPERTY_CONTENT_LENGTH] = {'\0'};
-
-	if (NULL == str || NULL == port) {
-		goto END;
-	}
-
-	if (*str == ',')
-        ++str;
-
-	if (-1 == syno_pciepath_dts_pattern_get(to_pci_dev(port->dev), sztemp, sizeof(sztemp))) {
-		goto END;
-	}
-
-	if (0 == strncmp(str, sztemp, strlen(sztemp))) {
-		ret = 1;
-	}
-
-END:
-	return ret;
-}
-
-bool dts_uart_port_match(struct uart_port *port, const int uart_index)
-{
-	bool ret = false;
-	int index = -1;
-	struct device_node *pSlotNode = NULL;
-	const char *addr_type = NULL;
-	int err = 0;
-	u32 base_addr = 0;
-
-	if (NULL == of_root) {
-		goto END;
-	}
-	for_each_child_of_node(of_root, pSlotNode) {
-		// get index number of tty, e.g. /ttyS@2 --> 2
-		if (!pSlotNode->full_name || 1 != sscanf(pSlotNode->full_name, DT_TTY_NODE"@%d", &index)) {
-			continue;
-		}
-		if (uart_index == index) {
-			break;
-		}
-	}
-
-	if (NULL == pSlotNode) {
-		goto END;
-	}
-
-	err = of_property_read_string(pSlotNode, "addr_type", &addr_type);
-	if (err < 0) {
-		of_node_put(pSlotNode);
-		goto END;
-	}
-
-	if (!strcmp(addr_type, "pcie")) {
-		if (dev_is_pci(port->dev)) {
-			ret = (0 == syno_compare_dts_pciepath(to_pci_dev(port->dev), pSlotNode) ? true : false);
-		} else {
-			ret = false;
-		}
-	} else if (!strcmp(addr_type, "io")){
-		of_property_read_u32(pSlotNode, "base", &base_addr);
-		ret = (port->iobase == base_addr? true : false);
-	} else if (!strcmp(addr_type, "mmio")){
-		of_property_read_u32(pSlotNode, "base", &base_addr);
-		ret = ((virt_to_phys((volatile void *)port->mapbase) & 0xffffffff) == base_addr? true : false);
-	} else {
-		// unknown type
-		ret = false;
-	}
-
-	//
-	// TODO: Uart port is found
-	//       Set uart configs if there are some settings in dts.
-	//
-	//if (ret) {
-		// Set configs
-	//}
-
-	of_node_put(pSlotNode);
-
-END:
-	return ret;
-}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 
 static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *port)
 {
 	int i;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 	char *str;
 	struct pci_dev *pdev = NULL;
 	char *root_port = NULL;
@@ -1262,7 +1314,7 @@ static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *
 				}
 			}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_DTS_INFO
 			if (!strcmp(gszSynoTtyS0, "")) {
 				if (dts_uart_port_match(port, 0)) {
 					iTtyCount++;
@@ -1283,7 +1335,14 @@ static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *
 					return &serial8250_ports[2];
 				}
 			}
-#endif /* MY_DEF_HERE */
+
+			if (!strcmp(gszSynoTtyS3, "")) {
+				if (dts_uart_port_match(port, 3)) {
+					iTtyCount++;
+					return &serial8250_ports[3];
+				}
+			}
+#endif /* CONFIG_SYNO_TTY_DTS_INFO */
 
 			/* fall through */
 		case UPIO_MEM:
@@ -1342,7 +1401,7 @@ static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *
 				}
 			}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_DTS_INFO
 			if (!strncmp(gszSynoTtyS0, "pcifull", 7)) {
 				str = &gszSynoTtyS0[7];
 				if (1 == pcipath_uart_port_match(str, port)) {
@@ -1384,22 +1443,29 @@ static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *
 					return &serial8250_ports[2];
 				}
 			}
-#endif /* MY_DEF_HERE */
+
+			if (!strcmp(gszSynoTtyS3, "")) {
+				if (dts_uart_port_match(port, 3)) {
+					iTtyCount++;
+					return &serial8250_ports[3];
+				}
+			}
+#endif /* CONFIG_SYNO_TTY_DTS_INFO */
 			break;
 		default:
 			break;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 
 	/*
 	 * First, find a port entry which matches.
 	 */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 	for (i = iTtyCount; i < nr_uarts; i++)
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 	for (i = 0; i < nr_uarts; i++)
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 		if (uart_match_port(&serial8250_ports[i].port, port))
 			return &serial8250_ports[i];
 
@@ -1407,9 +1473,9 @@ static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *
 	i = port->line;
 	if (i < nr_uarts && serial8250_ports[i].port.type == PORT_UNKNOWN &&
 			serial8250_ports[i].port.iobase == 0
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 			&& i > (iTtyCount - 1)
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 	)
 
 		return &serial8250_ports[i];
@@ -1418,11 +1484,11 @@ static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *
 	 * free entry.  We look for one which hasn't been previously
 	 * used (indicated by zero iobase).
 	 */
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 	for (i = iTtyCount; i < nr_uarts; i++)
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 	for (i = 0; i < nr_uarts; i++)
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 		if (serial8250_ports[i].port.type == PORT_UNKNOWN &&
 		    serial8250_ports[i].port.iobase == 0)
 			return &serial8250_ports[i];
@@ -1431,11 +1497,11 @@ static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *
 	 * That also failed.  Last resort is to find any entry which
 	 * doesn't have a real port associated with it.
 	 */
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 	for (i = iTtyCount; i < nr_uarts; i++)
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 	for (i = 0; i < nr_uarts; i++)
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 		if (serial8250_ports[i].port.type == PORT_UNKNOWN)
 			return &serial8250_ports[i];
 
@@ -1509,9 +1575,9 @@ int serial8250_register_8250_port(struct uart_8250_port *up)
 		uart->rs485_start_tx	= up->rs485_start_tx;
 		uart->rs485_stop_tx	= up->rs485_stop_tx;
 		uart->dma		= up->dma;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
 		uart->blXmitrCheck = true;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 
 		/* Take tx_loadsz from fifosize if it wasn't set separately */
 		if (uart->port.fifosize && !uart->tx_loadsz)

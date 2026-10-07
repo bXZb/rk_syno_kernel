@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* Generate assembler source containing symbol information
  *
  * Copyright 2002       by Kai Germaschewski
@@ -269,7 +266,7 @@ static int symbol_valid(const struct sym_entry *s)
 {
 	const char *name = sym_name(s);
 
-#if defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_KEXEC_TEST) || defined(CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK)
 	int i = 0;
 	static const char* const hidden_prefixes[] = {
 		/* libhydrogen */
@@ -296,7 +293,7 @@ static int symbol_valid(const struct sym_entry *s)
 			return 0;
 		}
 	}
-#endif /* MY_DEF_HERE || MY_DEF_HERE */
+#endif /* CONFIG_SYNO_KEXEC_TEST || CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
 
 	/* if --all-symbols is not specified, then symbols outside the text
 	 * and inittext sections are discarded */

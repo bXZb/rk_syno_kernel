@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2016-2018 Christoph Hellwig.
@@ -14,12 +11,12 @@
 struct fiemap_ctx {
 	struct fiemap_extent_info *fi;
 	struct iomap prev;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 	struct syno_rbd_meta_ioctl_args *rbd_meta;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 #define VALID_FIEMAP_FLAG_ON_RBD_META	(FIEMAP_EXTENT_UNWRITTEN | \
 					 FIEMAP_EXTENT_LAST)
 
@@ -52,13 +49,13 @@ static int rbd_meta_fill_next_extent(struct syno_rbd_meta_ioctl_args *args,
 	args->cnt++;
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 
 static int iomap_to_fiemap(struct fiemap_extent_info *fi,
 		struct iomap *iomap, u32 flags
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 		, struct syno_rbd_meta_ioctl_args *rbd_meta
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 		)
 {
 	switch (iomap->type) {
@@ -83,7 +80,7 @@ static int iomap_to_fiemap(struct fiemap_extent_info *fi,
 	if (iomap->flags & IOMAP_F_SHARED)
 		flags |= FIEMAP_EXTENT_SHARED;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 	if (!fi && !rbd_meta)
 		return -EINVAL;
 	else if (rbd_meta)
@@ -91,7 +88,7 @@ static int iomap_to_fiemap(struct fiemap_extent_info *fi,
 				iomap->offset + iomap->length,
 				iomap->addr != IOMAP_NULL_ADDR ? iomap->addr : 0,
 				iomap->length, flags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 	return fiemap_fill_next_extent(fi, iomap->offset,
 			iomap->addr != IOMAP_NULL_ADDR ? iomap->addr : 0,
 			iomap->length, flags);
@@ -108,9 +105,9 @@ iomap_fiemap_actor(struct inode *inode, loff_t pos, loff_t length, void *data,
 		return length;
 
 	ret = iomap_to_fiemap(ctx->fi, &ctx->prev, 0
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 			, ctx->rbd_meta
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 			);
 	ctx->prev = *iomap;
 	switch (ret) {
@@ -132,9 +129,9 @@ int iomap_fiemap(struct inode *inode, struct fiemap_extent_info *fi,
 	memset(&ctx, 0, sizeof(ctx));
 	ctx.fi = fi;
 	ctx.prev.type = IOMAP_HOLE;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 	ctx.rbd_meta = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 
 	ret = fiemap_prep(inode, fi, start, &len, 0);
 	if (ret)
@@ -157,9 +154,9 @@ int iomap_fiemap(struct inode *inode, struct fiemap_extent_info *fi,
 
 	if (ctx.prev.type != IOMAP_HOLE) {
 		ret = iomap_to_fiemap(fi, &ctx.prev, FIEMAP_EXTENT_LAST
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 				      , NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 				);
 		if (ret < 0)
 			return ret;
@@ -204,7 +201,7 @@ iomap_bmap(struct address_space *mapping, sector_t bno,
 }
 EXPORT_SYMBOL_GPL(iomap_bmap);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 static int rbd_meta_map_prep(struct inode *inode,
 			     struct syno_rbd_meta_ioctl_args *rbd_meta,
 			     u64 start, u64 *len)
@@ -249,6 +246,7 @@ int iomap_rbd_meta_map(struct inode *inode, struct syno_rbd_meta_ioctl_args *rbd
 
 		start += ret;
 		len -= ret;
+		cond_resched();
 	}
 
 	if (ctx.prev.type != IOMAP_HOLE) {
@@ -259,5 +257,5 @@ int iomap_rbd_meta_map(struct inode *inode, struct syno_rbd_meta_ioctl_args *rbd
 
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 

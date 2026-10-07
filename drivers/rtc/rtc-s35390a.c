@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Seiko Instruments S-35390A RTC Driver
@@ -15,9 +12,9 @@
 #include <linux/bcd.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_RTC_S35390A_ACPI_SUPPORT
 #include <linux/acpi.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_RTC_S35390A_ACPI_SUPPORT */
 
 #define S35390A_CMD_STATUS1	0
 #define S35390A_CMD_STATUS2	1
@@ -68,13 +65,13 @@ static const struct of_device_id s35390a_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, s35390a_of_match);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_RTC_S35390A_ACPI_SUPPORT
 static const struct acpi_device_id s35390a_acpi_ids[] = {
 	{ "RTC35390", 0 },
 	{ }
 };
 MODULE_DEVICE_TABLE(acpi, s35390a_acpi_ids);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_RTC_S35390A_ACPI_SUPPORT */
 
 struct s35390a {
 	struct i2c_client *client[8];
@@ -132,12 +129,12 @@ static int s35390a_init(struct s35390a *s35390a)
 	 * The 24H bit is kept over reset, so set it already here.
 	 */
 initialize:
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_RTC_S35390A_FIX_12HOUR_MODE
 	/* Synology use 12H mode, don't switch to 24H */
 	buf = S35390A_FLAG_RESET;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_RTC_S35390A_FIX_12HOUR_MODE */
 	buf = S35390A_FLAG_RESET | S35390A_FLAG_24H;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_RTC_S35390A_FIX_12HOUR_MODE */
 
 	ret = s35390a_set_reg(s35390a, S35390A_CMD_STATUS1, &buf, 1);
 
@@ -484,7 +481,7 @@ static int s35390a_probe(struct i2c_client *client,
 		return err_read;
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_RTC_S35390A_FIX_12HOUR_MODE
 	if (status1 & S35390A_FLAG_24H) {
 		dev_info(dev, "24H mode !! switch to 12H mode");
 
@@ -499,12 +496,12 @@ static int s35390a_probe(struct i2c_client *client,
 	}
 
 	s35390a->twentyfourhour = 0;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_RTC_S35390A_FIX_12HOUR_MODE */
 	if (status1 & S35390A_FLAG_24H)
 		s35390a->twentyfourhour = 1;
 	else
 		s35390a->twentyfourhour = 0;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_RTC_S35390A_FIX_12HOUR_MODE */
 
 	if (status1 & S35390A_FLAG_INT2) {
 		/* disable alarm (and maybe test mode) */
@@ -541,9 +538,9 @@ static struct i2c_driver s35390a_driver = {
 	.driver		= {
 		.name	= "rtc-s35390a",
 		.of_match_table = of_match_ptr(s35390a_of_match),
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_RTC_S35390A_ACPI_SUPPORT
 		.acpi_match_table = ACPI_PTR(s35390a_acpi_ids),
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_RTC_S35390A_ACPI_SUPPORT */
 	},
 	.probe		= s35390a_probe,
 	.id_table	= s35390a_id,

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *  linux/drivers/mmc/sdio.c
@@ -30,8 +27,8 @@
 #include "sdio_ops.h"
 #include "sdio_cis.h"
 
-#if defined(MY_ABC_HERE)
-#else /* MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
+#else /* CONFIG_SYNO_LSP_RTD1619B */
 MMC_DEV_ATTR(vendor, "0x%04x\n", card->cis.vendor);
 MMC_DEV_ATTR(device, "0x%04x\n", card->cis.device);
 MMC_DEV_ATTR(revision, "%u.%u\n", card->major_rev, card->minor_rev);
@@ -74,7 +71,7 @@ static struct device_type sdio_type = {
 	.groups = sdio_std_groups,
 };
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 static int sdio_read_fbr(struct sdio_func *func)
 {
 	int ret;
@@ -686,11 +683,11 @@ try_again:
 	/*
 	 * Allocate card structure.
 	 */
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 	card = mmc_alloc_card(host, NULL);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LSP_RTD1619B */
 	card = mmc_alloc_card(host, &sdio_type);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	if (IS_ERR(card))
 		return PTR_ERR(card);
 
@@ -730,7 +727,7 @@ try_again:
 	 * to make sure which speed mode should work.
 	 */
 	if (rocr & ocr & R4_18V_PRESENT) {
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 
 #ifdef CONFIG_MMC_SDHCI_OF_RTK
 		host->ios.signal_voltage = MMC_SIGNAL_VOLTAGE_180;
@@ -738,9 +735,9 @@ try_again:
 #else
 		err = mmc_set_uhs_voltage(host, ocr_card);
 #endif /* CONFIG_MMC_SDHCI_OF_RTK */
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LSP_RTD1619B */
 		err = mmc_set_uhs_voltage(host, ocr_card);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 		if (err == -EAGAIN) {
 			mmc_sdio_pre_init(host, ocr_card, card);
 			retries--;

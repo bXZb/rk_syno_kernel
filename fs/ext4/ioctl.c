@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * linux/fs/ext4/ioctl.c
@@ -274,7 +271,7 @@ static int uuid_is_zero(__u8 u[16])
 }
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CAPABILITY_FLAGS
 static int ext4_ioctl_get_features(struct file *filp, void __user *arg)
 {
 	struct inode *inode = file_inode(filp);
@@ -388,7 +385,7 @@ static int ext4_ioctl_set_features(struct file *filp, void __user *arg)
 out:
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CAPABILITY_FLAGS */
 
 /*
  * If immutable is set and we are not clearing it, we're not allowed to change
@@ -467,7 +464,7 @@ static int ext4_ioctl_setflags(struct inode *inode,
 
 	oldflags = ei->i_flags;
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_DEV) || defined(CONFIG_SYNO_FS_RBD_META)
 	/*
 	 * we use IMMUTABLE & SWAPFILE protected data,
 	 */
@@ -476,7 +473,7 @@ static int ext4_ioctl_setflags(struct inode *inode,
 		err = -ETXTBSY;
 		goto flags_out;
 	}
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_DEV || CONFIG_SYNO_FS_RBD_META */
 
 	err = vfs_ioc_setflags_prepare(inode, oldflags, flags);
 	if (err)
@@ -1256,9 +1253,9 @@ resizefs_out:
 		range.minlen = max((unsigned int)range.minlen,
 				   q->limits.discard_granularity);
 		ret = ext4_trim_fs(sb, &range
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_UNUSED_HINT
 				   , TRIM_SEND_TRIM
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_UNUSED_HINT */
 				   );
 		if (ret < 0)
 			return ret;
@@ -1269,7 +1266,7 @@ resizefs_out:
 
 		return 0;
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_UNUSED_HINT
 	case FIHINTUNUSED:
 	{
 		struct request_queue *q = bdev_get_queue(sb->s_bdev);
@@ -1292,7 +1289,7 @@ resizefs_out:
 
 		return ret;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_UNUSED_HINT */
 	case EXT4_IOC_PRECACHE_EXTENTS:
 		return ext4_ext_precache(inode);
 
@@ -1472,12 +1469,12 @@ out:
 		if (!ext4_has_feature_verity(sb))
 			return -EOPNOTSUPP;
 		return fsverity_ioctl_measure(filp, (void __user *)arg);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CAPABILITY_FLAGS
 	case EXT4_IOC_GET_FEATURES:
 		return ext4_ioctl_get_features(filp, (void __user *)arg);
 	case EXT4_IOC_SET_FEATURES:
 		return ext4_ioctl_set_features(filp, (void __user *)arg);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CAPABILITY_FLAGS */
 
 	default:
 		return -ENOTTY;
@@ -1495,7 +1492,7 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_SYMLINK_IOCTL
 long ext4_symlink_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	long ret;
@@ -1509,7 +1506,7 @@ long ext4_symlink_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_SYMLINK_IOCTL */
 
 #ifdef CONFIG_COMPAT
 long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -1582,10 +1579,10 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case EXT4_IOC_GET_ES_CACHE:
 	case FS_IOC_FSGETXATTR:
 	case FS_IOC_FSSETXATTR:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CAPABILITY_FLAGS
 	case EXT4_IOC_GET_FEATURES:
 	case EXT4_IOC_SET_FEATURES:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CAPABILITY_FLAGS */
 		break;
 	default:
 		return -ENOIOCTLCMD;

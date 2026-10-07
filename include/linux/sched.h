@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_SCHED_H
 #define _LINUX_SCHED_H
@@ -67,7 +64,7 @@ struct signal_struct;
 struct task_delay_info;
 struct task_group;
 struct io_uring_task;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_KWORK_STAT
 struct work_acct;
 #endif
 
@@ -1080,7 +1077,7 @@ struct task_struct {
 
 	struct task_io_accounting	ioac;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_KWORK_STAT
 	struct work_acct                 *workacct;
 #endif
 
@@ -1619,9 +1616,9 @@ static inline bool is_percpu_thread(void)
 #define PFA_SPEC_IB_FORCE_DISABLE	6	/* Indirect branch speculation permanently restricted */
 #define PFA_SPEC_SSB_NOEXEC		7	/* Speculative Store Bypass clear on execve() */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_FIX_FITHAW_DEADLOCK_WITH_SHRINKER_EVICT_UNLINKED_INODE
 #define PFA_SHRINK	10	/* for shrink */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_FIX_FITHAW_DEADLOCK_WITH_SHRINKER_EVICT_UNLINKED_INODE */
 
 #define TASK_PFA_TEST(name, func)					\
 	static inline bool task_##func(struct task_struct *p)		\
@@ -1664,11 +1661,11 @@ TASK_PFA_CLEAR(SPEC_IB_DISABLE, spec_ib_disable)
 TASK_PFA_TEST(SPEC_IB_FORCE_DISABLE, spec_ib_force_disable)
 TASK_PFA_SET(SPEC_IB_FORCE_DISABLE, spec_ib_force_disable)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_FIX_FITHAW_DEADLOCK_WITH_SHRINKER_EVICT_UNLINKED_INODE
 TASK_PFA_TEST(SHRINK, test_shrink)
 TASK_PFA_SET(SHRINK, shrink)
 TASK_PFA_CLEAR(SHRINK, shrink)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_FIX_FITHAW_DEADLOCK_WITH_SHRINKER_EVICT_UNLINKED_INODE */
 
 static inline void
 current_restore_flags(unsigned long orig_flags, unsigned long flags)

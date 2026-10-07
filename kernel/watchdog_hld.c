@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Detect hard lockups on a system
@@ -32,9 +29,17 @@ static struct cpumask dead_events_mask;
 static unsigned long hardlockup_allcpu_dumped;
 static atomic_t watchdog_cpus = ATOMIC_INIT(0);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PRINTK_DEADLOCK_HANG
+#include <linux/delay.h>
+#include <linux/kexec.h>
+extern raw_spinlock_t logbuf_lock;
+extern void syno_console_sem_force_reset(void);
+static atomic_t syno_hld_panic_in_progress = ATOMIC_INIT(0);
+#endif /* CONFIG_SYNO_PRINTK_DEADLOCK_HANG */
+
+#ifdef CONFIG_SYNO_HARDLOCKUP_THRESH_EXTENSION
 #define SYNO_HARDLOCKUP_WATCHDOG_THRESH 60
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_HARDLOCKUP_THRESH_EXTENSION */
 
 notrace void arch_touch_nmi_watchdog(void)
 {
@@ -118,6 +123,9 @@ static void watchdog_overflow_callback(struct perf_event *event,
 				       struct perf_sample_data *data,
 				       struct pt_regs *regs)
 {
+#ifdef CONFIG_SYNO_PRINTK_DEADLOCK_HANG
+	unsigned long flags;
+#endif /* CONFIG_SYNO_PRINTK_DEADLOCK_HANG */
 	/* Ensure the watchdog never gets throttled */
 	event->hw.interrupts = 0;
 
@@ -136,10 +144,10 @@ static void watchdog_overflow_callback(struct perf_event *event,
 	 * then this is a good indication the cpu is stuck
 	 */
 	if (is_hardlockup()) {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_HARDLOCKUP_PANIC_ENHANCE
 		/* save hardlockup_panic to avoid enable during printing calltrace */
 		unsigned int panic_backup = hardlockup_panic;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_HARDLOCKUP_PANIC_ENHANCE */
 		int this_cpu = smp_processor_id();
 
 		/* only print hardlockups once */
@@ -155,6 +163,14 @@ static void watchdog_overflow_callback(struct perf_event *event,
 		else
 			dump_stack();
 
+#ifdef CONFIG_SYNO_PRINTK_DEADLOCK_HANG
+		/* Try to get logbuf_lock - if we can't, printk is deadlocked, skip printing */
+		local_irq_save(flags);
+		if (raw_spin_trylock(&logbuf_lock)) {
+			raw_spin_unlock(&logbuf_lock);
+			local_irq_restore(flags);
+			/* Safe to use printk - keep original logic completely */
+#endif /* CONFIG_SYNO_PRINTK_DEADLOCK_HANG */
 		/*
 		 * Perform all-CPU dump only once to avoid multiple hardlockups
 		 * generating interleaving traces
@@ -162,12 +178,43 @@ static void watchdog_overflow_callback(struct perf_event *event,
 		if (sysctl_hardlockup_all_cpu_backtrace &&
 				!test_and_set_bit(0, &hardlockup_allcpu_dumped))
 			trigger_allbutself_cpu_backtrace();
+#ifdef CONFIG_SYNO_PRINTK_DEADLOCK_HANG
+		} else {
+			local_irq_restore(flags);
+		}
 
-#ifdef MY_DEF_HERE
+		/*
+		 * Unconditional rescue logic to prevent any potential printk deadlock
+		 * from blocking panic/reboot. Since deadlock can occur at any time
+		 * (even after trylock checks), we proactively stop other CPUs and
+		 * reset locks to ensure the system can always complete panic sequence.
+		 * Only skip this if kdump is loaded to preserve crash dump context.
+		 */
+		if (!kexec_crash_image) {
+			/* Only the first CPU to reach here conducts the rescue operation */
+			if (atomic_cmpxchg(&syno_hld_panic_in_progress, 0, 1) == 0) {
+				mdelay(1000);
+				smp_send_stop();
+				debug_locks_off();
+				raw_spin_lock_init(&logbuf_lock);
+				syno_console_sem_force_reset();
+			} else {
+				/*
+				 * Other CPUs: stall here to avoid interfering with rescue.
+				 * Will be stopped by smp_send_stop() from the rescuer.
+				 */
+				while (1) {
+					cpu_relax();
+				}
+			}
+		}
+#endif /* CONFIG_SYNO_PRINTK_DEADLOCK_HANG */
+
+#ifdef CONFIG_SYNO_HARDLOCKUP_PANIC_ENHANCE
 		if (panic_backup)
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_HARDLOCKUP_PANIC_ENHANCE */
 		if (hardlockup_panic)
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_HARDLOCKUP_PANIC_ENHANCE */
 			nmi_panic(regs, "Hard LOCKUP");
 
 		__this_cpu_write(hard_watchdog_warn, true);
@@ -185,11 +232,11 @@ static int hardlockup_detector_event_create(void)
 	struct perf_event *evt;
 
 	wd_attr = &wd_hw_attr;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_HARDLOCKUP_THRESH_EXTENSION
 	wd_attr->sample_period = hw_nmi_get_sample_period(SYNO_HARDLOCKUP_WATCHDOG_THRESH);
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_HARDLOCKUP_THRESH_EXTENSION */
 	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_HARDLOCKUP_THRESH_EXTENSION */
 
 	/* Try to register using hardware perf events */
 	evt = perf_event_create_kernel_counter(wd_attr, cpu, NULL,

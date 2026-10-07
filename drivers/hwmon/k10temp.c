@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * k10temp.c - AMD Family 10h/11h/12h/14h/15h/16h/17h
@@ -77,6 +74,7 @@ static DEFINE_MUTEX(nb_smu_ind_mutex);
 
 #define ZEN_CUR_TEMP_SHIFT			21
 #define ZEN_CUR_TEMP_RANGE_SEL_MASK		BIT(19)
+#define ZEN_CUR_TEMP_TJ_SEL_MASK		GENMASK(17, 16)
 
 #define ZEN_SVI_BASE				0x0005A000
 
@@ -176,7 +174,8 @@ static long get_raw_temp(struct k10temp_data *data)
 
 	data->read_tempreg(data->pdev, &regval);
 	temp = (regval >> ZEN_CUR_TEMP_SHIFT) * 125;
-	if (regval & data->temp_adjust_mask)
+	if ((regval & data->temp_adjust_mask) ||
+	    (regval & ZEN_CUR_TEMP_TJ_SEL_MASK) == ZEN_CUR_TEMP_TJ_SEL_MASK)
 		temp -= 49000;
 	return temp;
 }
@@ -396,7 +395,7 @@ static void k10temp_get_ccd_support(struct pci_dev *pdev,
 	}
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_HWMON_AMD_K10TEMP
 #include <linux/synobios.h>
 int syno_k10cpu_temperature(struct _SynoCpuTemp *pCpuTemp)
 {
@@ -409,15 +408,15 @@ int syno_k10cpu_temperature(struct _SynoCpuTemp *pCpuTemp)
 		return -1;
 	}
 
-#if defined(MY_DEF_HERE) || defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_V1000) || defined(CONFIG_SYNO_V1000SOFS) || defined(CONFIG_SYNO_R1000)
 	pdev = pci_get_device(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_17H_M10H_DF_F3, NULL);
-#elif defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
+#elif defined(CONFIG_SYNO_EPYC7002) || defined(CONFIG_SYNO_EPYC7002SOFS)
 	pdev = pci_get_device(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_17H_M30H_DF_F3, NULL);
-#elif defined(MY_DEF_HERE)
+#elif defined(CONFIG_SYNO_EPYC7003) || defined(CONFIG_SYNO_EPYC7003NTB)
 	pdev = pci_get_device(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_19H_DF_F3, NULL);
-#elif defined(MY_DEF_HERE)
+#elif defined(CONFIG_SYNO_RYZEN5K)
 	pdev = pci_get_device(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_17H_M70H_DF_F3, NULL);
-#endif /* MY_DEF_HERE || MY_DEF_HERE || MY_DEF_HERE || MY_DEF_HERE || MY_DEF_HERE || MY_DEF_HERE */
+#endif /* CONFIG_SYNO_V1000 || CONFIG_SYNO_V1000SOFS || CONFIG_SYNO_R1000 || CONFIG_SYNO_EPYC7002 || CONFIG_SYNO_EPYC7002SOFS || CONFIG_SYNO_RYZEN5K || CONFIG_SYNO_EPYC7003 || CONFIG_SYNO_EPYC7003NTB*/
 
 	if (!pdev)
 		return -ENODEV;
@@ -425,8 +424,9 @@ int syno_k10cpu_temperature(struct _SynoCpuTemp *pCpuTemp)
 	read_tempreg_nb_zen(pdev, &regval);
 
 	temp = (regval >> 21) * 125;
-	if (regval & 0x80000)
+	if ((regval & 0x80000) || (regval & ZEN_CUR_TEMP_TJ_SEL_MASK) == ZEN_CUR_TEMP_TJ_SEL_MASK) {
 		temp -= 49000;
+	}
 
 	pCpuTemp->cpu_temp[0] = temp / 1000;
 	pCpuTemp->cpu_num = 1;
@@ -434,7 +434,7 @@ int syno_k10cpu_temperature(struct _SynoCpuTemp *pCpuTemp)
 	return 0;
 }
 EXPORT_SYMBOL(syno_k10cpu_temperature);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_HWMON_AMD_K10TEMP */
 
 static int k10temp_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {

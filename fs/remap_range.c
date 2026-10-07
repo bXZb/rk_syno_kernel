@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 #include <linux/slab.h>
 #include <linux/stat.h>
@@ -22,7 +19,7 @@
 #include <linux/uaccess.h>
 #include <asm/unistd.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 #include <linux/syno_acl.h>
 #endif
 
@@ -446,12 +443,12 @@ static bool allow_file_dedupe(struct file *file)
 	if (uid_eq(current_fsuid(), file_inode(file)->i_uid))
 		return true;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(file_dentry(file))) {
 		if (!synoacl_op_permission(file_dentry(file), MAY_WRITE))
 			return true;
 	} else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	if (!inode_permission(file_inode(file), MAY_WRITE))
 		return true;
 	return false;
@@ -465,9 +462,9 @@ loff_t vfs_dedupe_file_range_one(struct file *src_file, loff_t src_pos,
 
 	WARN_ON_ONCE(remap_flags & ~(REMAP_FILE_DEDUP |
 				     REMAP_FILE_CAN_SHORTEN
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR
 				     | REMAP_FILE_SKIP_CHECK_COMPR_DIR
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 				     ));
 
 	ret = mnt_want_write_file(dst_file);

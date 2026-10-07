@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  *  Server-side procedures for NFSv4.
  *
@@ -52,9 +49,9 @@
 #include "acl.h"
 #include "pnfs.h"
 #include "trace.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 #include "syno_io_stat.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 
 #ifdef CONFIG_NFSD_V4_SECURITY_LABEL
 #include <linux/security.h>
@@ -193,14 +190,14 @@ do_open_permission(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nfs
 
 	if (open->op_share_access & NFS4_SHARE_ACCESS_READ)
 		accmode |= NFSD_MAY_READ;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_LOCKER
 	/* NFSD_MAY_TRUNC is checked later in nfsd_get_write_access() if size is changed. */
 	if (open->op_share_access & NFS4_SHARE_ACCESS_WRITE)
 		accmode |= NFSD_MAY_WRITE;
 #else
 	if (open->op_share_access & NFS4_SHARE_ACCESS_WRITE)
 		accmode |= (NFSD_MAY_WRITE | NFSD_MAY_TRUNC);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_LOCKER */
 	if (open->op_share_deny & NFS4_SHARE_DENY_READ)
 		accmode |= NFSD_MAY_WRITE;
 
@@ -512,7 +509,7 @@ nfsd4_getfh(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	return nfs_ok;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 static void get_pool_hint(struct svc_rqst *rqstp, const struct path *exp_path)
 {
 	struct svc_xprt *rq_xprt = rqstp->rq_xprt;
@@ -540,7 +537,7 @@ static void get_pool_hint(struct svc_rqst *rqstp, const struct path *exp_path)
 out:
 	kfree(kbuf);
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 
 static __be32
 nfsd4_putfh(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
@@ -548,21 +545,21 @@ nfsd4_putfh(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 {
 	struct nfsd4_putfh *putfh = &u->putfh;
 	__be32 ret;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 	struct svc_xprt *rq_xprt = rqstp->rq_xprt;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 
 	fh_put(&cstate->current_fh);
 	cstate->current_fh.fh_handle.fh_size = putfh->pf_fhlen;
 	memcpy(&cstate->current_fh.fh_handle.fh_base, putfh->pf_fhval,
 	       putfh->pf_fhlen);
 	ret = fh_verify(rqstp, &cstate->current_fh, 0, NFSD_MAY_BYPASS_GSS);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 	if (!ret && unlikely(rq_xprt && rq_xprt->xpt_pool_index == -1 &&
 			rq_xprt->xpt_server->has_pool_hint)) {
 		get_pool_hint(rqstp, &cstate->current_fh.fh_export->ex_path);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 #ifdef CONFIG_NFSD_V4_2_INTER_SSC
 	if (ret == nfserr_stale && putfh->no_verify) {
 		SET_FH_FLAG(&cstate->current_fh, NFSD4_FH_FOREIGN);
@@ -1157,9 +1154,9 @@ void nfs4_put_copy(struct nfsd4_copy *copy)
 {
 	if (!refcount_dec_and_test(&copy->refcount))
 		return;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP
 	kfree(copy->cp_src);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 	kfree(copy);
 }
 
@@ -1331,11 +1328,11 @@ nfsd4_setup_inter_ssc(struct svc_rqst *rqstp,
 	if (status)
 		goto out;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP
 	status = nfsd4_interssc_connect(copy->cp_src, rqstp, mount);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 	status = nfsd4_interssc_connect(&copy->cp_src, rqstp, mount);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 	if (status)
 		goto out;
 
@@ -1498,11 +1495,11 @@ static void dup_copy_fields(struct nfsd4_copy *src, struct nfsd4_copy *dst)
 		dst->nf_src = nfsd_file_get(src->nf_src);
 
 	memcpy(&dst->cp_stateid, &src->cp_stateid, sizeof(src->cp_stateid));
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP
 	memcpy(dst->cp_src, src->cp_src, sizeof(struct nl4_server));
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 	memcpy(&dst->cp_src, &src->cp_src, sizeof(struct nl4_server));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 	memcpy(&dst->stateid, &src->stateid, sizeof(src->stateid));
 	memcpy(&dst->c_fh, &src->c_fh, sizeof(src->c_fh));
 	dst->ss_mnt = src->ss_mnt;
@@ -1594,11 +1591,11 @@ nfsd4_copy(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 		async_copy = kzalloc(sizeof(struct nfsd4_copy), GFP_KERNEL);
 		if (!async_copy)
 			goto out_err;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP
 		async_copy->cp_src = (struct nl4_server *) kzalloc(sizeof(struct nl4_server), GFP_KERNEL);
 		if (!async_copy->cp_src)
 			goto out_err;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 		if (!nfs4_init_copy_state(nn, copy))
 			goto out_err;
 		refcount_set(&async_copy->refcount, 1);
@@ -1697,15 +1694,15 @@ nfsd4_copy_notify(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	/* For now, only return one server address in cpn_src, the
 	 * address used by the client to connect to this server.
 	 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP
 	cn->cpn_src->nl4_type = NL4_NETADDR;
 	status = nfsd4_set_netaddr((struct sockaddr *)&rqstp->rq_daddr,
 				 &cn->cpn_src->u.nl4_addr);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 	cn->cpn_src.nl4_type = NL4_NETADDR;
 	status = nfsd4_set_netaddr((struct sockaddr *)&rqstp->rq_daddr,
 				 &cn->cpn_src.u.nl4_addr);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_INIT_NL4_SERVER_BY_NFS_OP */
 	WARN_ON_ONCE(status);
 	if (status) {
 		nfs4_put_cpntf_state(nn, cps);
@@ -2390,7 +2387,7 @@ check_if_stalefh_allowed(struct nfsd4_compoundargs *args)
 }
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 static void nfsd_store_latency(u64 rpc_lat, u64 vfs_lat, u32 op)
 {
 	enum syno_nfsd_io_stat_type type;
@@ -2401,7 +2398,7 @@ static void nfsd_store_latency(u64 rpc_lat, u64 vfs_lat, u32 op)
 						SYNO_NFSD_USEC_TO_SEC(vfs_lat),
 						SYNO_NFSD_VERSION_4, type);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 
 
 /*
@@ -2418,10 +2415,10 @@ nfsd4_proc_compound(struct svc_rqst *rqstp)
 	struct svc_fh *save_fh = &cstate->save_fh;
 	struct nfsd_net *nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
 	__be32		status;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	ktime_t stime = ktime_get();
 	s64 latency_us;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 	svcxdr_init_encode(rqstp, resp);
 	resp->tagp = resp->xdr.p;
@@ -2462,9 +2459,9 @@ nfsd4_proc_compound(struct svc_rqst *rqstp)
 
 	trace_nfsd_compound(rqstp, args->opcnt);
 	while (!status && resp->opcnt < args->opcnt) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 		stime = ktime_get();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 		op = &args->ops[resp->opcnt++];
 
@@ -2515,13 +2512,13 @@ nfsd4_proc_compound(struct svc_rqst *rqstp)
 		if (op->opdesc->op_get_currentstateid)
 			op->opdesc->op_get_currentstateid(cstate, &op->u);
 		op->status = op->opdesc->op_func(rqstp, cstate, &op->u);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_TRACE
 		trace_syno_nfsd4_dispatch(rqstp, cstate, op);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_TRACE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 		// ignore internal error for udc.
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 		/* Only from SEQUENCE */
 		if (cstate->status == nfserr_replay_cache) {
 			dprintk("%s NFS4.1 replay from cache\n", __func__);
@@ -2540,9 +2537,9 @@ nfsd4_proc_compound(struct svc_rqst *rqstp)
 				op->status = check_nfsd_access(current_fh->fh_export, rqstp);
 		}
 encode_op:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 		syno_nfsd_store_error(be32_to_cpu(op->status), SYNO_NFSD_VERSION_4);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 		if (op->status == nfserr_replay_me) {
 			op->replay = &cstate->replay_owner->so_replay;
 			nfsd4_encode_replay(&resp->xdr, op);
@@ -2557,14 +2554,14 @@ encode_op:
 
 		nfsd4_cstate_clear_replay(cstate);
 		nfsd4_increment_op_stats(op->opnum);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 		latency_us = ktime_to_us(ktime_sub(ktime_get(), stime));
 		if (op->opnum >= FIRST_NFS4_OP && op->opnum <= LAST_NFS4_OP)
 			svc_update_lat(&nfsdstats.nfs4_oplatency[op->opnum], latency_us);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 		nfsd_store_latency(latency_us, rqstp->vfs_latency_us, op->opnum);
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	}
 
 	fh_put(current_fh);
@@ -3429,17 +3426,17 @@ static const struct svc_procedure nfsd_procedures4[2] = {
 };
 
 static unsigned int nfsd_count3[ARRAY_SIZE(nfsd_procedures4)];
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 static struct svc_lat nfsd_latency4[ARRAY_SIZE(nfsd_procedures4)];
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 const struct svc_version nfsd_version4 = {
 	.vs_vers		= 4,
 	.vs_nproc		= 2,
 	.vs_proc		= nfsd_procedures4,
 	.vs_count		= nfsd_count3,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	.vs_latency		= nfsd_latency4,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	.vs_dispatch		= nfsd_dispatch,
 	.vs_xdrsize		= NFS4_SVC_XDRSIZE,
 	.vs_rpcb_optnl		= true,

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 #ifndef LINUX_NFSD_SYNO_IO_STAT_H
 #define LINUX_NFSD_SYNO_IO_STAT_H
 #include <linux/types.h>
@@ -8,9 +5,9 @@
 #include <linux/socket.h>
 
 #include <linux/sunrpc/auth.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 #include <linux/sunrpc/xdr.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
 
 enum syno_nfsd_io_stat_type {
 	SYNO_NFSD_IO_READ = 0,
@@ -46,16 +43,16 @@ void syno_nfsd_client_expire_time_set(int t);
 int syno_nfsd_client_expire_time_get(void);
 void syno_nfsd_client_cleaner(void);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_CONNECTION_STAT
 void syno_nfsd_connection_init(void);
 void syno_nfsd_max_connection_init(void);
 int syno_nfsd_max_connection(void);
 void syno_nfsd_connection_destroy(void);
 void syno_nfsd_total_connection_reset(void);
 int syno_nfsd_total_connection_stat_open(struct inode *inode, struct file *file);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_CONNECTION_STAT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 struct syno_nfsd_dummy_status {
 	__be32 status;
 };
@@ -68,6 +65,6 @@ void syno_nfsd_store_latency_into_histogram(unsigned int rpc_lat_s, unsigned int
 int syno_nfsd_latency_histogram_open(struct inode *inode, struct file *file);
 void syno_nfsd_store_error(int errno, enum syno_nfsd_version nfs_vers);
 int syno_nfsd_total_error_open(struct inode *inode, struct file *file);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 
 #endif /* LINUX_NFSD_SYNO_IO_STAT_H */

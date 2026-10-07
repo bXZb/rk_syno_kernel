@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _RAID10_H
 #define _RAID10_H
@@ -111,10 +108,10 @@ struct r10conf {
 	 */
 	sector_t		cluster_sync_low;
 	sector_t		cluster_sync_high;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DATA_CORRECTION
 	spinlock_t          syno_heal_retry_list_lock;
 	struct list_head    syno_heal_retry_list;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DATA_CORRECTION */
 };
 
 /*
@@ -187,7 +184,7 @@ enum r10bio_state {
 /* failfast devices did receive failfast requests. */
 	R10BIO_FailFast,
 };
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_RAID10_IO_SERIALIZATION
 /* modified from raid1.h */
 /*
  * each barrier unit size is 64MB fow now
@@ -201,5 +198,5 @@ static inline int syno_raid10_sector_to_idx(sector_t sector)
 	return hash_long(sector >> SYNO_RAID10_BARRIER_UNIT_SECTOR_BITS,
 			 SYNO_RAID10_BARRIER_BUCKETS_NR_BITS);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_RAID10_IO_SERIALIZATION */
 #endif

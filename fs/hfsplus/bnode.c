@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/hfsplus/bnode.c
@@ -26,11 +23,11 @@ void hfs_bnode_read(struct hfs_bnode *node, void *buf, int off, int len)
 {
 	struct page **pagep;
 	int l;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_BNODE_READ_PAGE_MAPPING_LIMIT
 	int pagenum;
 
 	pagenum = off >> PAGE_SHIFT;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_BNODE_READ_PAGE_MAPPING_LIMIT */
 	off += node->page_offset;
 	pagep = node->page + (off >> PAGE_SHIFT);
 	off &= ~PAGE_MASK;
@@ -40,10 +37,10 @@ void hfs_bnode_read(struct hfs_bnode *node, void *buf, int off, int len)
 	kunmap(*pagep);
 
 	while ((len -= l) != 0) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_BNODE_READ_PAGE_MAPPING_LIMIT
 		if (++pagenum >= node->tree->pages_per_bnode)
 			break;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_BNODE_READ_PAGE_MAPPING_LIMIT */
 		buf += l;
 		l = min_t(int, len, PAGE_SIZE);
 		memcpy(buf, kmap(*++pagep), l);

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0+
 /*
  *  Driver core for serial ports
@@ -32,24 +29,28 @@
 #include <linux/irq.h>
 #include <linux/uaccess.h>
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_DTS_INFO
 #include <linux/pci.h>
 #include <linux/synolib.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_DTS_INFO */
+
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+#include <linux/synobios.h>
+#include <linux/syno_microp.h>
+extern void syno_microp_notify_work(struct tty_port *port);
+extern int gSynoMicropSeries;
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 
 
 /*
  * This is used to lock changes in serial line configuration.
  */
 static DEFINE_MUTEX(port_mutex);
-#ifdef MY_ABC_HERE
-static DEFINE_SPINLOCK(ttyS1_lock);
-#endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SERIAL_CONSOLE_FORBID
 #include <linux/synobios.h>
 extern int gSynoForbidConsole;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SERIAL_CONSOLE_FORBID */
 
 /*
  * lockdep: port->lock is initialized in two places, but we
@@ -599,15 +600,6 @@ static int uart_write(struct tty_struct *tty,
 	unsigned long flags;
 	int c, ret = 0;
 
-#ifdef MY_ABC_HERE
-	/* We need to delay 150 ms avoid micro p buffer queue overflow */
-	if (!strcmp(tty->name, "ttyS1")) {
-		spin_lock(&ttyS1_lock);
-		mdelay(150);
-		spin_unlock(&ttyS1_lock);
-	}
-#endif /* MY_ABC_HERE */
-
 	/*
 	 * This means you called this function _after_ the port was
 	 * closed.  No cookie for you.
@@ -624,12 +616,12 @@ static int uart_write(struct tty_struct *tty,
 		return 0;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SERIAL_CONSOLE_FORBID
 	if (1 == gSynoForbidConsole && !strcmp(tty->name, "ttyS0")) {
 		uart_port_unlock(port, flags);
 		return count;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SERIAL_CONSOLE_FORBID */
 
 	while (port) {
 		c = CIRC_SPACE_TO_END(circ->head, circ->tail, UART_XMIT_SIZE);
@@ -1975,11 +1967,11 @@ void uart_console_write(struct uart_port *port, const char *s,
 {
 	unsigned int i;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SERIAL_CONSOLE_FORBID
 	if (1 == gSynoForbidConsole) {
 		return;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SERIAL_CONSOLE_FORBID */
 
 	for (i = 0; i < count; i++, s++) {
 		if (*s == '\n')
@@ -2414,7 +2406,7 @@ uart_configure_port(struct uart_driver *drv, struct uart_state *state,
 	if (port->type != PORT_UNKNOWN) {
 		unsigned long flags;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_SHORT_TIME_STUCK_FIX
 #else
 		uart_report_port(drv, port);
 #endif
@@ -2445,7 +2437,7 @@ uart_configure_port(struct uart_driver *drv, struct uart_state *state,
 		 */
 		if (!uart_console(port))
 			uart_change_pm(state, UART_PM_STATE_OFF);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_SHORT_TIME_STUCK_FIX
 		uart_report_port(drv, port);
 #endif
 	}
@@ -2856,7 +2848,7 @@ static ssize_t console_store(struct device *dev,
 	return ret < 0 ? ret : count;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
 #define UART_MSR              0x6
 static ssize_t msr_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
@@ -2869,9 +2861,9 @@ static ssize_t msr_show(struct device *dev,
 	msr = uport->serial_in(uport, UART_MSR);
 	return snprintf(buf, PAGE_SIZE, "%x\n", msr);
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_DTS_INFO
 extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
 static void syno_pciepath_enum(struct device *dev, char *buf) {
 	struct pci_dev *pdev = NULL;
@@ -2904,7 +2896,7 @@ static ssize_t syno_pcipath_show(struct device *dev,
 
 	return sprintf(buf, "%s\n", szPciePath);
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_DTS_INFO */
 
 static DEVICE_ATTR_RO(uartclk);
 static DEVICE_ATTR_RO(type);
@@ -2920,12 +2912,12 @@ static DEVICE_ATTR_RO(io_type);
 static DEVICE_ATTR_RO(iomem_base);
 static DEVICE_ATTR_RO(iomem_reg_shift);
 static DEVICE_ATTR_RW(console);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
 static DEVICE_ATTR_RO(msr);
-#endif /* MY_DEF_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
+#ifdef CONFIG_SYNO_TTY_DTS_INFO
 static DEVICE_ATTR_RO(syno_pcipath);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_DTS_INFO */
 
 static struct attribute *tty_dev_attrs[] = {
 	&dev_attr_uartclk.attr,
@@ -2942,12 +2934,12 @@ static struct attribute *tty_dev_attrs[] = {
 	&dev_attr_iomem_base.attr,
 	&dev_attr_iomem_reg_shift.attr,
 	&dev_attr_console.attr,
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
 	&dev_attr_msr.attr,
-#endif /* MY_DEF_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
+#ifdef CONFIG_SYNO_TTY_DTS_INFO
 	&dev_attr_syno_pcipath.attr,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_DTS_INFO */
 	NULL
 };
 
@@ -3045,6 +3037,13 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
 		dev_err(uport->dev, "Cannot register tty device on line %d\n",
 		       uport->line);
 	}
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+	if (1 < gSynoMicropSeries && 0 == strcmp(uport->name, SYNO_MICROP_TTY_NAME)) {
+		uport->state->port.syno_microp_notify = syno_microp_notify_work;
+	} else {
+		uport->state->port.syno_microp_notify = NULL;
+	}
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 
 	/*
 	 * Ensure UPF_DEAD is not set.
@@ -3076,6 +3075,13 @@ int uart_remove_one_port(struct uart_driver *drv, struct uart_port *uport)
 	int ret = 0;
 
 	BUG_ON(in_interrupt());
+
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+	/* Close microP v2 communication when UART is removed */
+	if (1 < gSynoMicropSeries && 0 == strcmp(uport->name, SYNO_MICROP_TTY_NAME)) {
+		syno_microp_v2_close();
+	}
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 
 	mutex_lock(&port_mutex);
 
@@ -3380,15 +3386,15 @@ int uart_get_rs485_mode(struct uart_port *port)
 }
 EXPORT_SYMBOL_GPL(uart_get_rs485_mode);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_TTY_AES_COMMAND
 int (*syno_test_list)(unsigned char, struct tty_struct *) = NULL;
 EXPORT_SYMBOL(syno_test_list);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_TTY_AES_COMMAND */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_TTY_MICROP_FUNCTIONS
 int (*syno_get_current)(unsigned char, struct tty_struct *) = NULL;
 EXPORT_SYMBOL(syno_get_current);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_TTY_MICROP_FUNCTIONS */
 
 MODULE_DESCRIPTION("Serial driver core");
 MODULE_LICENSE("GPL");

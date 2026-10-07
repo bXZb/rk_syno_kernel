@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *   Copyright (C) 2020, Microsoft Corporation.
@@ -12,9 +9,9 @@
 #include "cifsglob.h"
 #include "cifs_debug.h"
 #include "fs_context.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_SMB_OPS
 #include "cifsproto.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_SMB_OPS */
 
 static const match_table_t cifs_smb_version_tokens = {
 	{ Smb_1, SMB1_VERSION_STRING },
@@ -26,9 +23,9 @@ static const match_table_t cifs_smb_version_tokens = {
 	{ Smb_311, SMB311_VERSION_STRING },
 	{ Smb_311, ALT_SMB311_VERSION_STRING },
 	{ Smb_3any, SMB3ANY_VERSION_STRING },
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_SMB_OPS
 	{ Smb_Syno, SYNO_VERSION_STRING },
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_SMB_OPS */
 	{ Smb_default, SMBDEFAULT_VERSION_STRING },
 	{ Smb_version_err, NULL }
 };
@@ -73,12 +70,12 @@ cifs_parse_smb_version(char *value, struct smb_vol *vol, bool is_smb3)
 		cifs_dbg(VFS, "vers=2.0 mount not permitted when legacy dialects disabled\n");
 		return 1;
 #endif /* CIFS_ALLOW_INSECURE_LEGACY */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_SMB_OPS
 	case Smb_Syno:
 		vol->ops = &synocifs_operations;
 		vol->vals = &synocifs_values;
 		break;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_SMB_OPS */
 	case Smb_21:
 		vol->ops = &smb21_operations;
 		vol->vals = &smb21_values;

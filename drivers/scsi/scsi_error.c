@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  scsi_error.c Copyright (C) 1997 Eric Youngdale
@@ -48,20 +45,20 @@
 #include "scsi_priv.h"
 #include "scsi_logging.h"
 #include "scsi_transport_api.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_ERROR_REPORT
 #include "libsyno_report.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_ERROR_REPORT */
 
 #include <trace/events/scsi.h>
 
 #include <asm/unaligned.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_PROMOTE_INFO_LOG_LEVEL
 #ifdef KERN_INFO
 #undef KERN_INFO
 #define KERN_INFO KERN_NOTICE
 #endif
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_PROMOTE_INFO_LOG_LEVEL */
 
 static void scsi_eh_done(struct scsi_cmnd *scmd);
 
@@ -292,7 +289,7 @@ void scsi_eh_scmd_add(struct scsi_cmnd *scmd)
 	call_rcu(&scmd->rcu, scsi_eh_inc_host_failed);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_ERROR_REPORT
 static inline bool
 SynoTimeoutCmdNeedReport(unsigned char op)
 {
@@ -320,7 +317,7 @@ SynoScsiTimeout(struct scsi_cmnd *scsi_cmd)
 END:
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_ERROR_REPORT */
 
 /**
  * scsi_times_out - Timeout function for normal scsi commands.
@@ -363,10 +360,10 @@ enum blk_eh_timer_return scsi_times_out(struct request *req)
 		if (test_and_set_bit(SCMD_STATE_COMPLETE, &scmd->state))
 			return BLK_EH_RESET_TIMER;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_ERROR_REPORT
 		/* record timeout event */
 		SynoScsiTimeout(scmd);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_ERROR_REPORT */
 
 		if (scsi_abort_command(scmd) != SUCCESS) {
 			set_host_byte(scmd, DID_TIME_OUT);

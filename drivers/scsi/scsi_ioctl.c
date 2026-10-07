@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Changes:
@@ -29,12 +26,12 @@
 
 #include "scsi_logging.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_PROMOTE_INFO_LOG_LEVEL
 #ifdef KERN_INFO
 #undef KERN_INFO
 #define KERN_INFO KERN_NOTICE
 #endif
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_PROMOTE_INFO_LOG_LEVEL */
 
 #define NORMAL_RETRIES			5
 #define IOCTL_NORMAL_TIMEOUT			(10 * HZ)
@@ -113,7 +110,7 @@ static int ioctl_internal_command(struct scsi_device *sdev, char *cmd,
 
 	if (driver_byte(result) == DRIVER_SENSE &&
 	    scsi_sense_valid(&sshdr)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DISK_HIBERNATION
 		if (START_STOP == cmd[0]) {
 			if (0 == sdev->nospindown) {
 				sdev->nospindown = 1;
@@ -121,7 +118,7 @@ static int ioctl_internal_command(struct scsi_device *sdev, char *cmd,
 					   sdev->host->host_no, sdev->id, sdev->lun);
 			}
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DISK_HIBERNATION */
 		switch (sshdr.sense_key) {
 		case ILLEGAL_REQUEST:
 			if (cmd[0] == ALLOW_MEDIUM_REMOVAL)

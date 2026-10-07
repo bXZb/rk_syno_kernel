@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Copyright 2012 Texas Instruments
  *
@@ -19,12 +16,12 @@
 #include <linux/leds.h>
 #include <linux/workqueue.h>
 #include <linux/leds-lp3943.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 #include <linux/spinlock.h>
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
+#ifdef CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI
 #include <linux/acpi.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI */
 
 #define MAX_NUM_LEDS		16
 #define MAX_BRIGHTNESS		255
@@ -71,9 +68,9 @@ struct lp3943_led {
 	struct lp3943_led_node *node;
 	struct work_struct brtwork;
 	u8 brightness;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 	int retry_count;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 };
 
 struct lp3943 {
@@ -83,11 +80,11 @@ struct lp3943 {
 	int num_leds;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_PROBE_FIXED_BUS
 static struct i2c_client *gpClient = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_PROBE_FIXED_BUS */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 static DEFINE_MUTEX(ModeLock);
 
 enum lp3943_led_channel ch0[] = {
@@ -295,7 +292,7 @@ static void syno_lp3943_i2c_mutex (bool lock)
 		mutex_unlock(&syno_lp3943_i2c_lock);
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 
 static int lp3943_read_byte(struct lp3943 *lp, u8 reg, u8 *data)
 {
@@ -321,31 +318,31 @@ static int lp3943_update_bits(struct lp3943 *lp, u8 reg, u8 mask, u8 data)
 	int ret;
 	u8 tmp;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 /*LS registers are modified in this function only, so this is the only part that we have to protect as a critical section*/
 	mutex_lock(&ModeLock);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 
 	ret = lp3943_read_byte(lp, reg, &tmp);
 	if (ret)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 		goto END;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 		return ret;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 
 	tmp &= ~mask;
 	tmp |= data & mask;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 	ret = lp3943_write_byte(lp, reg, tmp);
 
 END:
 	mutex_unlock(&ModeLock);
 	return ret;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 	return lp3943_write_byte(lp, reg, tmp);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 }
 
 static int lp3943_update_selector(struct lp3943 *lp, enum lp3943_led_mode mode,
@@ -415,7 +412,7 @@ static int lp3943_update_pwm(struct lp3943 *lp, enum lp3943_led_mode mode,
 	return lp3943_write_byte(lp, addr, pwm);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 static void lp3943_syno_brightness_set(u8 brightness, enum lp3943_led_mode *mode, enum lp3943_led_mode nodeMode)
 {
 	if (!mode) {
@@ -436,7 +433,7 @@ static void lp3943_syno_brightness_set(u8 brightness, enum lp3943_led_mode *mode
 END:
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 
 static int lp3943_update_brightness(struct lp3943_led *led)
 {
@@ -449,21 +446,21 @@ static int lp3943_update_brightness(struct lp3943_led *led)
 	for (i = 0 ; i < node->num_channels ; i++) {
 		channel = node->channel + i;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 		lp3943_syno_brightness_set(led->brightness, &mode, node->mode);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 		mode = led->brightness == 0 ? LP3943_LED_OFF : node->mode;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 
 		ret = lp3943_update_selector(lp, mode, *channel);
 		if (ret)
 			return ret;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 		if (mode == LP3943_LED_OFF || mode == LP3943_LED_ON)
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 		if (mode == LP3943_LED_OFF)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 			continue;
 
 		ret = lp3943_update_scale(lp, mode, node->prescale);
@@ -489,13 +486,13 @@ static void lp3943_brightness_force_off(struct lp3943 *lp)
 
 static void lp3943_brightness_work(struct work_struct *work)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 	int ret = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 	struct lp3943_led *led;
 
 	led = container_of(work, struct lp3943_led, brtwork);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 	syno_lp3943_i2c_mutex (true);
 	ret = lp3943_update_brightness(led);
 	syno_lp3943_i2c_mutex (false);
@@ -513,9 +510,9 @@ static void lp3943_brightness_work(struct work_struct *work)
 	} else {
 		led->retry_count = 0;
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 	lp3943_update_brightness(led);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 }
 
 static void lp3943_brightness_set(struct led_classdev *led_cdev,
@@ -524,11 +521,11 @@ static void lp3943_brightness_set(struct led_classdev *led_cdev,
 	struct lp3943_led *led;
 
 	led = container_of(led_cdev, struct lp3943_led, cdev);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 	if(brightness == led->brightness) {
 		return;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 	led->brightness = brightness;
 	schedule_work(&led->brtwork);
 }
@@ -547,19 +544,19 @@ static int lp3943_leds_register(struct lp3943 *lp,
 			ret = -EINVAL;
 			goto err_dev;
 		}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 		INIT_WORK(&lp->led[i].brtwork, lp3943_brightness_work);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 
 		lp->led[i].id = i;
 		lp->led[i].node = node;
 		lp->led[i].cdev.name = node->name;
 		lp->led[i].cdev.max_brightness = MAX_BRIGHTNESS;
 		lp->led[i].cdev.brightness_set = lp3943_brightness_set;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 		lp->led[i].cdev.default_trigger = node->default_trigger;
 		lp->led[i].retry_count = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 
 		ret = led_classdev_register(lp->dev, &lp->led[i].cdev);
 		if (ret) {
@@ -568,11 +565,11 @@ static int lp3943_leds_register(struct lp3943 *lp,
 			goto err_dev;
 		}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 		/* Move to above */
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 		INIT_WORK(&lp->led[i].brtwork, lp3943_brightness_work);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 	}
 
 	return 0;
@@ -619,13 +616,13 @@ static int lp3943_chip_detect(struct lp3943 *lp)
 	return lp3943_read_byte(lp, LP3943_INPUT1, &val);
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI
 static const struct acpi_device_id lp3943_acpi_ids[] = {
 	{ "LED3943", (kernel_ulong_t)&syno_lp3943_pdata },
 	{ }
 };
 MODULE_DEVICE_TABLE(acpi, lp3943_acpi_ids);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI */
 
 static int lp3943_probe(struct i2c_client *cl,
 				const struct i2c_device_id *id)
@@ -633,7 +630,7 @@ static int lp3943_probe(struct i2c_client *cl,
 	struct lp3943 *lp;
 	struct lp3943_platform_data *pdata = cl->dev.platform_data;
 	int ret;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI
 	const struct acpi_device_id *aid;
 
 	aid = acpi_match_device(lp3943_acpi_ids, &cl->dev);
@@ -642,14 +639,14 @@ static int lp3943_probe(struct i2c_client *cl,
 	} else {
 		return -ENODEV;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI */
 
 	if (!i2c_check_functionality(cl->adapter, I2C_FUNC_SMBUS_I2C_BLOCK))
 		return -EIO;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_PROBE_OF
 	pdata = &syno_lp3943_pdata;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_PROBE_OF */
 
 	ret = lp3943_validate_platform_data(&cl->dev, pdata);
 	if (ret)
@@ -670,10 +667,10 @@ static int lp3943_probe(struct i2c_client *cl,
 		return ret;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_FEATURES
 	mutex_init(&syno_lp3943_i2c_lock);
 	funcSynoLP3943Mutex = syno_lp3943_i2c_mutex;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_FEATURES */
 	return lp3943_leds_register(lp, pdata);
 }
 
@@ -698,16 +695,16 @@ static struct i2c_driver lp3943_driver = {
 	.driver = {
 		.name = "lp3943",
 		.owner = THIS_MODULE,
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI
 		.acpi_match_table = ACPI_PTR(lp3943_acpi_ids),
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI */
 	},
 	.id_table = lp3943_id,
 };
 
 static int __init lp3943_init(void)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_PROBE_FIXED_BUS
 	int iErr = -1;
 	struct i2c_adapter *pAdapter = NULL;
 	/* instantiate the devices explicitly */
@@ -729,17 +726,17 @@ static int __init lp3943_init(void)
 
 END:
 	return iErr;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LEDS_LP3943_PROBE_FIXED_BUS */
 	return i2c_add_driver(&lp3943_driver);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_PROBE_FIXED_BUS */
 }
 module_init(lp3943_init);
 
 static void __exit lp3943_exit(void)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_LP3943_PROBE_FIXED_BUS
 	i2c_unregister_device(gpClient);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_LP3943_PROBE_FIXED_BUS */
 	i2c_del_driver(&lp3943_driver);
 }
 module_exit(lp3943_exit);

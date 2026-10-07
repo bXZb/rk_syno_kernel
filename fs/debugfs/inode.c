@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  inode.c - part of debugfs, a tiny little debug file system
@@ -758,9 +755,9 @@ struct dentry *debugfs_rename(struct dentry *old_dir, struct dentry *old_dentry,
 	int error;
 	struct dentry *dentry = NULL, *trap;
 	struct name_snapshot old_name;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	struct synotify_rename_path *rename_path_list = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	if (IS_ERR(old_dir))
 		return old_dir;
@@ -782,9 +779,9 @@ struct dentry *debugfs_rename(struct dentry *old_dir, struct dentry *old_dentry,
 	if (IS_ERR(dentry) || dentry == trap || d_really_is_positive(dentry))
 		goto exit;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	rename_path_list = get_rename_path_list(old_dentry, dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 	take_dentry_name_snapshot(&old_name, old_dentry);
 
 	error = simple_rename(d_inode(old_dir), old_dentry, d_inode(new_dir),
@@ -797,18 +794,18 @@ struct dentry *debugfs_rename(struct dentry *old_dir, struct dentry *old_dentry,
 	fsnotify_move(d_inode(old_dir), d_inode(new_dir), &old_name.name,
 		d_is_dir(old_dentry),
 		NULL, old_dentry
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 		,rename_path_list, false
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 		);
 	release_dentry_name_snapshot(&old_name);
 	unlock_rename(new_dir, old_dir);
 	dput(dentry);
 	return old_dentry;
 exit:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	free_rename_path_list(rename_path_list);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 	if (dentry && !IS_ERR(dentry))
 		dput(dentry);
 	unlock_rename(new_dir, old_dir);

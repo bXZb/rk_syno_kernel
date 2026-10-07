@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/mm/nommu.c
@@ -535,13 +532,13 @@ static void __put_nommu_region(struct vm_region *region)
 			delete_nommu_region(region);
 		up_write(&nommu_region_sem);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 		if (region->vm_file)
 			vmr_fput(region);
 #else
 		if (region->vm_file)
 			fput(region->vm_file);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 		/* IO memory and memory shared directly out of the pagecache
 		 * from ramfs/tmpfs mustn't be released here */
@@ -672,13 +669,13 @@ static void delete_vma(struct mm_struct *mm, struct vm_area_struct *vma)
 {
 	if (vma->vm_ops && vma->vm_ops->close)
 		vma->vm_ops->close(vma);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 	if (vma->vm_file)
 		vma_fput(vma);
 #else
 	if (vma->vm_file)
 		fput(vma->vm_file);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 	put_nommu_region(vma->vm_region);
 	vm_area_free(vma);
 }
@@ -1201,11 +1198,11 @@ unsigned long do_mmap(struct file *file,
 					goto error_just_free;
 				}
 			}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 			vmr_fput(region);
 #else
 			fput(region->vm_file);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 			kmem_cache_free(vm_region_jar, region);
 			region = pregion;
 			result = start;
@@ -1281,7 +1278,7 @@ share:
 error_just_free:
 	up_write(&nommu_region_sem);
 error:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 	if (region->vm_file)
 		vmr_fput(region);
 	kmem_cache_free(vm_region_jar, region);
@@ -1293,7 +1290,7 @@ error:
 	kmem_cache_free(vm_region_jar, region);
 	if (vma->vm_file)
 		fput(vma->vm_file);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 	vm_area_free(vma);
 	return ret;
 

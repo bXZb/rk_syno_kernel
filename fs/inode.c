@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * (C) 1997 Linus Torvalds
@@ -27,9 +24,9 @@
 #include <trace/events/writeback.h>
 #include "internal.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 #include <linux/syno_acl.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 
 /*
@@ -184,17 +181,17 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
 	init_rwsem(&inode->i_rwsem);
 	lockdep_set_class(&inode->i_rwsem, &sb->s_type->i_mutex_key);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_BIT
 	inode->i_archive_bit = 0; /* set archive bit on creation */
 	mutex_init(&inode->i_archive_bit_mutex);
 	lockdep_set_class(&inode->i_archive_bit_mutex, &sb->s_type->i_archive_bit_mutex_key);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_VERSION
 	inode->i_archive_version = 0;
 	mutex_init(&inode->i_archive_version_mutex);
 	lockdep_set_class(&inode->i_archive_version_mutex, &sb->s_type->i_archive_version_mutex_key);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
 	atomic_set(&inode->i_dio_count, 0);
 
@@ -214,9 +211,9 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
 	inode->i_private = NULL;
 	inode->i_mapping = mapping;
 	INIT_HLIST_HEAD(&inode->i_dentry);	/* buggered by rcu freeing */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	inode->i_syno_acl = ACL_NOT_CACHED;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 #ifdef CONFIG_FS_POSIX_ACL
 	inode->i_acl = inode->i_default_acl = ACL_NOT_CACHED;
 #endif
@@ -287,10 +284,10 @@ void __destroy_inode(struct inode *inode)
 		atomic_long_dec(&inode->i_sb->s_remove_count);
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (inode->i_syno_acl && !is_uncached_syno_acl(inode->i_syno_acl))
 		syno_acl_release(inode->i_syno_acl);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 #ifdef CONFIG_FS_POSIX_ACL
 	if (inode->i_acl && !is_uncached_acl(inode->i_acl))
 		posix_acl_release(inode->i_acl);
@@ -442,9 +439,9 @@ void __iget(struct inode *inode)
 {
 	atomic_inc(&inode->i_count);
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 EXPORT_SYMBOL(__iget);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 
 /*
  * get additional reference to inode; caller must already hold one.
@@ -794,14 +791,14 @@ static enum lru_status inode_lru_isolate(struct list_head *item,
 		return LRU_ROTATE;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_FIX_FITHAW_DEADLOCK_WITH_SHRINKER_EVICT_UNLINKED_INODE
 	if (task_test_shrink(current) &&
 		inode->i_sb->s_writers.frozen != SB_UNFROZEN &&
 		!inode->i_nlink) {
 		spin_unlock(&inode->i_lock);
 		return LRU_ROTATE;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_FIX_FITHAW_DEADLOCK_WITH_SHRINKER_EVICT_UNLINKED_INODE */
 
 	if (inode_has_buffers(inode) || inode->i_data.nrpages) {
 		__iget(inode);
@@ -1666,12 +1663,12 @@ static void iput_final(struct inode *inode)
 	else
 		drop = generic_drop_inode(inode);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_FIX_FITHAW_DEADLOCK_WITH_SHRINKER_EVICT_UNLINKED_INODE
 	if (task_test_shrink(current) &&
 		sb->s_writers.frozen != SB_UNFROZEN &&
 		!inode->i_nlink)
 		drop = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_FIX_FITHAW_DEADLOCK_WITH_SHRINKER_EVICT_UNLINKED_INODE */
 
 	if (!drop &&
 	    !(inode->i_state & I_DONTCACHE) &&
@@ -1764,9 +1761,9 @@ EXPORT_SYMBOL(bmap);
 static int relatime_need_update(struct vfsmount *mnt, struct inode *inode,
 			     struct timespec64 now)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RELATIME_PERIOD
 	long relatime_period = 1;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RELATIME_PERIOD */
 
 	if (!(mnt->mnt_flags & MNT_RELATIME))
 		return 1;
@@ -1785,16 +1782,16 @@ static int relatime_need_update(struct vfsmount *mnt, struct inode *inode,
 	 * Is the previous atime value older than a day? If yes,
 	 * update atime:
 	 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RELATIME_PERIOD
 	if (inode->i_sb->relatime_period > 0)
 		relatime_period = inode->i_sb->relatime_period;
 
 	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= relatime_period*24*60*60)
 		return 1;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_RELATIME_PERIOD */
 	if ((long)(now.tv_sec - inode->i_atime.tv_sec) >= 24*60*60)
 		return 1;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RELATIME_PERIOD */
 	/*
 	 * Good, we can skip the atime update:
 	 */
@@ -1829,19 +1826,19 @@ EXPORT_SYMBOL(generic_update_time);
  * This does the actual work of updating an inodes time or version.  Must have
  * had called mnt_want_write() before calling this.
  */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 int update_time(struct inode *inode, struct timespec64 *time, int flags)
 #else
 static int update_time(struct inode *inode, struct timespec64 *time, int flags)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 {
 	if (inode->i_op->update_time)
 		return inode->i_op->update_time(inode, time, flags);
 	return generic_update_time(inode, time, flags);
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 EXPORT_SYMBOL_GPL(update_time);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 /**
  *	touch_atime	-	update the access time

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/ext4/dir.c
@@ -49,11 +46,11 @@ static int is_dx_dir(struct inode *inode)
 {
 	struct super_block *sb = inode->i_sb;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 	if ((is_syno_ext(inode->i_sb) || ext4_has_feature_dir_index(inode->i_sb)) &&
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 	if (ext4_has_feature_dir_index(inode->i_sb) &&
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 	    ((ext4_test_inode_flag(inode, EXT4_INODE_INDEX)) ||
 	     ((inode->i_size >> sb->s_blocksize_bits) == 1) ||
 	     ext4_has_inline_data(inode)))
@@ -98,7 +95,7 @@ int __ext4_check_dir_entry(const char *function, unsigned int line,
 	else
 		return 0;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_EIO_NODEV_HANDLER
 	if (filp) {
 		if (printk_ratelimit())
 			ext4_error_file(filp, function, line, bh->b_blocknr,
@@ -107,18 +104,18 @@ int __ext4_check_dir_entry(const char *function, unsigned int line,
 					error_msg, offset, le32_to_cpu(de->inode),
 					rlen, de->name_len, size);
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MD_EIO_NODEV_HANDLER */
 	if (filp)
 		ext4_error_file(filp, function, line, bh->b_blocknr,
 				"bad entry in directory: %s - offset=%u, "
 				"inode=%u, rec_len=%d, name_len=%d, size=%d",
 				error_msg, offset, le32_to_cpu(de->inode),
 				rlen, de->name_len, size);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_EIO_NODEV_HANDLER */
 	else
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_EIO_NODEV_HANDLER
 		if (printk_ratelimit())
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_EIO_NODEV_HANDLER */
 		ext4_error_inode(dir, function, line, bh->b_blocknr,
 				"bad entry in directory: %s - offset=%u, "
 				"inode=%u, rec_len=%d, name_len=%d, size=%d",

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Driver for Aquantia PHY
@@ -94,7 +91,7 @@
 #define VEND1_GLOBAL_FW_ID_MAJOR		GENMASK(15, 8)
 #define VEND1_GLOBAL_FW_ID_MINOR		GENMASK(7, 0)
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 #define VEND1_GLOBAL_LED_PROVISIONING1      0xc430
 #define VEND1_GLOBAL_LED_PROVISIONING2      0xc431
 #define VEND1_GLOBAL_LED_PROVISIONING3      0xc432
@@ -120,7 +117,7 @@
 #define VEND1_GLOBAL_LED_STRECH_60MS        0x2
 #define VEND1_GLOBAL_LED_STRECH_28MS        0x1
 #define VEND1_GLOBAL_LED_STRECH_NO          0x0
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 #define VEND1_GLOBAL_GEN_STAT2			0xc831
 #define VEND1_GLOBAL_GEN_STAT2_OP_IN_PROG	BIT(15)
@@ -610,7 +607,7 @@ static void aqr107_chip_info(struct phy_device *phydev)
 		   fw_major, fw_minor, build_id, prov_id);
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 static int syno_conf_init(struct phy_device *phydev)
 {
 	int ret = -1;
@@ -638,7 +635,7 @@ static int syno_conf_init(struct phy_device *phydev)
 END:
 	return ret;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 static int aqr107_config_init(struct phy_device *phydev)
 {
@@ -660,11 +657,11 @@ static int aqr107_config_init(struct phy_device *phydev)
 	if (!ret)
 		aqr107_chip_info(phydev);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 	if (syno_conf_init(phydev)) {
 		phydev_err(phydev, "Failed to configure the phy with syno conf\n");
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 	return aqr107_set_downshift(phydev, MDIO_AN_VEND_PROV_DOWNSHIFT_DFLT);
 }
@@ -692,11 +689,11 @@ static int aqr113_config_init(struct phy_device *phydev)
 	val =  val & (~( 1<< 0xb));
 	phy_write_mmd(phydev, 0x7, 0xc400,val);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 	if (syno_conf_init(phydev)) {
 		phydev_err(phydev, "Failed to configure the phy with syno conf\n");
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 	return aqr107_set_downshift(phydev, MDIO_AN_VEND_PROV_DOWNSHIFT_DFLT);
 }

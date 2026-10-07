@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2003-2006, Cluster File Systems, Inc, info@clusterfs.com
@@ -3047,7 +3044,7 @@ static inline int ext4_issue_discard(struct super_block *sb,
 		return sb_issue_discard(sb, discard_block, count, GFP_NOFS, 0);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_UNUSED_HINT
 static inline int ext4_hint_unused(struct super_block *sb,
 		ext4_group_t block_group, ext4_grpblk_t cluster, int count)
 {
@@ -3060,7 +3057,7 @@ static inline int ext4_hint_unused(struct super_block *sb,
 			(unsigned long long) hint_block, count);
 	return sb_hint_unused(sb, hint_block, count, GFP_NOFS);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_UNUSED_HINT */
 
 static void ext4_free_data_in_buddy(struct super_block *sb,
 				    struct ext4_free_data *entry)
@@ -5608,9 +5605,9 @@ int ext4_group_add_blocks(handle_t *handle, struct super_block *sb,
 	    in_range(block, ext4_inode_table(sb, desc), sbi->s_itb_per_group) ||
 	    in_range(block + count - 1, ext4_inode_table(sb, desc),
 		     sbi->s_itb_per_group)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_EIO_NODEV_HANDLER
 		if (printk_ratelimit())
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_EIO_NODEV_HANDLER */
 		ext4_error(sb, "Adding blocks in system zones - "
 			   "Block = %llu, count = %lu",
 			   block, count);
@@ -5704,9 +5701,9 @@ error_return:
  */
 static int ext4_trim_extent(struct super_block *sb, int start, int count,
 			    ext4_group_t group, struct ext4_buddy *e4b
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_UNUSED_HINT
 			    , enum trim_act act
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_UNUSED_HINT */
 			    )
 __releases(bitlock)
 __acquires(bitlock)
@@ -5729,14 +5726,14 @@ __acquires(bitlock)
 	mb_mark_used(e4b, &ex);
 	ext4_unlock_group(sb, group);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_UNUSED_HINT
 	if (act == TRIM_SEND_HINT)
 		ret = ext4_hint_unused(sb, group, start, count);
 	else
 		ret = ext4_issue_discard(sb, group, start, count, NULL);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_UNUSED_HINT */
 	ret = ext4_issue_discard(sb, group, start, count, NULL);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_UNUSED_HINT */
 
 	ext4_lock_group(sb, group);
 	mb_free_blocks(NULL, e4b, start, ex.fe_len);
@@ -5765,9 +5762,9 @@ static ext4_grpblk_t
 ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
 		   ext4_grpblk_t start, ext4_grpblk_t max,
 		   ext4_grpblk_t minblocks
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_UNUSED_HINT
 		   , enum trim_act act
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_UNUSED_HINT */
 		   )
 {
 	void *bitmap;
@@ -5787,13 +5784,13 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
 
 	ext4_lock_group(sb, group);
 	if (EXT4_MB_GRP_WAS_TRIMMED(e4b.bd_info) &&
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_UNUSED_HINT
 		/*
 		 * ext4 skipped trim block group if it has already trimmed.
 		 * We don't want to skip while doing hint scanning.
 		 */
 		act != TRIM_SEND_HINT &&
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_UNUSED_HINT */
 	    minblocks >= atomic_read(&EXT4_SB(sb)->s_last_trim_minblks))
 		goto out;
 
@@ -5809,9 +5806,9 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
 		if ((next - start) >= minblocks) {
 			ret = ext4_trim_extent(sb, start,
 					       next - start, group, &e4b
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_UNUSED_HINT
 					       , act
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_UNUSED_HINT */
 					       );
 			if (ret && ret != -EOPNOTSUPP)
 				break;
@@ -5838,11 +5835,11 @@ ext4_trim_all_free(struct super_block *sb, ext4_group_t group,
 
 	if (!ret) {
 		ret = count;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_UNUSED_HINT
 		/* Do not set as trimmed because we just sended hints */
 		if (act == TRIM_SEND_HINT)
 			goto out;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_UNUSED_HINT */
 		EXT4_MB_GRP_SET_TRIMMED(e4b.bd_info);
 	}
 out:
@@ -5868,9 +5865,9 @@ out:
  * is invoked to trim all free space.
  */
 int ext4_trim_fs(struct super_block *sb, struct fstrim_range *range
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_UNUSED_HINT
 		, enum trim_act act
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_UNUSED_HINT */
 		)
 {
 	struct ext4_group_info *grp;
@@ -5928,9 +5925,9 @@ int ext4_trim_fs(struct super_block *sb, struct fstrim_range *range
 		if (grp->bb_free >= minlen) {
 			cnt = ext4_trim_all_free(sb, group, first_cluster,
 						 end, minlen
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_UNUSED_HINT
 						 , act
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_UNUSED_HINT */
 						 );
 			if (cnt < 0) {
 				ret = cnt;
@@ -5946,11 +5943,11 @@ int ext4_trim_fs(struct super_block *sb, struct fstrim_range *range
 		first_cluster = 0;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_UNUSED_HINT
         /* Do not set s_last_trim_minblks */
 	if (act == TRIM_SEND_HINT)
 		goto out;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_UNUSED_HINT */
 
 	if (!ret)
 		atomic_set(&EXT4_SB(sb)->s_last_trim_minblks, minlen);

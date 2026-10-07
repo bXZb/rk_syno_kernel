@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Synopsys DesignWare I2C adapter driver (master only).
@@ -23,11 +20,23 @@
 #include <linux/pm_runtime.h>
 #include <linux/regmap.h>
 #include <linux/reset.h>
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_DW_CLK_FREQ_CUSTOM
 #include <linux/synobios.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_DW_CLK_FREQ_CUSTOM */
 
 #include "i2c-designware-core.h"
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+#include <linux/of.h>
+#include <linux/synolib.h>
+#include <linux/gpio/machine.h>
+#include <linux/gpio/driver.h>
+#include <linux/syno_fdt.h>
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+#ifdef CONFIG_SYNO_I2C_TIMEOUT_RETRY
+#define SYNO_DW_I2C_XFER_RETRY_COUNT 3
+#define SYNO_DW_I2C_RETRY_DELAY_MS 20
+#endif /* CONFIG_SYNO_I2C_TIMEOUT_RETRY */
 
 static void i2c_dw_configure_fifo_master(struct dw_i2c_dev *dev)
 {
@@ -76,7 +85,7 @@ static int i2c_dw_set_timings_master(struct dw_i2c_dev *dev)
 					scl_falling_time,
 					0);	/* No offset */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_DW_CLK_FREQ_CUSTOM
 		/* FIXME: Don't use these model customize code
 		 *        They should be customized in dts or acpi
 		 */
@@ -93,7 +102,7 @@ static int i2c_dw_set_timings_master(struct dw_i2c_dev *dev)
 						scl_falling_time,
 						0);	/* No offset */
 		}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_DW_CLK_FREQ_CUSTOM */
 	}
 	dev_dbg(dev->dev, "Standard Mode HCNT:LCNT = %d:%d\n",
 		dev->ss_hcnt, dev->ss_lcnt);
@@ -475,6 +484,77 @@ i2c_dw_read(struct dw_i2c_dev *dev)
 	}
 }
 
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+static void i2c_dw_prepare_recovery(struct i2c_adapter *adap);
+static void i2c_dw_unprepare_recovery(struct i2c_adapter *adap);
+static void syno_init_recovery_info(struct i2c_adapter *adap)
+{
+	static bool lookup_table_loaded = false;
+
+	struct dw_i2c_dev *dev = i2c_get_adapdata(adap);
+	struct i2c_bus_recovery_info *rinfo = &dev->rinfo;
+	struct gpio_desc *gpio = NULL;
+	struct device_node *node = NULL;
+	int scl_mode_i2c  = -1;
+	int scl_mode_gpio = -1;
+
+	if (adap->bus_recovery_info &&
+		adap->bus_recovery_info->recover_bus == i2c_generic_scl_recovery &&
+		adap->bus_recovery_info->set_scl) {
+		goto END;
+	}
+
+	if (!lookup_table_loaded) {
+		syno_dts_parse_gpiod_lookup_table();
+		lookup_table_loaded = true;
+	}
+
+	gpio = devm_gpiod_get_optional(dev->dev, "scl", GPIOD_OUT_HIGH);
+	if (IS_ERR_OR_NULL(gpio)) {
+		goto END;
+	}
+	rinfo->scl_gpiod = gpio;
+
+	rinfo->get_scl = syno_export_get_scl_gpio_value;
+	rinfo->set_scl = syno_export_set_scl_gpio_value;
+
+	// sda control is optional in i2c_generic_scl_recovery
+	gpio = devm_gpiod_get_optional(dev->dev, "sda", GPIOD_IN);
+	if (!IS_ERR_OR_NULL(gpio)) {
+		rinfo->sda_gpiod = gpio;
+	}
+
+	if (rinfo->sda_gpiod) {
+		rinfo->get_sda = syno_export_get_sda_gpio_value;
+		/* FIXME: add proper flag instead of '0' once available */
+		if (gpiod_get_direction(rinfo->sda_gpiod) == 0)
+			rinfo->set_sda = syno_export_set_sda_gpio_value;
+	}
+
+	node = syno_of_i2c_adapter_match(adap);
+	if (node) {
+		if (0 == syno_of_get_int_property_recursive(node, DT_I2C_RCVY_SCL_MODE_I2C, &scl_mode_i2c) &&
+			0 == syno_of_get_int_property_recursive(node, DT_I2C_RCVY_SCL_MODE_GPIO, &scl_mode_gpio)) {
+			rinfo->syno_mux_ops.scl_mode_i2c = scl_mode_i2c;
+			rinfo->syno_mux_ops.scl_mode_gpio = scl_mode_gpio;
+			rinfo->syno_mux_ops.set_scl_mux = syno_set_scl_mux;
+		} else {
+			dev_err(dev->dev, "%s No iomux_base specified in DTS", __func__);
+		}
+		of_node_put(node);
+	}
+
+	rinfo->recover_bus = i2c_generic_scl_recovery;
+	rinfo->prepare_recovery = i2c_dw_prepare_recovery;
+	rinfo->unprepare_recovery = i2c_dw_unprepare_recovery;
+
+	adap->bus_recovery_info = rinfo;
+	dev_info(dev->dev, "%s running with gpio recovery mode! scl%s%s", __func__, rinfo->sda_gpiod ? ",sda" : "", rinfo->syno_mux_ops.set_scl_mux ? ",iomux" : "");
+
+END:
+}
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 /*
  * Prepare controller for a transaction and call i2c_dw_xfer_msg.
  */
@@ -483,6 +563,10 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
 {
 	struct dw_i2c_dev *dev = i2c_get_adapdata(adap);
 	int ret;
+#ifdef CONFIG_SYNO_I2C_TIMEOUT_RETRY
+	unsigned int val;   // to save register values
+	int retry = 0;
+#endif /* CONFIG_SYNO_I2C_TIMEOUT_RETRY */
 
 	dev_dbg(dev->dev, "%s: msgs: %d\n", __func__, num);
 
@@ -493,6 +577,82 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
 		goto done_nolock;
 	}
 
+#ifdef CONFIG_SYNO_I2C_TIMEOUT_RETRY
+	// get lock first
+	ret = i2c_dw_acquire_lock(dev);
+	if (ret) {
+		goto done_nolock;
+	}
+	for (retry = 0; retry < SYNO_DW_I2C_XFER_RETRY_COUNT; retry ++) {
+		// 1. transfers a command
+		reinit_completion(&dev->cmd_complete);
+		dev->msgs = msgs;
+		dev->msgs_num = num;
+		dev->cmd_err = 0;
+		dev->msg_write_idx = 0;
+		dev->msg_read_idx = 0;
+		dev->msg_err = 0;
+		dev->status = STATUS_IDLE;
+		dev->abort_source = 0;
+		dev->rx_outstanding = 0;
+		ret = i2c_dw_wait_bus_not_busy(dev);
+		if (ret < 0) {
+			dev_err(dev->dev, "i2c bus is busy, it returns %d\n", ret);
+			goto done;
+		}
+		/* Start the transfers */
+		i2c_dw_xfer_init(dev);
+
+		/* Wait for completion */
+		if (wait_for_completion_timeout(&dev->cmd_complete, adap->timeout)) {
+			/* succeed, break the loop */
+			break;
+		}
+		ret = -ETIMEDOUT;
+		dev_err(dev->dev, "controller timed out, retry %d/%d\n", retry + 1, SYNO_DW_I2C_XFER_RETRY_COUNT);
+
+		/* Dump registers for diagnosis for the first timed out */
+		if (retry == 0) {
+			dev_err(dev->dev, "--- I2C Controller State Dump on Timeout ---\n");
+			regmap_read(dev->map, DW_IC_CON, &val);
+			dev_err(dev->dev, "IC_CON:      0x%08x\n", val);
+			regmap_read(dev->map, DW_IC_TAR, &val);
+			dev_err(dev->dev, "IC_TAR:      0x%08x\n", val);
+			regmap_read(dev->map, DW_IC_STATUS, &val);
+			dev_err(dev->dev, "IC_STATUS:   0x%08x\n", val);
+			regmap_read(dev->map, DW_IC_ENABLE, &val);
+			dev_err(dev->dev, "IC_ENABLE:   0x%08x\n", val);
+			regmap_read(dev->map, DW_IC_RAW_INTR_STAT, &val);
+			dev_err(dev->dev, "IC_RAW_INTR_STAT: 0x%08x\n", val);
+			regmap_read(dev->map, DW_IC_INTR_STAT, &val);
+			dev_err(dev->dev, "IC_INTR_STAT:      0x%08x\n", val);
+			regmap_read(dev->map, DW_IC_INTR_MASK, &val);
+			dev_err(dev->dev, "IC_INTR_MASK:   0x%08x\n", val);
+			regmap_read(dev->map, DW_IC_TX_ABRT_SOURCE, &val);
+			dev_err(dev->dev, "TX_ABRT_SOURCE: 0x%08x\n", val);
+			regmap_read(dev->map, DW_IC_CLR_TX_ABRT, &val);
+			dev_err(dev->dev, "CLR_TX_ABRT:    Read-only, value is 0x%08x after read\n", val);
+			regmap_read(dev->map, DW_IC_TXFLR, &val);
+			dev_err(dev->dev, "TXFLR: %u\n", val);
+			regmap_read(dev->map, DW_IC_RXFLR, &val);
+			dev_err(dev->dev, "RXFLR: %u\n", val);
+			regmap_read(dev->map, DW_IC_SDA_HOLD, &val);
+			dev_err(dev->dev, "SDA_HOLD:       0x%08x\n", val);
+			dev_err(dev->dev, "------------------------------------------\n");
+		}
+		// 2. recover the bus for the next try
+		i2c_recover_bus(&dev->adapter);
+		i2c_dw_init_master(dev);
+		// 3. a delay for safety
+		if (retry < SYNO_DW_I2C_XFER_RETRY_COUNT - 1)
+			msleep(SYNO_DW_I2C_RETRY_DELAY_MS);
+	}
+	if (retry == SYNO_DW_I2C_XFER_RETRY_COUNT) {
+		dev_err(dev->dev, "controller timed out after %d retries\n", SYNO_DW_I2C_XFER_RETRY_COUNT);
+		// ret has been set to -ETIMEDOUT
+		goto done;
+	}
+#else /* CONFIG_SYNO_I2C_TIMEOUT_RETRY */
 	reinit_completion(&dev->cmd_complete);
 	dev->msgs = msgs;
 	dev->msgs_num = num;
@@ -524,6 +684,7 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
 		ret = -ETIMEDOUT;
 		goto done;
 	}
+#endif /* CONFIG_SYNO_I2C_TIMEOUT_RETRY */
 
 	/*
 	 * We must disable the adapter before returning and signaling the end
@@ -818,6 +979,10 @@ int i2c_dw_probe_master(struct dw_i2c_dev *dev)
 	ret = i2c_dw_init_recovery_info(dev);
 	if (ret)
 		return ret;
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+	adap->syno_init_recovery_info = syno_init_recovery_info;
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
 
 	/*
 	 * Increment PM usage count during adapter registration in order to

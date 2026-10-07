@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Implement the manual drop-all-pagecache function
@@ -78,7 +75,7 @@ int drop_caches_sysctl_handler(struct ctl_table *table, int write,
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DROP_CACHE_MEM_COMPACT
 void syno_drop_caches()
 {
 	iterate_supers(drop_pagecache_sb, NULL);
@@ -88,4 +85,4 @@ void syno_drop_caches()
 }
 
 EXPORT_SYMBOL(syno_drop_caches);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DROP_CACHE_MEM_COMPACT */

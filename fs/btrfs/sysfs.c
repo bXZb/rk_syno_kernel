@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
@@ -13,9 +10,9 @@
 #include <linux/completion.h>
 #include <linux/bug.h>
 #include <crypto/hash.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_PERF_STATS
 #include <linux/debugfs.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_PERF_STATS */
 
 #include "ctree.h"
 #include "discard.h"
@@ -75,10 +72,10 @@ static struct btrfs_feature_attr btrfs_attr_features_##_name = {	     \
 	BTRFS_FEAT_ATTR(name, FEAT_COMPAT_RO, BTRFS_FEATURE_COMPAT_RO, feature)
 #define BTRFS_FEAT_ATTR_INCOMPAT(name, feature) \
 	BTRFS_FEAT_ATTR(name, FEAT_INCOMPAT, BTRFS_FEATURE_INCOMPAT, feature)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS
 #define BTRFS_FEAT_ATTR_SYNO_CAPABILITY(name, feature) \
 	BTRFS_FEAT_ATTR(name, FEAT_SYNO_CAPABILITY, BTRFS_FEATURE_SYNO_CAPABILITY, feature)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS */
 
 static inline struct btrfs_fs_info *to_fs_info(struct kobject *kobj);
 static inline struct btrfs_fs_devices *to_fs_devs(struct kobject *kobj);
@@ -107,10 +104,10 @@ static u64 get_features(struct btrfs_fs_info *fs_info,
 		return btrfs_super_compat_flags(disk_super);
 	else if (set == FEAT_COMPAT_RO)
 		return btrfs_super_compat_ro_flags(disk_super);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS
 	else if (set == FEAT_SYNO_CAPABILITY)
 		return btrfs_super_syno_capability_flags(disk_super);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS */
 	else
 		return btrfs_super_incompat_flags(disk_super);
 }
@@ -123,10 +120,10 @@ static void set_features(struct btrfs_fs_info *fs_info,
 		btrfs_set_super_compat_flags(disk_super, features);
 	else if (set == FEAT_COMPAT_RO)
 		btrfs_set_super_compat_ro_flags(disk_super, features);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS
 	else if (set == FEAT_SYNO_CAPABILITY)
 		btrfs_set_super_syno_capability_flags(disk_super, features);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS */
 	else
 		btrfs_set_super_incompat_flags(disk_super, features);
 }
@@ -148,12 +145,12 @@ static int can_modify_feature(struct btrfs_feature_attr *fa)
 		set = BTRFS_FEATURE_INCOMPAT_SAFE_SET;
 		clear = BTRFS_FEATURE_INCOMPAT_SAFE_CLEAR;
 		break;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS
 	case FEAT_SYNO_CAPABILITY:
 		set = BTRFS_FEATURE_SYNO_CAPABILITY_SAFE_SET;
 		clear = BTRFS_FEATURE_SYNO_CAPABILITY_SAFE_CLEAR;
 		break;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS */
 	default:
 		pr_warn("btrfs: sysfs: unknown feature set %d\n",
 				fa->feature_set);
@@ -211,11 +208,11 @@ static ssize_t btrfs_feature_attr_store(struct kobject *kobj,
 	} else if (fa->feature_set == FEAT_COMPAT_RO) {
 		set = BTRFS_FEATURE_COMPAT_RO_SAFE_SET;
 		clear = BTRFS_FEATURE_COMPAT_RO_SAFE_CLEAR;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS
 	} else if (fa->feature_set == FEAT_SYNO_CAPABILITY) {
 		set = BTRFS_FEATURE_SYNO_CAPABILITY_SAFE_SET;
 		clear = BTRFS_FEATURE_SYNO_CAPABILITY_SAFE_CLEAR;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS */
 	} else {
 		set = BTRFS_FEATURE_INCOMPAT_SAFE_SET;
 		clear = BTRFS_FEATURE_INCOMPAT_SAFE_CLEAR;
@@ -270,10 +267,10 @@ static umode_t btrfs_feature_visible(struct kobject *kobj,
 		fa = attr_to_btrfs_feature_attr(attr);
 		features = get_features(fs_info, fa->feature_set);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE
 		if (fa->feature_set == FEAT_COMPAT_RO)
 			features |= BTRFS_FEATURE_COMPAT_RO_FREE_SPACE_TREE;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE */
 		if (can_modify_feature(fa))
 			mode |= S_IWUSR;
 		else if (!(features & fa->feature_bit))
@@ -296,12 +293,12 @@ BTRFS_FEAT_ATTR_INCOMPAT(no_holes, NO_HOLES);
 BTRFS_FEAT_ATTR_INCOMPAT(metadata_uuid, METADATA_UUID);
 BTRFS_FEAT_ATTR_COMPAT_RO(free_space_tree, FREE_SPACE_TREE);
 BTRFS_FEAT_ATTR_INCOMPAT(raid1c34, RAID1C34);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE
 BTRFS_FEAT_ATTR_COMPAT(block_group_cache_tree, BLOCK_GROUP_CACHE_TREE);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE */
+#ifdef CONFIG_SYNO_BTRFS_RBD_META
 BTRFS_FEAT_ATTR_SYNO_CAPABILITY(syno_rbd_meta, RBD_META);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RBD_META */
 
 static struct attribute *btrfs_supported_feature_attrs[] = {
 	BTRFS_FEAT_ATTR_PTR(mixed_backref),
@@ -317,12 +314,12 @@ static struct attribute *btrfs_supported_feature_attrs[] = {
 	BTRFS_FEAT_ATTR_PTR(metadata_uuid),
 	BTRFS_FEAT_ATTR_PTR(free_space_tree),
 	BTRFS_FEAT_ATTR_PTR(raid1c34),
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE
 	BTRFS_FEAT_ATTR_PTR(block_group_cache_tree),
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_BLOCK_GROUP_CACHE_TREE */
+#ifdef CONFIG_SYNO_BTRFS_RBD_META
 	BTRFS_FEAT_ATTR_PTR(syno_rbd_meta),
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RBD_META */
 	NULL
 };
 
@@ -392,7 +389,7 @@ static const struct attribute_group btrfs_static_feature_attr_group = {
 	.attrs = btrfs_supported_static_feature_attrs,
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 static ssize_t btrfs_locker_show(struct kobject *kobj,
 				 struct kobj_attribute *a, char *buf)
 {
@@ -428,9 +425,9 @@ static const struct attribute_group btrfs_locker_feature_attr_group = {
 	.name = "features",
 	.attrs = btrfs_locker_feature_attrs,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT
 static ssize_t btrfs_qgroup_soft_limit_show(struct kobject *kobj,
 				 struct kobj_attribute *a, char *buf)
 {
@@ -465,9 +462,9 @@ static const struct attribute_group btrfs_qgroup_soft_limit_feature_attr_group =
 	.name = "features",
 	.attrs = btrfs_qgroup_soft_limit_feature_attrs,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 static ssize_t btrfs_global_syno_extent_map_max_show(struct kobject *kobj,
 				 struct kobj_attribute *a, char *buf)
 {
@@ -507,7 +504,7 @@ static const struct attribute_group btrfs_syno_feature_attr_group = {
 	.name = "features",
 	.attrs = btrfs_syno_feature_attrs,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 
 #ifdef CONFIG_BTRFS_DEBUG
 
@@ -723,7 +720,7 @@ static ssize_t global_rsv_reserved_show(struct kobject *kobj,
 }
 BTRFS_ATTR(allocation, global_rsv_reserved, global_rsv_reserved_show);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLEANER_THROTTLE
 static ssize_t cleaner_rsv_size_show(struct kobject *kobj,
 				    struct kobj_attribute *ka, char *buf)
 {
@@ -741,9 +738,9 @@ static ssize_t cleaner_rsv_reserved_show(struct kobject *kobj,
 	return btrfs_show_u64(&block_rsv->reserved, &block_rsv->lock, buf);
 }
 BTRFS_ATTR(allocation, cleaner_rsv_reserved, cleaner_rsv_reserved_show);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CLEANER_THROTTLE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 static ssize_t syno_bg_prefetch_enabled_show(struct kobject *kobj,
 				    struct kobj_attribute *ka, char *buf)
 {
@@ -770,7 +767,7 @@ static ssize_t syno_bg_prefetch_enabled_store(struct kobject *kobj,
 	return -EINVAL;
 }
 BTRFS_ATTR_RW(allocation, syno_bg_prefetch_enabled, syno_bg_prefetch_enabled_show, syno_bg_prefetch_enabled_store);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 
 #define to_space_info(_kobj) container_of(_kobj, struct btrfs_space_info, kobj)
 #define to_raid_kobj(_kobj) container_of(_kobj, struct raid_kobject, kobj)
@@ -849,7 +846,7 @@ SPACE_INFO_ATTR(disk_total);
 BTRFS_ATTR(space_info, total_bytes_pinned,
 	   btrfs_space_info_show_total_bytes_pinned);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 static ssize_t btrfs_space_info_show_syno_allocation(struct kobject *kobj,
 						       struct kobj_attribute *a,
 						       char *buf)
@@ -863,7 +860,7 @@ static ssize_t btrfs_space_info_show_syno_allocation(struct kobject *kobj,
 	return len;
 }
 BTRFS_ATTR(space_info, syno_allocation, btrfs_space_info_show_syno_allocation);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 
 static struct attribute *space_info_attrs[] = {
 	BTRFS_ATTR_PTR(space_info, flags),
@@ -876,9 +873,9 @@ static struct attribute *space_info_attrs[] = {
 	BTRFS_ATTR_PTR(space_info, disk_used),
 	BTRFS_ATTR_PTR(space_info, disk_total),
 	BTRFS_ATTR_PTR(space_info, total_bytes_pinned),
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	BTRFS_ATTR_PTR(space_info, syno_allocation),
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 	NULL,
 };
 ATTRIBUTE_GROUPS(space_info);
@@ -899,13 +896,13 @@ static struct kobj_type space_info_ktype = {
 static const struct attribute *allocation_attrs[] = {
 	BTRFS_ATTR_PTR(allocation, global_rsv_reserved),
 	BTRFS_ATTR_PTR(allocation, global_rsv_size),
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CLEANER_THROTTLE
 	BTRFS_ATTR_PTR(allocation, cleaner_rsv_reserved),
 	BTRFS_ATTR_PTR(allocation, cleaner_rsv_size),
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_CLEANER_THROTTLE */
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	BTRFS_ATTR_PTR(allocation, syno_bg_prefetch_enabled),
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 	NULL,
 };
 
@@ -1091,7 +1088,7 @@ static ssize_t btrfs_exclusive_operation_show(struct kobject *kobj,
 }
 BTRFS_ATTR(, exclusive_operation, btrfs_exclusive_operation_show);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP
 static ssize_t btrfs_snapshot_cleaner_show(struct kobject *kobj,
 				struct kobj_attribute *a, char *buf)
 {
@@ -1121,9 +1118,9 @@ static ssize_t btrfs_snapshot_cleaner_store(struct kobject *kobj,
 
 BTRFS_ATTR_RW(, snapshot_cleaner, btrfs_snapshot_cleaner_show,
 		btrfs_snapshot_cleaner_store);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE
 static ssize_t btrfs_metadata_cache_enable_show(struct kobject *kobj,
 						struct kobj_attribute *a,
 						char *buf)
@@ -1155,9 +1152,9 @@ static ssize_t btrfs_metadata_cache_enable_store(struct kobject *kobj,
 BTRFS_ATTR_RW(, metadata_cache_enable,
 		btrfs_metadata_cache_enable_show,
 		btrfs_metadata_cache_enable_store);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE */
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE) || defined(CONFIG_SYNO_BTRFS_DATA_CORRECTION)
 static ssize_t btrfs_mount_path_show(struct kobject *kobj,
 				     struct kobj_attribute *a,
 				     char *buf)
@@ -1195,9 +1192,9 @@ static ssize_t btrfs_mount_path_store(struct kobject *kobj,
 BTRFS_ATTR_RW(, mount_path,
 		btrfs_mount_path_show,
 		btrfs_mount_path_store);
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE || CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 static ssize_t btrfs_correction_suppress_log_show(struct kobject *kobj,
 						  struct kobj_attribute *a,
 						  char *buf)
@@ -1319,9 +1316,9 @@ static ssize_t btrfs_correction_record_cnt_store(struct kobject *kobj,
 BTRFS_ATTR_RW(, correction_record_cnt,
 		btrfs_correction_record_cnt_show,
 		btrfs_correction_record_cnt_store);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK
 static ssize_t btrfs_syno_writeback_thread_max_show(struct kobject *kobj,
 				struct kobj_attribute *a, char *buf)
 {
@@ -1356,9 +1353,9 @@ static ssize_t btrfs_syno_writeback_thread_count_show(struct kobject *kobj,
 }
 
 BTRFS_ATTR(, syno_writeback_thread_count, btrfs_syno_writeback_thread_count_show);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYSFS_BLOCK_GROUP_CNT
 static ssize_t btrfs_block_group_cnt_show(struct kobject *kobj,
 					  struct kobj_attribute *a, char *buf)
 {
@@ -1366,9 +1363,9 @@ static ssize_t btrfs_block_group_cnt_show(struct kobject *kobj,
 	return snprintf(buf, PAGE_SIZE, "%llu\n", (u64)atomic64_read(&fs_info->block_group_cnt));
 }
 BTRFS_ATTR(, block_group_cnt, btrfs_block_group_cnt_show);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYSFS_BLOCK_GROUP_CNT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_COMMIT_STATS
 static ssize_t btrfs_fsync_cnt_show(struct kobject *kobj,
 		struct kobj_attribute *a, char *buf)
 {
@@ -1410,9 +1407,9 @@ static ssize_t btrfs_commit_time_debug_store(struct kobject *kobj,
 }
 
 BTRFS_ATTR_RW(, commit_time_debug_ms, btrfs_commit_time_debug_show, btrfs_commit_time_debug_store);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_COMMIT_STATS */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 static char* syno_usage_type_to_str(int type, char *ret, int max_size)
 {
 	int unknown = 0;
@@ -1452,9 +1449,9 @@ static ssize_t btrfs_syno_usage_show(struct kobject *kobj,
 }
 
 BTRFS_ATTR(, syno_usage, btrfs_syno_usage_show);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 static ssize_t btrfs_locker_update_interval_show(struct kobject *kobj,
 				struct kobj_attribute *a, char *buf)
 {
@@ -1484,9 +1481,9 @@ static ssize_t btrfs_locker_update_interval_store(struct kobject *kobj,
 }
 
 BTRFS_ATTR_RW(, locker_update_interval, btrfs_locker_update_interval_show, btrfs_locker_update_interval_store);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_COW_ASYNC_THROTTLE
 static ssize_t btrfs_syno_async_submit_throttle_show(struct kobject *kobj,
 				struct kobj_attribute *a, char *buf)
 {
@@ -1510,9 +1507,9 @@ static ssize_t btrfs_syno_async_submit_throttle_store(struct kobject *kobj,
 }
 
 BTRFS_ATTR_RW(, syno_async_submit_throttle, btrfs_syno_async_submit_throttle_show, btrfs_syno_async_submit_throttle_store);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_COW_ASYNC_THROTTLE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ORDERED_EXTENT_THROTTLE
 static ssize_t btrfs_syno_max_ordered_queue_size_show(struct kobject *kobj,
 				struct kobj_attribute *a, char *buf)
 {
@@ -1544,22 +1541,22 @@ static ssize_t btrfs_syno_ordered_extent_nr_show(struct kobject *kobj,
 	return snprintf(buf, PAGE_SIZE, "%llu\n", (u64)atomic64_read(&fs_info->syno_ordered_extent_nr));
 }
 BTRFS_ATTR(, syno_ordered_extent_nr, btrfs_syno_ordered_extent_nr_show);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ORDERED_EXTENT_THROTTLE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP
 static ssize_t btrfs_incompat_supp_show(struct kobject *kobj,
 				struct kobj_attribute *a, char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "%llu\n", BTRFS_FEATURE_INCOMPAT_SUPP);
 }
 BTRFS_ATTR(, incompat_supp, btrfs_incompat_supp_show);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP
 static ssize_t btrfs_compat_ro_supp_show(struct kobject *kobj,
 				struct kobj_attribute *a, char *buf)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 	if (btrfs_syno_locker_feature_is_support()) {
 		return snprintf(buf, PAGE_SIZE, "%llu\n", BTRFS_FEATURE_COMPAT_RO_SUPP);
 	} else {
@@ -1567,24 +1564,24 @@ static ssize_t btrfs_compat_ro_supp_show(struct kobject *kobj,
 	}
 #else
 	return snprintf(buf, PAGE_SIZE, "%llu\n", BTRFS_FEATURE_COMPAT_RO_SUPP);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 }
 BTRFS_ATTR(, compat_ro_supp, btrfs_compat_ro_supp_show);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP */
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP) || defined(CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP)
 static const struct attribute *btrfs_info_attrs[] = {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP
 	BTRFS_ATTR_PTR(, incompat_supp),
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP */
+#ifdef CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP
 	BTRFS_ATTR_PTR(, compat_ro_supp),
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP */
 	NULL,
 };
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP || CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_STATISTICS
 static ssize_t btrfs_syno_meta_statistics_show(struct kobject *kobj,
 				struct kobj_attribute *a, char *buf)
 {
@@ -1599,9 +1596,9 @@ static ssize_t btrfs_syno_meta_statistics_show(struct kobject *kobj,
 	return len;
 }
 BTRFS_ATTR(, syno_meta_statistics, btrfs_syno_meta_statistics_show);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_STATISTICS */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT
 static ssize_t btrfs_syno_orphan_cleanup_enable_show(struct kobject *kobj,
 				struct kobj_attribute *a, char *buf)
 {
@@ -1653,9 +1650,9 @@ static ssize_t btrfs_syno_orphan_cleanup_delayed_store(struct kobject *kobj,
 	return len;
 }
 BTRFS_ATTR_RW(, syno_orphan_cleanup_delayed, btrfs_syno_orphan_cleanup_delayed_show, btrfs_syno_orphan_cleanup_delayed_store);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 static ssize_t btrfs_syno_extent_map_nr_show(struct kobject *kobj,
 				struct kobj_attribute *a, char *buf)
 {
@@ -1664,7 +1661,57 @@ static ssize_t btrfs_syno_extent_map_nr_show(struct kobject *kobj,
 }
 
 BTRFS_ATTR(, syno_extent_map_nr, btrfs_syno_extent_map_nr_show);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
+
+#ifdef CONFIG_SYNO_BTRFS_SEND_CROSS_EXTENT_READ_AHEAD
+static ssize_t btrfs_syno_send_data_ra_show(struct kobject *kobj, struct kobj_attribute *a, char *buf)
+{
+	int ret;
+	struct btrfs_fs_info *fs_info = to_fs_info(kobj);
+	s64 ra_min, ra_max, ra_level, ra_default;
+
+	spin_lock(&fs_info->syno_send_data_ra.lock);
+	ra_min = fs_info->syno_send_data_ra.ra_min;
+	ra_max = fs_info->syno_send_data_ra.ra_max;
+	ra_level = fs_info->syno_send_data_ra.ra_level;
+	ra_default = fs_info->syno_send_data_ra.ra_default;
+	spin_unlock(&fs_info->syno_send_data_ra.lock);
+	ret = snprintf(buf, PAGE_SIZE, "%lld %lld %lld %lld\n",
+		       ra_min, ra_max, ra_level, ra_default);
+
+	return ret;
+}
+static ssize_t btrfs_syno_send_data_ra_store(struct kobject *kobj, struct kobj_attribute *a,
+					     const char *buf, size_t len)
+{
+	struct btrfs_fs_info *fs_info = to_fs_info(kobj);
+	int num_parsed;
+	s64 new_min, new_max, new_level, new_default;
+
+	num_parsed = sscanf(buf, "%lld %lld %lld %lld",
+			    &new_min, &new_max, &new_level, &new_default);
+	if (num_parsed != 4)
+		return -EINVAL;
+	if (new_min <= 0 || new_max <= 0 || new_level <= 0 || new_default <= 0)
+		return -EINVAL;
+	if (new_min > new_max)
+		return -EINVAL;
+	if (new_default > new_max || new_default < new_min)
+		return -EINVAL;
+	if (new_level > new_max || new_level < new_min)
+		return -EINVAL;
+
+	spin_lock(&fs_info->syno_send_data_ra.lock);
+	fs_info->syno_send_data_ra.ra_min = new_min;
+	fs_info->syno_send_data_ra.ra_max = new_max;
+	fs_info->syno_send_data_ra.ra_level = new_level;
+	fs_info->syno_send_data_ra.ra_default = new_default;
+	spin_unlock(&fs_info->syno_send_data_ra.lock);
+
+	return len;
+}
+BTRFS_ATTR_RW(, syno_send_data_ra, btrfs_syno_send_data_ra_show, btrfs_syno_send_data_ra_store);
+#endif /* CONFIG_SYNO_BTRFS_SEND_CROSS_EXTENT_READ_AHEAD */
 
 static const struct attribute *btrfs_attrs[] = {
 	BTRFS_ATTR_PTR(, label),
@@ -1675,62 +1722,65 @@ static const struct attribute *btrfs_attrs[] = {
 	BTRFS_ATTR_PTR(, metadata_uuid),
 	BTRFS_ATTR_PTR(, checksum),
 	BTRFS_ATTR_PTR(, exclusive_operation),
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP
 	BTRFS_ATTR_PTR(, snapshot_cleaner),
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP */
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE
 	BTRFS_ATTR_PTR(, metadata_cache_enable),
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE */
+#ifdef CONFIG_SYNO_BTRFS_SYSFS_BLOCK_GROUP_CNT
 	BTRFS_ATTR_PTR(, block_group_cnt),
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SYSFS_BLOCK_GROUP_CNT */
+#ifdef CONFIG_SYNO_BTRFS_COMMIT_STATS
 	BTRFS_ATTR_PTR(, fsync_cnt),
 	BTRFS_ATTR_PTR(, fsync_full_commit_cnt),
 	BTRFS_ATTR_PTR(, commit_time_debug_ms),
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_COMMIT_STATS */
+#ifdef CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE
 	BTRFS_ATTR_PTR(, syno_usage),
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_SPACE_USAGE */
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE) || defined(CONFIG_SYNO_BTRFS_DATA_CORRECTION)
 	BTRFS_ATTR_PTR(, mount_path),
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FEATURE_METADATA_CACHE || CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	BTRFS_ATTR_PTR(, correction_suppress_log),
 	BTRFS_ATTR_PTR(, correction_disable),
 	BTRFS_ATTR_PTR(, correction_record_cnt),
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK
 	BTRFS_ATTR_PTR(, syno_writeback_thread_max),
 	BTRFS_ATTR_PTR(, syno_writeback_thread_count),
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_COW_ASYNC_THROTTLE
 	BTRFS_ATTR_PTR(, syno_async_submit_throttle),
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_COW_ASYNC_THROTTLE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ORDERED_EXTENT_THROTTLE
 	BTRFS_ATTR_PTR(, syno_max_ordered_queue_size),
 	BTRFS_ATTR_PTR(, syno_ordered_extent_nr),
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ORDERED_EXTENT_THROTTLE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 	BTRFS_ATTR_PTR(, locker_update_interval),
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_STATISTICS
 	BTRFS_ATTR_PTR(, syno_meta_statistics),
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_STATISTICS */
+#ifdef CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT
 	BTRFS_ATTR_PTR(, syno_orphan_cleanup_enable),
 	BTRFS_ATTR_PTR(, syno_orphan_cleanup_delayed),
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_DELAYED_ORPHAN_CLEANUP_WHEN_MOUNT */
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 	BTRFS_ATTR_PTR(, syno_extent_map_nr),
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
+#ifdef CONFIG_SYNO_BTRFS_SEND_CROSS_EXTENT_READ_AHEAD
+	BTRFS_ATTR_PTR(, syno_send_data_ra),
+#endif /* CONFIG_SYNO_BTRFS_SEND_CROSS_EXTENT_READ_AHEAD */
 	NULL,
 };
 
@@ -1770,12 +1820,12 @@ static const u64 supported_feature_masks[FEAT_MAX] = {
 	[FEAT_COMPAT]    = BTRFS_FEATURE_COMPAT_SUPP,
 	[FEAT_COMPAT_RO] = BTRFS_FEATURE_COMPAT_RO_SUPP,
 	[FEAT_INCOMPAT]  = BTRFS_FEATURE_INCOMPAT_SUPP,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS
 	[FEAT_SYNO_CAPABILITY]  = BTRFS_FEATURE_SYNO_CAPABILITY_SUPP,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS */
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE
 static ssize_t btrfs_free_space_tree_create_show(struct kobject *kobj,
 						 struct kobj_attribute *a,
 						 char *buf)
@@ -1865,7 +1915,7 @@ int add_free_space_tree_attrs(struct btrfs_fs_info *fs_info)
 failure:
 	return error;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE */
 
 static int addrm_unknown_feature_attrs(struct btrfs_fs_info *fs_info, bool add)
 {
@@ -1983,14 +2033,14 @@ void btrfs_sysfs_remove_mounted(struct btrfs_fs_info *fs_info)
 	}
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE
 	if (fs_info->free_space_tree_kobj) {
 		sysfs_remove_files(fs_info->free_space_tree_kobj,
 				   free_space_tree_attrs);
 		kobject_del(fs_info->free_space_tree_kobj);
 		kobject_put(fs_info->free_space_tree_kobj);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE */
 
 	addrm_unknown_feature_attrs(fs_info, false);
 	sysfs_remove_group(fsid_kobj, &btrfs_feature_attr_group);
@@ -2002,9 +2052,9 @@ static const char * const btrfs_feature_set_names[FEAT_MAX] = {
 	[FEAT_COMPAT]	 = "compat",
 	[FEAT_COMPAT_RO] = "compat_ro",
 	[FEAT_INCOMPAT]	 = "incompat",
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS
 	[FEAT_SYNO_CAPABILITY]  = "syno_capability",
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CAPABILITY_FLAGS */
 };
 
 const char *btrfs_feature_set_name(enum btrfs_feature_set set)
@@ -2488,14 +2538,14 @@ int btrfs_sysfs_add_mounted(struct btrfs_fs_info *fs_info)
 	if (error)
 		goto failure;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE
 	if (btrfs_test_opt(fs_info, FREE_SPACE_TREE) &&
 	    !btrfs_fs_compat_ro(fs_info, FREE_SPACE_TREE_VALID)) {
 		error = add_free_space_tree_attrs(fs_info);
 		if (error)
 			goto failure;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYSFS_FREE_SPACE_TREE */
 
 #ifdef CONFIG_BTRFS_DEBUG
 	fs_info->debug_kobj = kobject_create_and_add("debug", fsid_kobj);
@@ -2733,7 +2783,7 @@ void btrfs_sysfs_feature_update(struct btrfs_fs_info *fs_info,
 	ret = sysfs_create_group(fsid_kobj, &btrfs_feature_attr_group);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_PERF_STATS
 /* /sys/kernel/debug/btrfs */
 static struct dentry *btrfs_debugfs_root_dentry;
 
@@ -2846,7 +2896,7 @@ out:
 		btrfs_debugfs_remove_mounted(fs_info);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_PERF_STATS */
 
 int __init btrfs_init_sysfs(void)
 {
@@ -2856,46 +2906,46 @@ int __init btrfs_init_sysfs(void)
 	if (!btrfs_kset)
 		return -ENOMEM;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_PERF_STATS
 	btrfs_debugfs_root_dentry = debugfs_create_dir("btrfs", NULL);
 	if (!btrfs_debugfs_root_dentry) {
 		ret = -ENOMEM;
 		goto out2;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_PERF_STATS */
 
 	init_feature_attrs();
 	ret = sysfs_create_group(&btrfs_kset->kobj, &btrfs_feature_attr_group);
 	if (ret)
 		goto out2;
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP) || defined(CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP)
 	ret = sysfs_create_files(&btrfs_kset->kobj, btrfs_info_attrs);
 	if (ret)
 		goto out_remove_group;
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP || CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP */
 
 	ret = sysfs_merge_group(&btrfs_kset->kobj,
 				&btrfs_static_feature_attr_group);
 	if (ret)
 		goto out_remove_group;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 	ret = sysfs_merge_group(&btrfs_kset->kobj, &btrfs_locker_feature_attr_group);
 	if (ret)
 		goto out_remove_group;
 #endif /* CONFIG_SYNO_BTRFS_LOCK */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT
 	ret = sysfs_merge_group(&btrfs_kset->kobj, &btrfs_qgroup_soft_limit_feature_attr_group);
 	if (ret)
 		goto out_remove_group;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_QUOTA_SOFT_LIMIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 	ret = sysfs_merge_group(&btrfs_kset->kobj, &btrfs_syno_feature_attr_group);
 	if (ret)
 		goto out_remove_group;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 
 #ifdef CONFIG_BTRFS_DEBUG
 	ret = sysfs_create_group(&btrfs_kset->kobj, &btrfs_debug_feature_attr_group);
@@ -2908,9 +2958,9 @@ int __init btrfs_init_sysfs(void)
 out_remove_group:
 	sysfs_remove_group(&btrfs_kset->kobj, &btrfs_feature_attr_group);
 out2:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_PERF_STATS
 	debugfs_remove_recursive(btrfs_debugfs_root_dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_PERF_STATS */
 	kset_unregister(btrfs_kset);
 
 	return ret;
@@ -2918,18 +2968,18 @@ out2:
 
 void __cold btrfs_exit_sysfs(void)
 {
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP) || defined(CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP)
 	sysfs_remove_files(&btrfs_kset->kobj, btrfs_info_attrs);
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP || CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP */
 	sysfs_unmerge_group(&btrfs_kset->kobj,
 			    &btrfs_static_feature_attr_group);
 	sysfs_remove_group(&btrfs_kset->kobj, &btrfs_feature_attr_group);
 #ifdef CONFIG_BTRFS_DEBUG
 	sysfs_remove_group(&btrfs_kset->kobj, &btrfs_debug_feature_attr_group);
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_PERF_STATS
 	debugfs_remove_recursive(btrfs_debugfs_root_dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_PERF_STATS */
 	kset_unregister(btrfs_kset);
 }
 

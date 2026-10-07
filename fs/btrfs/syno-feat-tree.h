@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Copyright (C) 2020 Synology Inc.  All rights reserved.
  */
@@ -28,11 +25,11 @@ do {                                                                   	\
 	(SYNO_FEAT_TREE_ST_ENABLE == fs_info->syno_feat_tree_status.status))
 
 int btrfs_syno_feat_tree_enable(struct btrfs_fs_info *fs_info);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOCKER
 #define btrfs_syno_feat_tree_disable(...)
 #else
 int btrfs_syno_feat_tree_disable(struct btrfs_fs_info *fs_info);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOCKER */
 int btrfs_syno_feat_tree_load_status_from_disk(struct btrfs_fs_info *fs_info);
 
 #endif /* __BTRFS_SYNO_FEAT_TREE_H_ */

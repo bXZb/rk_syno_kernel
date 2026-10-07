@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _RAID5_H
 #define _RAID5_H
@@ -257,7 +254,7 @@ struct stripe_head {
 	int	nr_pages;	/* page array size */
 	int	stripes_per_page;
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_RAID_PERF_STAT
 	int syno_stat_batched_len;
 	/**
 	 * we recored overhead of three function for raid5 cpu time analysis (ns)
@@ -283,10 +280,10 @@ struct stripe_head {
 	bool syno_stat_lat_enable:1;
 	bool syno_stat_is_rcw:1;
 	bool syno_stat_is_full_write:1;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_RAID_PERF_STAT */
+#ifdef CONFIG_SYNO_MD_FULL_STRIPE_MERGE
 	unsigned long syno_full_stripe_merge_state;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FULL_STRIPE_MERGE */
 	struct r5dev {
 		/* rreq and rvec are used for the replacement device when
 		 * writing data to both devices.
@@ -326,12 +323,12 @@ struct stripe_head_state {
 	int handle_bad_blocks;
 	int log_failed;
 	int waiting_extra_page;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_FULL_STRIPE_MERGE
 	int syno_full_stripe_merging;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_FULL_STRIPE_MERGE */
+#ifdef CONFIG_SYNO_MD_DATA_CORRECTION
 	bool syno_force_stripe_rcw;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DATA_CORRECTION */
 };
 
 /* Flags for struct r5dev.flags */
@@ -382,9 +379,9 @@ enum r5dev_flags {
 				 * set, orig_page contains latest data in the
 				 * raid disk.
 				 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_AUTO_REMAP_REPORT
 	R5_SynoAutoRemaped,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_AUTO_REMAP_REPORT */
 };
 
 /*
@@ -440,12 +437,12 @@ enum {
 				 * in conf->r5c_full_stripe_list)
 				 */
 	STRIPE_R5C_PREFLUSH,	/* need to flush journal device */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_RAID5_FIX_MAX_LATENCY_HIGH
 	STRIPE_SYNO_STABLE_STATE, /* finished xor and ready to write back */
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_RAID5_FIX_MAX_LATENCY_HIGH */
+#ifdef CONFIG_SYNO_MD_STATUS_DISKERROR
 	STRIPE_SYNO_NORETRY,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_STATUS_DISKERROR */
 };
 
 #define STRIPE_EXPAND_SYNC_FLAGS \
@@ -550,12 +547,12 @@ struct disk_info {
 #define NR_STRIPE_HASH_LOCKS 8
 #define STRIPE_HASH_LOCKS_MASK (NR_STRIPE_HASH_LOCKS - 1)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_FLUSH_PLUG
 #define SYNO_DEFAULT_FLUSH_PLUG_STRIPE_CNT	128
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_FLUSH_PLUG */
+#ifdef CONFIG_SYNO_MD_RAID5_ACTIVE_STRIPE_THRESHOLD
 #define SYNO_DEFAULT_ACTIVE_STRIPE_THRESHOLD	1024
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_RAID5_ACTIVE_STRIPE_THRESHOLD */
 
 struct r5worker {
 	struct work_struct work;
@@ -612,12 +609,12 @@ struct r5pending_data {
 	struct list_head sibling;
 	sector_t sector; /* stripe sector */
 	struct bio_list bios;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_RAID5_PERF_ENHANCE_BY_DEFERIO
 	int count;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_RAID5_PERF_ENHANCE_BY_DEFERIO */
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_RAID5_PERF_ENHANCE_BY_DEFERIO
 #define SYNO_MAX_SORT_ENT_CNT 512
 #define SYNO_DEFAULT_FLUSH_THRESHOLD 2048
 #define SYNO_NONROT_FLUSH_THRESHOLD 64
@@ -641,7 +638,7 @@ struct syno_r5defer {
 	struct r5pending_data	*pending_data;
 	struct md_thread *defer_thread;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_RAID5_PERF_ENHANCE_BY_DEFERIO */
 
 struct r5conf {
 	struct hlist_head	*stripe_hashtbl;
@@ -774,18 +771,18 @@ struct r5conf {
 	int			pending_data_cnt;
 	struct r5pending_data	*next_pending_data;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_RAID5_DISABLE_STRIPE_GROWTH
 	unsigned char			syno_enable_stripe_grow; /* Don't allow stripe grow automatic */
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_RAID5_DISABLE_STRIPE_GROWTH */
+#ifdef CONFIG_SYNO_MD_RAID5_FIX_MAX_LATENCY_HIGH
 	/* I/O hits a stripe that finished compute parity and ready to write back to disks,
 	 * thus this stripe cannot do preread and will be added into delayed_list. In this
 	 * case, we add this stripe into our syno_stable_list instead, we mostly want to
 	 * prevent direct I/O from high latency.
 	 */
 	struct list_head syno_stable_list;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_RAID5_FIX_MAX_LATENCY_HIGH */
+#ifdef CONFIG_SYNO_MD_RAID5_PERF_ENHANCE_BY_DEFERIO
 	int syno_defer_flush_threshold;
 	int syno_defer_mode;
 	int syno_defer_group_cnt;
@@ -794,17 +791,14 @@ struct r5conf {
 	int syno_defer_flush_batch_size;
 	atomic_t syno_active_stripe_workers;
 	bool syno_defer_skip_sort;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_RAID5_PERF_ENHANCE_BY_DEFERIO */
+#ifdef CONFIG_SYNO_MD_FIX_RAID5_RESHAPE_HANG
 	unsigned char			syno_reshape_failed; /* record when reshape failed */
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_FIX_RAID5_RESHAPE_HANG */
+#ifdef CONFIG_SYNO_MD_RAID5_ACTIVE_STRIPE_THRESHOLD
 	int syno_active_stripe_threshold;
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
-	int syno_handle_stripes_cpu;
-#endif /* MY_DEF_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_RAID5_ACTIVE_STRIPE_THRESHOLD */
+#ifdef CONFIG_SYNO_MD_DATA_CORRECTION
 	atomic_t          syno_heal_active_stripes;
 	int               syno_heal_max_nr_stripes;
 	int               syno_heal_active_name;
@@ -815,8 +809,8 @@ struct r5conf {
 	struct list_head  syno_heal_handle_list;
 	struct mutex      syno_heal_cache_size_mutex; /* Protect changes to cache size */
 	wait_queue_head_t syno_heal_wait_for_stripe;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_DATA_CORRECTION */
+#ifdef CONFIG_SYNO_MD_RAID_PERF_STAT
 	/* histogram of batched length and io cnt */
 	u64 syno_stat_rcw;
 	u64 syno_stat_full_write;
@@ -839,16 +833,18 @@ struct r5conf {
 	u64 syno_stat_raid5d_handle_cnt;
 	u64 syno_stat_r5worker_handle_cnt;
 	bool syno_stat_lat_enable:1;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_RAID_PERF_STAT */
+#ifdef CONFIG_SYNO_MD_DUMMY_READ
 	int syno_dummy_read;
 	int syno_dummy_read_allow_sector_min;
 	struct bio *syno_dummy_bio;
 	struct page *syno_dummy_page;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+	struct bio_set syno_dummy_bioset;
+	bool syno_dummy_bioset_initialized;
+#endif /* CONFIG_SYNO_MD_DUMMY_READ */
+#ifdef CONFIG_SYNO_MD_FULL_STRIPE_MERGE
 	bool syno_full_stripe_merge;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FULL_STRIPE_MERGE */
 };
 
 #if PAGE_SIZE == DEFAULT_STRIPE_SIZE
@@ -920,7 +916,7 @@ static inline struct bio *r5_next_bio(struct r5conf *conf, struct bio *bio, sect
 #define ALGORITHM_PARITY_0_6		20
 #define ALGORITHM_PARITY_N_6		ALGORITHM_PARITY_N
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_RAID_F1
 /* For Synology RAID F1, define new layout as follow */
 #define ALGORITHM_RAID_F1_0             ALGORITHM_LEFT_SYMMETRIC
 #define ALGORITHM_RAID_F1_1             32
@@ -936,7 +932,7 @@ static inline int algorithm_valid_raid_f1(int layout)
 		((layout >= ALGORITHM_RAID_F1_1) &&
 		 (layout <= ALGORITHM_RAID_F1_4));
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_RAID_F1 */
 
 static inline int algorithm_valid_raid5(int layout)
 {
@@ -976,7 +972,7 @@ raid5_get_dev_page(struct stripe_head *sh, int disk_idx)
 }
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DATA_CORRECTION
 #define SYNO_RAID5_HEAL_STRIPE_DEFAULT_CNT 256
 
 enum {
@@ -1005,7 +1001,7 @@ struct syno_heal_stripe_head {
 		struct md_rdev *rdev;
 	} dev[1]; /* allocated with extra space depending of RAID geometry */
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DATA_CORRECTION */
 extern void md_raid5_kick_device(struct r5conf *conf);
 extern int raid5_set_cache_size(struct mddev *mddev, int size);
 extern sector_t raid5_compute_blocknr(struct stripe_head *sh, int i, int previous);
@@ -1018,13 +1014,13 @@ raid5_get_active_stripe(struct r5conf *conf, sector_t sector,
 			int previous, int noblock, int noquiesce);
 extern int raid5_calc_degraded(struct r5conf *conf);
 extern int r5c_journal_mode_set(struct mddev *mddev, int journal_mode);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_RAID_F1
 static inline int md_raid_f1_uneven_count(int algorithm)
 {
 	return (algorithm == ALGORITHM_RAID_F1_0 ? 0 : algorithm - ALGORITHM_RAID_F1_1 + 1);
 }
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_RAID_F1 */
+#ifdef CONFIG_SYNO_MD_FULL_STRIPE_MERGE
 #define SYNO_FULL_STRIPE_MERGE_DENOMINATOR 16
 /*
  * Full stripe merge state
@@ -1034,5 +1030,5 @@ enum {
 	SYNO_FULL_STRIPE_MERGING,
 	SYNO_FULL_STRIPE_MERGE_DO_WRITE,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FULL_STRIPE_MERGE */
 #endif

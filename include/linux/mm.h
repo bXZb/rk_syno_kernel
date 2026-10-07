@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_MM_H
 #define _LINUX_MM_H
@@ -1733,7 +1730,7 @@ static inline void unmap_shared_mapping_range(struct address_space *mapping,
 	unmap_mapping_range(mapping, holebegin, holelen, 0);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 extern void vma_do_file_update_time(struct vm_area_struct *, const char[], int);
 extern struct file *vma_do_pr_or_file(struct vm_area_struct *, const char[],
 				      int);
@@ -1755,7 +1752,7 @@ extern void vmr_do_fput(struct vm_region *, const char[], int);
 							  __LINE__)
 #define vmr_fput(region)		vmr_do_fput(region, __func__, __LINE__)
 #endif /* !CONFIG_MMU */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 extern int access_process_vm(struct task_struct *tsk, unsigned long addr,
 		void *buf, int len, unsigned int gup_flags);
@@ -2488,9 +2485,9 @@ extern void memmap_init_zone(unsigned long, int, unsigned long,
 		unsigned long, unsigned long, enum meminit_context,
 		struct vmem_altmap *, int migratetype);
 extern void setup_per_zone_wmarks(void);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MULTI_KSWAPD
 extern void update_kswapd_threads(void);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MULTI_KSWAPD */
 extern int __meminit init_per_zone_wmark_min(void);
 extern void mem_init(void);
 extern void __init mmap_init(void);
@@ -2507,10 +2504,10 @@ void warn_alloc(gfp_t gfp_mask, nodemask_t *nodemask, const char *fmt, ...);
 
 extern void setup_per_cpu_pageset(void);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MULTI_KSWAPD
 extern int kswapd_threads;
 extern int kswapd_threads_current;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MULTI_KSWAPD */
 /* page_alloc.c */
 extern int min_free_kbytes;
 extern int watermark_boost_factor;
@@ -3033,9 +3030,9 @@ int drop_caches_sysctl_handler(struct ctl_table *, int, void *, size_t *,
 		loff_t *);
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DROP_CACHE_MEM_COMPACT
 extern void syno_drop_caches(void);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DROP_CACHE_MEM_COMPACT */
 
 void drop_slab(void);
 void drop_slab_node(int nid);

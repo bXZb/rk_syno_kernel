@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0-only */
 /* 
  *  Transport specific attributes.
@@ -47,12 +44,12 @@ struct scsi_transport_template {
 	 */
 	void (* eh_strategy_handler)(struct Scsi_Host *);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP
 	/*
 	 * Check if Synology Eunit is in deep sleep.
 	 */
 	struct Scsi_Host* (* is_eunit_deepsleep)(struct Scsi_Host *);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_DEEPSLEEP */
 };
 
 #define transport_class_to_shost(tc) \

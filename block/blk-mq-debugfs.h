@@ -34,7 +34,10 @@ void blk_mq_debugfs_unregister_sched_hctx(struct blk_mq_hw_ctx *hctx);
 
 void blk_mq_debugfs_register_rqos(struct rq_qos *rqos);
 void blk_mq_debugfs_unregister_rqos(struct rq_qos *rqos);
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+#else /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 void blk_mq_debugfs_unregister_queue_rqos(struct request_queue *q);
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 #else
 static inline void blk_mq_debugfs_register(struct request_queue *q)
 {
@@ -86,9 +89,12 @@ static inline void blk_mq_debugfs_unregister_rqos(struct rq_qos *rqos)
 {
 }
 
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+#else /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 static inline void blk_mq_debugfs_unregister_queue_rqos(struct request_queue *q)
 {
 }
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 #endif
 
 #ifdef CONFIG_BLK_DEBUG_FS_ZONED

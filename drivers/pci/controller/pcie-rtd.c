@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 /*
@@ -36,9 +33,9 @@
 #include <linux/regmap.h>
 #include <linux/phy/phy.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HW_VERSION
 #include <linux/synobios.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HW_VERSION */
 
 #include "pcie-rtd.h"
 
@@ -724,15 +721,15 @@ static int pcie_link_init(struct rtd_pcie_port *pp)
 	writel(0x001E0022, pp->ctrl_base + PCIE_SYS_CTR);
 	writel(0x00010120, pp->ctrl_base + PORT_LINK_CTRL_OFF);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_RTD1619B
 	timeout = 1000;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_RTD1619B */
 	timeout = PCIE_CONNECT_TIMEOUT;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 	do {
 		pci_link_detected = readl(pp->ctrl_base + PCIE_MAC_ST) & 0x800;
 		if (pci_link_detected) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_RTD1619B
 			if (1000 - timeout > PCIE_CONNECT_TIMEOUT) {
 				dev_err(pp->dev, "error: link up with device timeout %d ms exceed default %d", 1000 - timeout, PCIE_CONNECT_TIMEOUT);
 			} else {
@@ -742,9 +739,9 @@ static int pcie_link_init(struct rtd_pcie_port *pp)
 			// Follow PCIe spec: software must wait for 100 ms after the Data Link Layer Link Active bit reads 1b before initiating a configuration access to the hot added device.
 			mdelay(100);
 
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_RTD1619B */
 			dev_info(pp->dev, "link up with device");
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 			break;
 		}
 		mdelay(1);
@@ -960,7 +957,7 @@ static int rtd_pcie_probe(struct platform_device *pdev)
 	}
 	bus = bridge->bus;
 
-#if defined(MY_ABC_HERE) && defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B) && defined(CONFIG_SYNO_HW_VERSION)
 	if (list_empty(&bus->devices) && syno_is_hw_version(HW_DS423)) {
 		dev_err(dev, "scan child pci device failed\n");
 		ret = pcie_link_init(pp);
@@ -970,7 +967,7 @@ static int rtd_pcie_probe(struct platform_device *pdev)
 		}
 		pci_scan_child_bus(bridge->bus);
 	}
-#endif /* defined(MY_ABC_HERE) && defined(MY_ABC_HERE) */
+#endif /* defined(CONFIG_SYNO_RTD1619B) && defined(CONFIG_SYNO_HW_VERSION) */
 
 	pci_bus_size_bridges(bus);
 	pci_bus_assign_resources(bus);

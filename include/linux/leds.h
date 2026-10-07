@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Driver model for leds and led triggers
@@ -213,9 +210,9 @@ extern void led_put(struct led_classdev *led_cdev);
 struct led_classdev *__must_check devm_of_led_get(struct device *dev,
 						  int index);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_TRIGGER_DISK
 extern struct led_classdev *of_leddev_get(struct device_node *led_node);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_TRIGGER_DISK */
 
 /**
  * led_blink_set - set blinking with software fallback
@@ -488,11 +485,11 @@ static inline void ledtrig_flash_ctrl(bool on) {}
 static inline void ledtrig_torch_ctrl(bool on) {}
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_LEDS_TRIGGER_DISK
 void ledtrig_syno_disk_activity_on(struct led_classdev *led_cdev);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LEDS_TRIGGER_DISK */
 static inline void ledtrig_syno_disk_activity_on(struct led_classdev *led_cdev) {}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LEDS_TRIGGER_DISK */
 
 /*
  * Generic LED platform data for describing LED names and default triggers.

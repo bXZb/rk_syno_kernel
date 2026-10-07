@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * drivers/usb/core/sysfs.c
@@ -51,10 +48,10 @@ static ssize_t field##_show(struct device *dev,				\
 usb_actconfig_attr(bNumInterfaces, "%2d\n");
 usb_actconfig_attr(bmAttributes, "%2x\n");
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_POWER_RESET
 extern struct usb_hub *usb_hub_to_struct_hub(struct usb_device *hdev);
 extern int syno_usb_power_cycle(struct usb_hub *hub, int port, int status);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_POWER_RESET */
 
 static ssize_t bMaxPower_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -266,7 +263,7 @@ static ssize_t quirks_show(struct device *dev, struct device_attribute *attr,
 }
 static DEVICE_ATTR_RO(quirks);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_DEVICE_QUIRKS
 static ssize_t
 syno_quirks_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -292,7 +289,7 @@ syno_quirks_store(struct device *dev, struct device_attribute *attr,
 	return count;
 }
 static DEVICE_ATTR_RW(syno_quirks);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_DEVICE_QUIRKS */
 
 static ssize_t avoid_reset_quirk_show(struct device *dev,
 				      struct device_attribute *attr, char *buf)
@@ -366,7 +363,7 @@ static ssize_t ltm_capable_show(struct device *dev,
 }
 static DEVICE_ATTR_RO(ltm_capable);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_POWER_RESET
 static ssize_t
 syno_vbus_reset_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -391,7 +388,7 @@ syno_vbus_reset_store(struct device *dev, struct device_attribute *attr,
 	return count;
 }
 static DEVICE_ATTR_RW(syno_vbus_reset);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_POWER_RESET */
 
 #ifdef	CONFIG_PM
 
@@ -858,7 +855,7 @@ static ssize_t remove_store(struct device *dev, struct device_attribute *attr,
 }
 static DEVICE_ATTR_IGNORE_LOCKDEP(remove, S_IWUSR, NULL, remove_store);
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_RTK_HCD_TEST_MODE
 #include <linux/slab.h>
 #include <linux/usb/ch11.h>
@@ -1047,7 +1044,7 @@ set_runTestMode (struct device *dev, struct device_attribute *attr, const char *
 static DEVICE_ATTR(runTestMode, S_IRUGO | S_IWUSR,
 		show_runTestMode, set_runTestMode);
 #endif /* CONFIG_USB_RTK_HCD_TEST_MODE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 
 static struct attribute *dev_attrs[] = {
 	/* current configuration's attributes */
@@ -1075,25 +1072,25 @@ static struct attribute *dev_attrs[] = {
 	&dev_attr_version.attr,
 	&dev_attr_maxchild.attr,
 	&dev_attr_quirks.attr,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_DEVICE_QUIRKS
 	&dev_attr_syno_quirks.attr,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_DEVICE_QUIRKS */
 	&dev_attr_avoid_reset_quirk.attr,
 	&dev_attr_authorized.attr,
 	&dev_attr_remove.attr,
 	&dev_attr_removable.attr,
 	&dev_attr_ltm_capable.attr,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_POWER_RESET
 	&dev_attr_syno_vbus_reset.attr,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_POWER_RESET */
 #ifdef CONFIG_OF
 	&dev_attr_devspec.attr,
 #endif
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_RTK_HCD_TEST_MODE
 	&dev_attr_runTestMode.attr,
 #endif // CONFIG_USB_RTK_HCD_TEST_MODE
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	NULL,
 };
 static struct attribute_group dev_attr_grp = {

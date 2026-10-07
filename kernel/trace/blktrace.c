@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2006 Jens Axboe <axboe@kernel.dk>
@@ -79,10 +76,10 @@ static void trace_note(struct blk_trace *bt, pid_t pid, int action,
 	int cpu = smp_processor_id();
 	bool blk_tracer = blk_tracer_enabled;
 	ssize_t cgid_len = cgid ? sizeof(cgid) : 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLOCK_BLKTRACE_AFFINITY_FIX
 	struct rchan_buf *buf = NULL;
 	unsigned long flags = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLOCK_BLKTRACE_AFFINITY_FIX */
 
 	if (blk_tracer) {
 		buffer = blk_tr->array_buffer.buffer;
@@ -99,10 +96,10 @@ static void trace_note(struct blk_trace *bt, pid_t pid, int action,
 	if (!bt->rchan)
 		return;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLOCK_BLKTRACE_AFFINITY_FIX
 	buf = *get_cpu_ptr(bt->rchan->buf);
 	spin_lock_irqsave(&buf->lock, flags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLOCK_BLKTRACE_AFFINITY_FIX */
 	t = relay_reserve(bt->rchan, sizeof(*t) + len + cgid_len);
 	if (t) {
 		t->magic = BLK_IO_TRACE_MAGIC | BLK_IO_TRACE_VERSION;
@@ -120,12 +117,12 @@ record_it:
 		if (blk_tracer)
 			trace_buffer_unlock_commit(blk_tr, buffer, event, 0, pc);
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLOCK_BLKTRACE_AFFINITY_FIX
 	if (!blk_tracer) {
 		spin_unlock_irqrestore(&buf->lock, flags);
 		put_cpu_ptr(bt->rchan->buf);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLOCK_BLKTRACE_AFFINITY_FIX */
 }
 
 /*
@@ -243,9 +240,9 @@ static void __blk_add_trace(struct blk_trace *bt, sector_t sector, int bytes,
 	int cpu, pc = 0;
 	bool blk_tracer = blk_tracer_enabled;
 	ssize_t cgid_len = cgid ? sizeof(cgid) : 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLOCK_BLKTRACE_AFFINITY_FIX
 	struct rchan_buf *buf = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLOCK_BLKTRACE_AFFINITY_FIX */
 
 	if (unlikely(bt->trace_state != Blktrace_running && !blk_tracer))
 		return;
@@ -290,12 +287,12 @@ static void __blk_add_trace(struct blk_trace *bt, sector_t sector, int bytes,
 	 * some space in the relay per-cpu buffer, to prevent an irq
 	 * from coming in and stepping on our toes.
 	 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLOCK_BLKTRACE_AFFINITY_FIX
 	buf = *get_cpu_ptr(bt->rchan->buf);
 	spin_lock_irqsave(&buf->lock, flags);
 #else
 	local_irq_save(flags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLOCK_BLKTRACE_AFFINITY_FIX */
 	t = relay_reserve(bt->rchan, sizeof(*t) + pdu_len + cgid_len);
 	if (t) {
 		sequence = per_cpu_ptr(bt->sequence, cpu);
@@ -331,12 +328,12 @@ record_it:
 		}
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLOCK_BLKTRACE_AFFINITY_FIX
 	spin_unlock_irqrestore(&buf->lock, flags);
 	put_cpu_ptr(bt->rchan->buf);
 #else
 	local_irq_restore(flags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLOCK_BLKTRACE_AFFINITY_FIX */
 }
 
 static void blk_trace_free(struct blk_trace *bt)

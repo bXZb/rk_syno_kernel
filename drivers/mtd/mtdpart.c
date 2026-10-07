@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Simple MTD partitioning layer
@@ -20,23 +17,23 @@
 #include <linux/mtd/partitions.h>
 #include <linux/err.h>
 #include <linux/of.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
 
 #include "mtdcore.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 extern unsigned char grgbLanMac[SYNO_MAC_MAX_NUMBER][16];
 extern int giVenderFormatVersion;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
+#ifdef CONFIG_SYNO_SERIAL
 extern char gszSerialNum[];
 extern char gszCustomSerialNum[];
 #define SYNO_SN_TAG "SN="
 #define SYNO_CHKSUM_TAG "CHK="
 #define SYNO_SN_12_SIG SYNO_SN_TAG  // signature for 12 serial number
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SERIAL */
 
 /*
  * MTD methods which simply translate the effective address and pass through
@@ -49,14 +46,14 @@ static inline void free_partition(struct mtd_info *mtd)
 	kfree(mtd);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 #define SYNO_MAC_LEN            6
 #define SYNO_MAC_CHK_LEN        1
 #define SYNO_MAC_MAX_NUM        8
 #define SYNO_MAC_BUF_LEN        16
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_SERIAL) || defined(CONFIG_SYNO_MAC_ADDRESS)
 #define SYNO_VENDER_HEADER_SIZE     0x10
 #define SYNO_VENDER_SN_SIZE     0x20
 #define SYNO_VENDER_CUSTSN_SIZE     0x20
@@ -72,7 +69,7 @@ static inline void free_partition(struct mtd_info *mtd)
 #define SYNO_VENDER_SN_TOKEN        "SN="
 #define SYNO_VENDER_SN_CKSUM_TOKEN  "CHK="
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SERIAL
 static int syno_vender_sn_verify(char *szSN)
 {
 	int errRes = 0;
@@ -147,9 +144,9 @@ static int syno_vender_cust_sn_verify(char *szCustSN)
 END:
 	return errRes;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SERIAL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 static int syno_vender_mac_parser(u_char* rgbszBuf)
 {
 	int errRes = 0;
@@ -214,7 +211,7 @@ static int syno_vender_mac_parser(u_char* rgbszBuf)
 END:
 	return errRes;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
 
 static int syno_vender_v2_parser(struct mtd_info *mtd_vender)
 {
@@ -237,7 +234,7 @@ static int syno_vender_v2_parser(struct mtd_info *mtd_vender)
 		goto END;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SERIAL
 	memset(gszSerialNum, 0, 32);
 	memset(gszCustomSerialNum, 0, 32);
 
@@ -258,15 +255,15 @@ static int syno_vender_v2_parser(struct mtd_info *mtd_vender)
 		snprintf(gszCustomSerialNum, 32, "%s", szCustSN);
 		printk("Custom Serial Number: %s\n", gszCustomSerialNum);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SERIAL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 	memset(rgbszBuf, 0, 128*sizeof(u_char));
 	mtd_read(mtd_vender, SYNO_VENDER_MAC_OFFSET, (SYNO_MAC_MAX_NUM*SYNO_VENDER_MAC_SIZE), &retlen, rgbszBuf);
 
 	// read MACs
 	syno_vender_mac_parser(rgbszBuf);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
 
 	errRes = 0;
 END:
@@ -281,23 +278,23 @@ static int syno_vender_v1_parser(struct mtd_info *mtd_vender)
 	int i = 0, x = 0;
 	unsigned int Sum;
 	u_char ucSum;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 	int n = 0;
 	int MacNumber = 4;
 	char rgbLanMac[SYNO_MAC_MAX_NUMBER][6];
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
+#ifdef CONFIG_SYNO_SERIAL
 	char szSerialBuffer[32];
 	char *ptr;
 	char szSerial[32];
 	char szCheckSum[32];
 	unsigned long ulchksum = 0;
 	unsigned long ulTemp = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SERIAL */
 
 	mtd_read(mtd_vender, 0, 128, &retlen, rgbszBuf);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MAC_ADDRESS
 	x = 0;
 	for (n = 0; n < MacNumber; n++) {
 		for (Sum=0,ucSum=0,i=0; i<6; i++) {
@@ -333,8 +330,8 @@ static int syno_vender_v1_parser(struct mtd_info *mtd_vender)
 
 		x++;
 	}
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MAC_ADDRESS */
+#ifdef CONFIG_SYNO_SERIAL
 	memset(szSerial, 0, sizeof(szSerial));
 	memset(szCheckSum, 0, sizeof(szCheckSum));
 	memset(gszSerialNum, 0, 32);
@@ -416,11 +413,11 @@ SKIP_SERIAL:
 	} else {
 		printk("Custom Serial Number: %s\n", gszCustomSerialNum);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SERIAL */
 
 	return 0;
 }
-#endif /* MY_ABC_HERE) || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SERIAL) || CONFIG_SYNO_MAC_ADDRESS */
 
 static struct mtd_info *allocate_partition(struct mtd_info *parent,
 					   const struct mtd_partition *part,
@@ -600,7 +597,7 @@ static struct mtd_info *allocate_partition(struct mtd_info *parent,
 	}
 
 out_register:
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_MAC_ADDRESS) || defined(CONFIG_SYNO_SERIAL)
 	if ((memcmp(part->name, "vender", 7)==0) ||
 		(memcmp(part->name, "vendor", 7)==0)) {
 
@@ -615,7 +612,7 @@ out_register:
 			printk(KERN_ERR "Undefined verder version %d\n", giVenderFormatVersion);
 		}
 	}
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MAC_ADDRESS || CONFIG_SYNO_SERIAL */
 	return child;
 }
 
@@ -1124,7 +1121,7 @@ uint64_t mtd_get_device_size(const struct mtd_info *mtd)
 }
 EXPORT_SYMBOL_GPL(mtd_get_device_size);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MTD_INFO
 int SYNOMTDModifyPartInfo(struct mtd_info *mtd, unsigned long offset, unsigned long length)
 {
 	struct mtd_info *master = mtd_get_master((struct mtd_info *)mtd);
@@ -1140,4 +1137,4 @@ int SYNOMTDModifyPartInfo(struct mtd_info *mtd, unsigned long offset, unsigned l
 
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MTD_INFO */

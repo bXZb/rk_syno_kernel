@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2003-2006, Cluster File Systems, Inc, info@clusterfs.com
@@ -4928,7 +4925,7 @@ int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
 	return iomap_fiemap(inode, fieinfo, start, len, &ext4_iomap_report_ops);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 int ext4_rbd_meta_file_mapping(struct inode *inode,
 			struct syno_rbd_meta_ioctl_args *args)
 {
@@ -4967,7 +4964,7 @@ int ext4_rbd_meta_file_mapping(struct inode *inode,
 		args->start = (u64) -1;
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 
 int ext4_get_es_cache(struct inode *inode, struct fiemap_extent_info *fieinfo,
 		      __u64 start, __u64 len)

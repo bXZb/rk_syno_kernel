@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 1991-1998  Linus Torvalds
@@ -218,7 +215,7 @@ static ssize_t part_discard_alignment_show(struct device *dev,
 				p->start_sect));
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 extern void syno_partition_remap_mode_set(struct gendisk *gd, struct hd_struct *phd,
 					  unsigned char auto_remap);
 ssize_t part_syno_auto_remap_show(struct device *dev, struct device_attribute *attr, char *buf)
@@ -239,7 +236,7 @@ ssize_t part_syno_auto_remap_store(struct device *dev, struct device_attribute *
 	syno_partition_remap_mode_set(disk, p, val ? 1 : 0);
 	return count;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 
 static DEVICE_ATTR(partition, 0444, part_partition_show, NULL);
 static DEVICE_ATTR(start, 0444, part_start_show, NULL);
@@ -253,9 +250,9 @@ static DEVICE_ATTR(inflight, 0444, part_inflight_show, NULL);
 static struct device_attribute dev_attr_fail =
 	__ATTR(make-it-fail, 0644, part_fail_show, part_fail_store);
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 static DEVICE_ATTR(auto_remap, 0644, part_syno_auto_remap_show, part_syno_auto_remap_store);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 
 static struct attribute *part_attrs[] = {
 	&dev_attr_partition.attr,
@@ -269,9 +266,9 @@ static struct attribute *part_attrs[] = {
 #ifdef CONFIG_FAIL_MAKE_REQUEST
 	&dev_attr_fail.attr,
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 	&dev_attr_auto_remap.attr,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 	NULL
 };
 
@@ -507,9 +504,9 @@ static struct hd_struct *add_partition(struct gendisk *disk, int partno,
 	/* suppress uevent if the disk suppresses it */
 	if (!dev_get_uevent_suppress(ddev))
 		kobject_uevent(&pdev->kobj, KOBJ_ADD);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP
 	syno_partition_remap_mode_set(disk, p, 0);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_BAD_SECTOR_AUTO_REMAP */
 	return p;
 
 out_free_info:

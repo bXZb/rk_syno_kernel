@@ -31,7 +31,11 @@
 #define SKX_NUM_DIMMS		2	/* Max DIMMS per channel */
 
 #define I10NM_NUM_IMC		4
+#ifdef CONFIG_SYNO_ICELAKED
+#define I10NM_NUM_CHANNELS	3
+#else /* CONFIG_SYNO_ICELAKED */
 #define I10NM_NUM_CHANNELS	2
+#endif /* CONFIG_SYNO_ICELAKED */
 #define I10NM_NUM_DIMMS		2
 
 #define MAX(a, b)	((a) > (b) ? (a) : (b))

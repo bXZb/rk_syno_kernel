@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Process version 3 NFS requests.
@@ -15,16 +12,16 @@
 #include "cache.h"
 #include "xdr3.h"
 #include "vfs.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 #include "syno_io_stat.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 
 #define NFSDDBG_FACILITY		NFSDDBG_PROC
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDP_PACKET
 extern u32 nfs_udp_f_rtpref;
 extern u32 nfs_udp_f_wtpref;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDP_PACKET */
 
 static int	nfs3_ftypes[] = {
 	0,			/* NF3NON */
@@ -601,7 +598,7 @@ nfsd3_proc_fsinfo(struct svc_rqst *rqstp)
 	resp->f_maxfilesize = ~(u32) 0;
 	resp->f_properties = NFS3_FSF_DEFAULT;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDP_PACKET
 	if (unlikely(IPPROTO_UDP == rqstp->rq_prot)) {
 		if (CONFIG_SYNO_NFSD_UDP_MIN_PACKET_SIZE <= nfs_udp_f_rtpref && CONFIG_SYNO_NFSD_UDP_MAX_PACKET_SIZE >= nfs_udp_f_rtpref) {
 			resp->f_rtpref = nfs_udp_f_rtpref;
@@ -616,7 +613,7 @@ nfsd3_proc_fsinfo(struct svc_rqst *rqstp)
 			dprintk("nfsd: FSINFO(3) nfs_udp_f_wtpref value is not correct %d\n", nfs_udp_f_wtpref);
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDP_PACKET */
 
 	resp->status = fh_verify(rqstp, &argp->fh, 0,
 				 NFSD_MAY_NOP | NFSD_MAY_BYPASS_GSS_ON_ROOT);
@@ -947,7 +944,7 @@ static const struct svc_procedure nfsd_procedures3[22] = {
 	},
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 static void nfsd_store_latency(u64 rpc_lat, u64 vfs_lat, u32 op)
 {
 	enum syno_nfsd_io_stat_type type;
@@ -969,24 +966,24 @@ static void nfsd_store_error(struct svc_rqst *rqstp)
 	st = (const struct syno_nfsd_dummy_status *) rqstp->rq_resp;
 	syno_nfsd_store_error(be32_to_cpu(st->status), SYNO_NFSD_VERSION_3);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 
 static unsigned int nfsd_count3[ARRAY_SIZE(nfsd_procedures3)];
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 static struct svc_lat nfsd_latency3[ARRAY_SIZE(nfsd_procedures3)];
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 const struct svc_version nfsd_version3 = {
 	.vs_vers	= 3,
 	.vs_nproc	= 22,
 	.vs_proc	= nfsd_procedures3,
 	.vs_dispatch	= nfsd_dispatch,
 	.vs_count	= nfsd_count3,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	.vs_latency	= nfsd_latency3,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	.vs_xdrsize	= NFS3_SVC_XDRSIZE,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 	.vs_store_latency_to_histogram 	= nfsd_store_latency,
 	.vs_store_resp_error 		= nfsd_store_error,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 };

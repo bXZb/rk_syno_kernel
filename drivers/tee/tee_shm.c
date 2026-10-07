@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2015-2016, Linaro Limited
@@ -15,7 +12,7 @@
 #include <linux/uio.h>
 #include "tee_private.h"
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 /* extra references appended to shm object for registered shared memory */
 struct tee_shm_dmabuf_ref {
 	struct tee_shm shm;
@@ -24,7 +21,7 @@ struct tee_shm_dmabuf_ref {
 	struct sg_table *sgt;
 };
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 static void release_registered_pages(struct tee_shm *shm)
 {
 	if (shm->pages) {
@@ -51,7 +48,7 @@ static void tee_shm_release(struct tee_shm *shm)
 		mutex_unlock(&teedev->mutex);
 	}
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 	if (shm->flags & TEE_SHM_EXT_DMA_BUF) {
 		struct tee_shm_dmabuf_ref *ref;
 
@@ -61,9 +58,9 @@ static void tee_shm_release(struct tee_shm *shm)
 		dma_buf_detach(ref->dmabuf, ref->attach);
 		dma_buf_put(ref->dmabuf);
 	} else if (shm->flags & TEE_SHM_POOL) {
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LSP_RTD1619B */
 	if (shm->flags & TEE_SHM_POOL) {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 		struct tee_shm_pool_mgr *poolm;
 
 		if (shm->flags & TEE_SHM_DMA_BUF)
@@ -343,7 +340,7 @@ err:
 }
 EXPORT_SYMBOL_GPL(tee_shm_register);
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 struct tee_shm *tee_shm_register_fd(struct tee_context *ctx, int fd)
 {
 	struct tee_shm_dmabuf_ref *ref;
@@ -436,7 +433,7 @@ err:
 }
 EXPORT_SYMBOL_GPL(tee_shm_register_fd);
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 /**
  * tee_shm_get_fd() - Increase reference count and return file descriptor
  * @shm:	Shared memory handle
@@ -553,10 +550,14 @@ EXPORT_SYMBOL_GPL(tee_shm_get_va);
  */
 int tee_shm_get_pa(struct tee_shm *shm, size_t offs, phys_addr_t *pa)
 {
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
+#if 0	//optee: remove registered shm argument size check
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	if (offs >= shm->size)
 		return -EINVAL;
-#endif /* MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
+#endif
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	if (pa)
 		*pa = shm->paddr + offs;
 	return 0;

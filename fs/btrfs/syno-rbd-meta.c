@@ -117,6 +117,7 @@ int btrfs_rbd_meta_file_mapping(struct inode *inode,
 		}
 		args->start += len;
 		args->cnt++;
+		cond_resched();
 	}
 
 	if (args->start >= isize)

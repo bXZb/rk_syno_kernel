@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * AMD 10Gb Ethernet driver
  *
@@ -943,16 +940,16 @@ struct xgbe_phy_impl_if {
 	int (*module_eeprom)(struct xgbe_prv_data *pdata,
 			     struct ethtool_eeprom *eeprom, u8 *data);
 
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	/* WOL setting Enable */
 	void (*wol_enable)(struct xgbe_prv_data *);
 	void (*force_1g)(struct xgbe_prv_data *);
 	void (*resume_autoneg)(struct xgbe_prv_data *);
 	void (*phy_led_test_mode)(struct xgbe_prv_data *, unsigned int);
 	void (*phy_pause)(struct xgbe_prv_data *, bool);
-	void (*phy_mdio_mii_read)(struct xgbe_prv_data *, unsigned int, unsigned int *);
-	void (*phy_mdio_mii_write)(struct xgbe_prv_data *, unsigned int, unsigned int);
-#endif /* MY_DEF_HERE */
+	int (*phy_mdio_mii_read)(struct xgbe_prv_data *, unsigned int, unsigned int *);
+	int (*phy_mdio_mii_write)(struct xgbe_prv_data *, unsigned int, unsigned int);
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 };
 
@@ -1352,10 +1349,11 @@ struct xgbe_prv_data {
 	bool debugfs_an_cdr_workaround;
 	bool debugfs_an_cdr_track_early;
 
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	int wol_flag;
-#endif /* MY_DEF_HERE */
-	
+	unsigned int mb_rx_reset_cnt;   /* consecutive mailbox rx_reset count */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
+
 	bool en_rx_adap;
 	int rx_adapt_retries;
 	bool rx_adapt_done;

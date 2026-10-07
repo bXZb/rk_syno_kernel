@@ -43,6 +43,9 @@
 #include <linux/module.h>
 #include <linux/pagemap.h>
 #include <linux/user_namespace.h>
+#ifdef CONFIG_SYNO_KERBEROS_FIX_UPCALL_TIMEOUT
+#include <linux/semaphore.h>
+#endif /* CONFIG_SYNO_KERBEROS_FIX_UPCALL_TIMEOUT */
 
 #include <linux/sunrpc/auth_gss.h>
 #include <linux/sunrpc/gss_err.h>
@@ -54,6 +57,10 @@
 
 #include "gss_rpc_upcall.h"
 
+#ifdef CONFIG_SYNO_KERBEROS_FIX_UPCALL_TIMEOUT
+static struct semaphore gss_legacy_init_sem =
+	__SEMAPHORE_INITIALIZER(gss_legacy_init_sem, 2);
+#endif /* CONFIG_SYNO_KERBEROS_FIX_UPCALL_TIMEOUT */
 
 /* The rpcsec_init cache is used for mapping RPCSEC_GSS_{,CONT_}INIT requests
  * into replies.
@@ -194,6 +201,8 @@ static void rsi_request(struct cache_detail *cd,
 	qword_addhex(bpp, blen, rsii->in_handle.data, rsii->in_handle.len);
 	qword_addhex(bpp, blen, rsii->in_token.data, rsii->in_token.len);
 	(*bpp)[-1] = '\n';
+	WARN_ONCE(*blen < 0,
+		  "RPCSEC/GSS credential too large - please use gssproxy\n");
 }
 
 static int rsi_parse(struct cache_detail *cd,
@@ -1581,8 +1590,21 @@ svcauth_gss_accept(struct svc_rqst *rqstp, __be32 *authp)
 	case RPC_GSS_PROC_CONTINUE_INIT:
 		if (use_gss_proxy(SVC_NET(rqstp)))
 			return svcauth_gss_proxy_init(rqstp, gc, authp);
+#ifdef CONFIG_SYNO_KERBEROS_FIX_UPCALL_TIMEOUT
+		else {
+			bool unlock_sem = false;
+
+			if (!down_killable(&gss_legacy_init_sem))
+				unlock_sem = true;
+			ret = svcauth_gss_legacy_init(rqstp, gc, authp);
+			if (unlock_sem)
+				up(&gss_legacy_init_sem);
+			return ret;
+		}
+#else
 		else
 			return svcauth_gss_legacy_init(rqstp, gc, authp);
+#endif /* CONFIG_SYNO_KERBEROS_FIX_UPCALL_TIMEOUT */
 	case RPC_GSS_PROC_DATA:
 	case RPC_GSS_PROC_DESTROY:
 		/* Look up the context, and check the verifier: */

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/ioctl.c
@@ -22,9 +19,9 @@
 #include <linux/falloc.h>
 #include <linux/sched/signal.h>
 #include <linux/fiemap.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_VERSION
 #include <linux/mount.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
 #include "internal.h"
 
@@ -120,9 +117,9 @@ int fiemap_fill_next_extent(struct fiemap_extent_info *fieinfo, u64 logical,
 {
 	struct fiemap_extent extent;
 	struct fiemap_extent __user *dest = fieinfo->fi_extents_start;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_GENERIC_FIEMAP_FOR_KERNEL_SPACE
 	struct fiemap_extent *kernel_dest = fieinfo->kernel_fi_extents_start;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_GENERIC_FIEMAP_FOR_KERNEL_SPACE */
 
 	/* only count the extents */
 	if (fieinfo->fi_extents_max == 0) {
@@ -146,7 +143,7 @@ int fiemap_fill_next_extent(struct fiemap_extent_info *fieinfo, u64 logical,
 	extent.fe_length = len;
 	extent.fe_flags = flags;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_GENERIC_FIEMAP_FOR_KERNEL_SPACE
 	if (dest) {
 		dest += fieinfo->fi_extents_mapped;
 		if (copy_to_user(dest, &extent, sizeof(extent)))
@@ -158,11 +155,11 @@ int fiemap_fill_next_extent(struct fiemap_extent_info *fieinfo, u64 logical,
 		WARN_ON_ONCE(1);
 		return -EINVAL;
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_GENERIC_FIEMAP_FOR_KERNEL_SPACE */
 	dest += fieinfo->fi_extents_mapped;
 	if (copy_to_user(dest, &extent, sizeof(extent)))
 		return -EFAULT;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_GENERIC_FIEMAP_FOR_KERNEL_SPACE */
 
 	fieinfo->fi_extents_mapped++;
 	if (fieinfo->fi_extents_mapped == fieinfo->fi_extents_max)
@@ -247,7 +244,7 @@ static int ioctl_fiemap(struct file *filp, struct fiemap __user *ufiemap)
 	return error;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_GENERIC_FIEMAP_FOR_KERNEL_SPACE
 int vfs_fiemap(struct file *filp, struct fiemap *fiemap)
 {
 	struct fiemap_extent_info fieinfo = { 0, };
@@ -273,9 +270,9 @@ int vfs_fiemap(struct file *filp, struct fiemap *fiemap)
 	return error;
 }
 EXPORT_SYMBOL(vfs_fiemap);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_GENERIC_FIEMAP_FOR_KERNEL_SPACE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR
 static long __ioctl_file_clone(struct file *dst_file, unsigned long srcfd,
 			       u64 off, u64 olen, u64 destoff,
 			       unsigned int flags);
@@ -288,10 +285,10 @@ long ioctl_file_clone(struct file *dst_file, unsigned long srcfd,
 static long __ioctl_file_clone(struct file *dst_file, unsigned long srcfd,
 			       u64 off, u64 olen, u64 destoff,
 			       unsigned int flags)
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 static long ioctl_file_clone(struct file *dst_file, unsigned long srcfd,
 			     u64 off, u64 olen, u64 destoff)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 {
 	struct fd src_file = fdget(srcfd);
 	loff_t cloned;
@@ -302,13 +299,13 @@ static long ioctl_file_clone(struct file *dst_file, unsigned long srcfd,
 	ret = -EXDEV;
 	if (src_file.file->f_path.mnt != dst_file->f_path.mnt)
 		goto fdput;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR
 	cloned = vfs_clone_file_range(src_file.file, off, dst_file, destoff,
 				      olen, flags);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 	cloned = vfs_clone_file_range(src_file.file, off, dst_file, destoff,
 				      olen, 0);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 	if (cloned < 0)
 		ret = cloned;
 	else if (olen && cloned != olen)
@@ -324,13 +321,13 @@ static long ioctl_file_clone_range(struct file *file,
 				   struct file_clone_range __user *argp)
 {
 	struct file_clone_range args;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR
 	unsigned int flags = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 
 	if (copy_from_user(&args, argp, sizeof(args)))
 		return -EFAULT;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR
 	/*
 	 * This is a workaround for DSM #81059.
 	 * We allow to clone between compression and no compression dirs,
@@ -342,10 +339,10 @@ static long ioctl_file_clone_range(struct file *file,
 	return __ioctl_file_clone(file, args.src_fd, args.src_offset,
 				args.src_length, args.dest_offset,
 				flags);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 	return ioctl_file_clone(file, args.src_fd, args.src_offset,
 				args.src_length, args.dest_offset);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DISABLE_CLONE_BETWEEN_COMPR_AND_NOCOMPR_DIR */
 }
 
 #ifdef CONFIG_BLOCK
@@ -745,7 +742,7 @@ out:
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_VERSION
 static int archive_version_check_capable(struct inode *inode)
 {
 	if((!S_ISDIR(inode->i_mode)) && (!S_ISREG(inode->i_mode)))
@@ -857,9 +854,9 @@ static int ioctl_set_inode_archive_version(struct file *filp, int __user *argp)
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SPACE_USAGE
 static int ioctl_syno_space_usage(struct file *filp, void __user *argp)
 {
 	int ret;
@@ -883,9 +880,9 @@ static int ioctl_syno_space_usage(struct file *filp, void __user *argp)
 out:
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SPACE_USAGE */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RBD_META
 static int syno_rbd_meta_file_mapping(struct inode *inode, size_t size,
 				      struct syno_rbd_meta_ioctl_args __user *user)
 {
@@ -978,7 +975,7 @@ static int ioctl_syno_rbd_meta(struct file *filp, unsigned int __user *argp)
 	}
 	return -EINVAL;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RBD_META */
 
 /*
  * do_vfs_ioctl() is not for drivers and not intended to be EXPORT_SYMBOL()'d.
@@ -1039,10 +1036,10 @@ static int do_vfs_ioctl(struct file *filp, unsigned int fd,
 
 	case FICLONERANGE:
 		return ioctl_file_clone_range(filp, argp);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RBD_META
 	case FICTRRBDMETA:
 		return ioctl_syno_rbd_meta(filp, argp);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RBD_META */
 
 	case FIDEDUPERANGE:
 		return ioctl_file_dedupe_range(filp, argp);
@@ -1054,7 +1051,7 @@ static int do_vfs_ioctl(struct file *filp, unsigned int fd,
 		return put_user(i_size_read(inode) - filp->f_pos,
 				(int __user *)argp);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_VERSION
 	case FIGETVERSION:
 		return ioctl_get_sb_archive_version(inode, argp);
 	case FISETVERSION:
@@ -1063,12 +1060,12 @@ static int do_vfs_ioctl(struct file *filp, unsigned int fd,
 		return ioctl_inc_sb_archive_version(filp);
 	case FISETFILEVERSION:
 		return ioctl_set_inode_archive_version(filp, argp);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SPACE_USAGE
 	case FISPACEUSAGE:
 		return ioctl_syno_space_usage(filp, argp);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SPACE_USAGE */
 
 	default:
 		if (S_ISREG(inode->i_mode))
@@ -1081,17 +1078,17 @@ static int do_vfs_ioctl(struct file *filp, unsigned int fd,
 
 SYSCALL_DEFINE3(ioctl, unsigned int, fd, unsigned int, cmd, unsigned long, arg)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_SYMLINK_IOCTL
 	int error;
 	struct fd f;
 	if (cmd == FS_IOC_GETFLAGS || cmd == FS_IOC_SETFLAGS)
 		f = fdget_raw(fd);
 	else
 		f = fdget(fd);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_SYMLINK_IOCTL */
 	struct fd f = fdget(fd);
 	int error;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_SYMLINK_IOCTL */
 
 	if (!f.file)
 		return -EBADF;

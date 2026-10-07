@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/ext4/hash.c
@@ -202,10 +199,10 @@ static void str2hashbuf_unsigned(const char *msg, int len, __u32 *buf, int num)
  */
 static int __ext4fs_dirhash(const char *name, int len,
 			    struct dx_hash_info *hinfo
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 			    , const char *ori_name
 			    , const int ori_len
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 			    )
 {
 	__u32	hash;
@@ -215,9 +212,9 @@ static int __ext4fs_dirhash(const char *name, int len,
 	__u32		in[8], buf[4];
 	void		(*str2hashbuf)(const char *, int, __u32 *, int) =
 				str2hashbuf_signed;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 	const bool ori_minor_hash = !!ori_name;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 
 	/* Initialize the default seed for the hash checksum functions */
 	buf[0] = 0x67452301;
@@ -238,17 +235,17 @@ static int __ext4fs_dirhash(const char *name, int len,
 	switch (hinfo->hash_version) {
 	case DX_HASH_LEGACY_UNSIGNED:
 		hash = dx_hack_hash_unsigned(name, len);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 		if (ori_minor_hash)
 			minor_hash = dx_hack_hash_unsigned(ori_name, ori_len);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 		break;
 	case DX_HASH_LEGACY:
 		hash = dx_hack_hash_signed(name, len);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 		if (ori_minor_hash)
 			minor_hash = dx_hack_hash_signed(ori_name, ori_len);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 		break;
 	case DX_HASH_HALF_MD4_UNSIGNED:
 		str2hashbuf = str2hashbuf_unsigned;
@@ -261,7 +258,7 @@ static int __ext4fs_dirhash(const char *name, int len,
 			len -= 32;
 			p += 32;
 		}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 		if (ori_minor_hash) {
 			hash = buf[1];
 			p = ori_name;
@@ -281,10 +278,10 @@ static int __ext4fs_dirhash(const char *name, int len,
 			minor_hash = buf[2];
 			hash = buf[1];
 		}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 		minor_hash = buf[2];
 		hash = buf[1];
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 		break;
 	case DX_HASH_TEA_UNSIGNED:
 		str2hashbuf = str2hashbuf_unsigned;
@@ -298,7 +295,7 @@ static int __ext4fs_dirhash(const char *name, int len,
 			p += 16;
 		}
 		hash = buf[0];
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 		if (ori_minor_hash) {
 			p = ori_name;
 			len = ori_len;
@@ -313,7 +310,7 @@ static int __ext4fs_dirhash(const char *name, int len,
 				p += 16;
 			}
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 		minor_hash = buf[1];
 		break;
 	default:
@@ -331,7 +328,7 @@ static int __ext4fs_dirhash(const char *name, int len,
 int ext4fs_dirhash(const struct inode *dir, const char *name, int len,
 		   struct dx_hash_info *hinfo)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 	/*
 	 * hash_buf need to add 1 byte for syno_utf8_toupper,
 	 * because it will append 0 to last byte.
@@ -340,7 +337,7 @@ int ext4fs_dirhash(const struct inode *dir, const char *name, int len,
 	char hash_buf[EXT4_NAME_LEN + 1] = {'\0'};
 	const char *ori_name = NULL;
 	int ori_len = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 
 #ifdef CONFIG_UNICODE
 	const struct unicode_map *um = dir->i_sb->s_encoding;
@@ -349,9 +346,9 @@ int ext4fs_dirhash(const struct inode *dir, const char *name, int len,
 	struct qstr qstr = {.name = name, .len = len };
 
 	if (len && IS_CASEFOLDED(dir) && um) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 		syno_caseless = false;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 		buff = kzalloc(sizeof(char) * PATH_MAX, GFP_KERNEL);
 		if (!buff)
 			return -ENOMEM;
@@ -362,11 +359,11 @@ int ext4fs_dirhash(const struct inode *dir, const char *name, int len,
 			goto opaque_seq;
 		}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 		r = __ext4fs_dirhash(buff, dlen, hinfo, NULL, 0);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 		r = __ext4fs_dirhash(buff, dlen, hinfo);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 
 		kfree(buff);
 		return r;
@@ -374,7 +371,7 @@ int ext4fs_dirhash(const struct inode *dir, const char *name, int len,
 opaque_seq:
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 	if (syno_caseless && name && (len > 0)) {
 		ori_name = name;
 		ori_len = len;
@@ -389,7 +386,7 @@ opaque_seq:
 	}
 
 	return __ext4fs_dirhash(name, len, hinfo, ori_name, ori_len);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 	return __ext4fs_dirhash(name, len, hinfo);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 }

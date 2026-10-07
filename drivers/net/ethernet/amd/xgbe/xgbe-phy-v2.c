@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * AMD 10Gb Ethernet driver
  *
@@ -371,9 +368,9 @@ struct xgbe_phy_data {
 	enum xgbe_mdio_mode phydev_mode;
 	struct mii_bus *mii;
 	struct phy_device *phydev;
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	unsigned int ext_phy_pause;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	enum xgbe_mdio_reset mdio_reset;
 	unsigned int mdio_reset_addr;
 	unsigned int mdio_reset_gpio;
@@ -403,6 +400,11 @@ static enum xgbe_mode xgbe_phy_cur_mode(struct xgbe_prv_data *pdata);
 static void xgbe_phy_perform_ratechange(struct xgbe_prv_data *pdata,
 					enum xgbe_mb_cmd cmd,
 					enum xgbe_mb_subcmd sub_cmd);
+
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+static int syno_phy_mdio_mii_read(struct xgbe_prv_data *pdata, unsigned int reg, unsigned int *val);
+static int syno_phy_mdio_mii_write(struct xgbe_prv_data *pdata, unsigned int reg, unsigned int val);
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 static int xgbe_phy_i2c_xfer(struct xgbe_prv_data *pdata,
 			     struct xgbe_i2c_op *i2c_op)
@@ -1795,6 +1797,16 @@ static enum xgbe_mode xgbe_phy_an73_outcome(struct xgbe_prv_data *pdata)
 	XGBE_SET_LP_ADV(lks, Autoneg);
 	XGBE_SET_LP_ADV(lks, Backplane);
 
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+	/* Use external PHY to determine flow control */
+	if (pdata->phy.pause_autoneg && 
+			((struct xgbe_phy_data *)pdata->phy_data)->phydev) {
+		/* phy link partner pause frame informantion will be update in 
+		 * marvell 88x3310 : marvell10g.c mv3310_read_status
+		 */
+		xgbe_phy_phydev_flowctrl(pdata);
+	} else {
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	/* Compare Advertisement and Link Partner register 1 */
 	ad_reg = XMDIO_READ(pdata, MDIO_MMD_AN, MDIO_AN_ADVERTISE);
 	lp_reg = XMDIO_READ(pdata, MDIO_MMD_AN, MDIO_AN_LPA);
@@ -1818,6 +1830,9 @@ static enum xgbe_mode xgbe_phy_an73_outcome(struct xgbe_prv_data *pdata)
 				pdata->phy.tx_pause = 1;
 		}
 	}
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
+	}
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 	/* Compare Advertisement and Link Partner register 2 */
 	ad_reg = XMDIO_READ(pdata, MDIO_MMD_AN, MDIO_AN_ADVERTISE + 1);
@@ -2020,6 +2035,61 @@ static void xgbe_phy_an_advertising(struct xgbe_prv_data *pdata,
 	}
 }
 
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+static int syno_phy_pause_frame_an_config(struct xgbe_prv_data *pdata)
+{
+	struct ethtool_link_ksettings *lks = &pdata->phy.lks;
+	unsigned int val = 0, new_val = 0;
+	int ret;
+
+	if (pdata->phy.pause_autoneg == 0) {
+		return 0;
+	}
+
+	ret = syno_phy_mdio_mii_read(pdata, (MDIO_MMD_AN << 16) + MDIO_AN_ADVERTISE, &val);
+	if (ret < 0) {
+		dev_err(pdata->dev, " %s: read PHY MDIO_AN_ADVERTISE failed\n", __func__);
+		return -1;
+	}
+
+	new_val = val;
+	if (XGBE_ADV(lks, Pause)) {
+		new_val |= ADVERTISE_PAUSE_CAP;
+	} else {
+		new_val &= ~ADVERTISE_PAUSE_CAP;
+	}
+	if (XGBE_ADV(lks, Asym_Pause)) {
+		new_val |= ADVERTISE_PAUSE_ASYM;
+	} else {
+		new_val &= ~ADVERTISE_PAUSE_ASYM;
+	}
+
+	if(new_val == val) {
+		return 0;
+	} else {
+		ret = syno_phy_mdio_mii_write(pdata, (MDIO_MMD_AN << 16) + MDIO_AN_ADVERTISE, new_val);
+		if (ret < 0) {
+			dev_err(pdata->dev, " %s: write PHY MDIO_AN_ADVERTISE failed\n", __func__);
+			return -1;
+		}
+
+		// restart auto-negotiation
+		ret = syno_phy_mdio_mii_read(pdata, (MDIO_MMD_AN << 16) + MDIO_CTRL1, &val);
+		if (ret < 0) {
+			dev_err(pdata->dev, " %s: read PHY MDIO_CTRL1 failed\n", __func__);
+			return -1;
+		}
+		ret = syno_phy_mdio_mii_write(pdata, (MDIO_MMD_AN << 16) + MDIO_CTRL1, val | MDIO_AN_CTRL1_ENABLE | MDIO_AN_CTRL1_RESTART);
+		if (ret < 0) {
+			dev_err(pdata->dev, " %s: restart PHY autoneg failed\n", __func__);
+			return -1;
+		}
+	}
+	
+	return 0;
+}
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
+
 static int xgbe_phy_an_config(struct xgbe_prv_data *pdata)
 {
 	struct ethtool_link_ksettings *lks = &pdata->phy.lks;
@@ -2048,6 +2118,10 @@ static int xgbe_phy_an_config(struct xgbe_prv_data *pdata)
 	 phy_data->phydev->drv->config_aneg(phy_data->phydev);
 	phy_start_aneg() wornt work with Marvell PHY
 	*/
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+		// we set phy to advertise pause frame support
+		syno_phy_pause_frame_an_config(pdata);
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 		return 0;
 	}
 
@@ -2298,6 +2372,16 @@ static void xgbe_phy_pll_ctrl(struct xgbe_prv_data *pdata, bool enable)
 	usleep_range(100, 200);
 }
 
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+/*
+ * Maximum consecutive rx_reset attempts before giving up.
+ * Beyond this, the firmware is assumed unrecoverable without a full
+ * device reset. Continuing to hammer the mailbox and PMA RX path
+ * risks destabilising the entire SoC.
+ */
+#define XGBE_MB_RX_RESET_MAX	3
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
+
 static void xgbe_phy_perform_ratechange(struct xgbe_prv_data *pdata,
 					enum xgbe_mb_cmd cmd, enum xgbe_mb_subcmd sub_cmd)
 {
@@ -2312,10 +2396,38 @@ static void xgbe_phy_perform_ratechange(struct xgbe_prv_data *pdata,
 
 	/* Log if a previous command did not complete */
 	if (XP_IOREAD_BITS(pdata, XP_DRIVER_INT_RO, STATUS)) {
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+		netif_err(pdata, link, pdata->netdev,
+			  "firmware mailbox not ready for command "
+			  "(cmd=%d sub=%d reset_cnt=%u "
+			  "INT_RO=0x%x INT_REQ=0x%x DIGITAL_STAT=0x%04x)\n",
+			  cmd, sub_cmd, pdata->mb_rx_reset_cnt,
+			  XP_IOREAD(pdata, XP_DRIVER_INT_RO),
+			  XP_IOREAD(pdata, XP_DRIVER_INT_REQ),
+			  XMDIO_READ(pdata, MDIO_MMD_PCS,
+				     MDIO_MMD_DIGITAL_STAT));
+
+		if (pdata->mb_rx_reset_cnt >= XGBE_MB_RX_RESET_MAX) {
+			netif_err(pdata, link, pdata->netdev,
+				  "firmware mailbox stuck after %u rx_reset "
+				  "attempts — aborting ratechange "
+				  "(INT_RO=0x%x INT_REQ=0x%x)\n",
+				  pdata->mb_rx_reset_cnt,
+				  XP_IOREAD(pdata, XP_DRIVER_INT_RO),
+				  XP_IOREAD(pdata, XP_DRIVER_INT_REQ));
+			goto reenable_pll;
+		}
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 		netif_err(pdata, link, pdata->netdev,
 			  "firmware mailbox not ready for command\n");
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 			goto rx_reset;
 	}
+
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+	/* Firmware is ready — reset consecutive failure counter */
+	pdata->mb_rx_reset_cnt = 0;
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 	/* Construct the command */
 	XP_SET_BITS(s0, XP_DRIVER_SCRATCH_0, COMMAND, cmd);
@@ -2338,26 +2450,42 @@ static void xgbe_phy_perform_ratechange(struct xgbe_prv_data *pdata,
 	}
 
 rx_reset:
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+	pdata->mb_rx_reset_cnt++;
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
+
 	reg = XMDIO_READ(pdata, MDIO_MMD_PCS, MDIO_MMD_DIGITAL_STAT);
 	if (reg & 0x10) {
 		/* mailbox command timed out, reset Rx block */
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+		netif_err(pdata, link, pdata->netdev,
+			  "mailbox timeout — rx_reset #%u "
+			  "(DIGITAL_STAT=0x%04x INT_RO=0x%x INT_REQ=0x%x)\n",
+			  pdata->mb_rx_reset_cnt, reg,
+			  XP_IOREAD(pdata, XP_DRIVER_INT_RO),
+			  XP_IOREAD(pdata, XP_DRIVER_INT_REQ));
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
+
 		XMDIO_WRITE_BITS(pdata, MDIO_MMD_PMAPMD, MDIO_PMA_RX_CTRL1,
 				 BIT(4) /* mask */, BIT(4)/* value*/);
 
 		for (i = 0; i < 100; i++)
 			usleep_range(1000, 2000);
-	
 
 		XMDIO_WRITE_BITS(pdata, MDIO_MMD_PMAPMD, MDIO_PMA_RX_CTRL1,
 				 BIT(4) /* mask */, 0/* value*/);
 		netif_err(pdata, link, pdata->netdev, " rxX_reset done!\n");
-	
+
 		/* Reset on error */
 		xgbe_phy_rx_reset(pdata);
 		goto reenable_pll;
 	}
 
 do_rx_adaptation:
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+	pdata->mb_rx_reset_cnt = 0;
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
+
 	if (pdata->en_rx_adap && sub_cmd == XGBE_MB_SUBCMD_RX_ADAP &&
 	    (cmd == XGBE_MB_CMD_SET_10G_KR || cmd == XGBE_MB_CMD_SET_10G_SFI)) {
 		netif_dbg(pdata, link, pdata->netdev,
@@ -2564,6 +2692,17 @@ static void xgbe_phy_kx_1000_mode(struct xgbe_prv_data *pdata)
 static enum xgbe_mode xgbe_phy_cur_mode(struct xgbe_prv_data *pdata)
 {
 	struct xgbe_phy_data *phy_data = pdata->phy_data;
+
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
+	// Check flow control status after phy link up
+	if (pdata->phy.pause_autoneg && 
+			phy_data->phydev && phy_data->phydev->link) {
+		/* phy link partner pause frame informantion will be update in 
+		 * marvell 88x3310 : marvell10g.c mv3310_read_status
+		 */
+		xgbe_phy_phydev_flowctrl(pdata);
+	}
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 	return phy_data->cur_mode;
 }
@@ -3062,10 +3201,10 @@ static int xgbe_phy_link_status(struct xgbe_prv_data *pdata, int *an_restart)
 
 	if (phy_data->phydev) {
 		/* Check external PHY */
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 		if (phy_data->ext_phy_pause)
 			return 0;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 		ret = phy_read_status(phy_data->phydev);
 		if (ret < 0)
 			return 0;
@@ -3140,7 +3279,7 @@ static int xgbe_phy_link_status(struct xgbe_prv_data *pdata, int *an_restart)
 	} else if (reg & MDIO_STAT1_LSTATUS)
 		return 1;
 
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	if (phy_data->phydev && phy_data->phydev->link) {
 		dev_warn(pdata->dev, "MDIO_STAT1: 0x%x , but phy_data->phydev->link: 0x%x", reg, phy_data->phydev->link);
 		return 1;
@@ -3811,9 +3950,9 @@ static int xgbe_phy_init(struct xgbe_prv_data *pdata)
 	if (!phy_data)
 		return -ENOMEM;
 	pdata->phy_data = phy_data;
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	phy_data->ext_phy_pause = 0;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 	phy_data->port_mode = XP_GET_BITS(pdata->pp0, XP_PROP_0, PORT_MODE);
 	phy_data->port_id = XP_GET_BITS(pdata->pp0, XP_PROP_0, PORT_ID);
@@ -4094,7 +4233,7 @@ static int xgbe_phy_init(struct xgbe_prv_data *pdata)
 	return 0;
 }
 
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 static void syno_force_1g(struct xgbe_prv_data *pdata)
 {
 	int reg;
@@ -4221,16 +4360,16 @@ static void syno_phy_led_test_mode(struct xgbe_prv_data *pdata, unsigned int tes
 	phy_data->conn_type = temp_c;
 }
 
-static void syno_phy_mdio_mii_read(struct xgbe_prv_data *pdata, unsigned int reg, unsigned int *val)
+static int syno_phy_mdio_mii_read(struct xgbe_prv_data *pdata, unsigned int reg, unsigned int *val)
 {
-	int ret;
+	int ret = 0;
 	struct xgbe_phy_data *phy_data = pdata->phy_data;
 	int temp_m, temp_c;
 
 	ret = xgbe_phy_get_comm_ownership(pdata);
 	if (ret){
 		printk("get ownership fail \n");
-		return ;
+		return ret;
 	}
 
 	temp_c = phy_data->conn_type;
@@ -4239,23 +4378,29 @@ static void syno_phy_mdio_mii_read(struct xgbe_prv_data *pdata, unsigned int reg
 	phy_data->phydev_mode = XGBE_MDIO_MODE_CL45;
 	phy_data->conn_type = XGBE_CONN_TYPE_MDIO;
 
-	*val = xgbe_phy_mdio_mii_read(pdata, 0, MII_ADDR_C45 | reg);
+	ret = xgbe_phy_mdio_mii_read(pdata, 0, MII_ADDR_C45 | reg);
+	if (ret >= 0) {
+		*val = ret;
+		ret = 0;
+	}
 
 	xgbe_phy_put_comm_ownership(pdata);
 	phy_data->phydev_mode = temp_m;
 	phy_data->conn_type = temp_c;
+
+	return ret;
 }
 
-static void syno_phy_mdio_mii_write(struct xgbe_prv_data *pdata, unsigned int reg, unsigned int val)
+static int syno_phy_mdio_mii_write(struct xgbe_prv_data *pdata, unsigned int reg, unsigned int val)
 {
-	int ret;
+	int ret = 0;
 	struct xgbe_phy_data *phy_data = pdata->phy_data;
 	int temp_m, temp_c;
 
 	ret = xgbe_phy_get_comm_ownership(pdata);
 	if (ret){
 		printk("get ownership fail \n");
-		return ;
+		return ret;
 	}
 
 	temp_c = phy_data->conn_type;
@@ -4264,11 +4409,13 @@ static void syno_phy_mdio_mii_write(struct xgbe_prv_data *pdata, unsigned int re
 	phy_data->phydev_mode = XGBE_MDIO_MODE_CL45;
 	phy_data->conn_type = XGBE_CONN_TYPE_MDIO;
 
-	xgbe_phy_mdio_mii_write(pdata, 0, MII_ADDR_C45 | reg, val);
+	ret = xgbe_phy_mdio_mii_write(pdata, 0, MII_ADDR_C45 | reg, val);
 
 	xgbe_phy_put_comm_ownership(pdata);
 	phy_data->phydev_mode = temp_m;
 	phy_data->conn_type = temp_c;
+
+	return ret;
 }
 
 static void syno_phy_pause_polling(struct xgbe_prv_data *pdata, bool pause)
@@ -4369,7 +4516,7 @@ static void syno_xgbe_wol_enable(struct xgbe_prv_data *pdata)
 		}
 	}
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 void xgbe_init_function_ptrs_phy_v2(struct xgbe_phy_if *phy_if)
 {
@@ -4411,7 +4558,7 @@ void xgbe_init_function_ptrs_phy_v2(struct xgbe_phy_if *phy_if)
 
 	phy_impl->module_info		= xgbe_phy_module_info;
 	phy_impl->module_eeprom		= xgbe_phy_module_eeprom;
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	phy_impl->wol_enable		= syno_xgbe_wol_enable;
 	phy_impl->force_1g		= syno_force_1g;
 	phy_impl->resume_autoneg	= syno_resume_autoneg;
@@ -4419,5 +4566,5 @@ void xgbe_init_function_ptrs_phy_v2(struct xgbe_phy_if *phy_if)
 	phy_impl->phy_mdio_mii_read	= syno_phy_mdio_mii_read;
 	phy_impl->phy_mdio_mii_write	= syno_phy_mdio_mii_write;
 	phy_impl->phy_pause		= syno_phy_pause_polling;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 }

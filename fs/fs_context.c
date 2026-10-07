@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /* Provide a way to create a superblock configuration context within the kernel
  * that allows a superblock to be set up prior to mounting.
@@ -82,7 +79,7 @@ static int vfs_parse_sb_flag(struct fs_context *fc, const char *key)
 	return -ENOPARAM;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RELATIME_PERIOD
 enum {
 	SB_RELATIME_PERIOD = 1,
 };
@@ -107,7 +104,7 @@ static int vfs_parse_syno_sb_mnt_opts(struct fs_context *fc, struct fs_parameter
 
 	return -ENOPARAM;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RELATIME_PERIOD */
 
 /**
  * vfs_parse_fs_param - Add a single parameter to a superblock config
@@ -136,11 +133,11 @@ int vfs_parse_fs_param(struct fs_context *fc, struct fs_parameter *param)
 	if (ret != -ENOPARAM)
 		return ret;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RELATIME_PERIOD
 	ret = vfs_parse_syno_sb_mnt_opts(fc, param);
 	if (ret != -ENOPARAM)
 		return ret;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RELATIME_PERIOD */
 
 	ret = security_fs_context_parse_param(fc, param);
 	if (ret != -ENOPARAM)
@@ -278,9 +275,9 @@ static struct fs_context *alloc_fs_context(struct file_system_type *fs_type,
 	fc->cred	= get_current_cred();
 	fc->net_ns	= get_net(current->nsproxy->net_ns);
 	fc->log.prefix	= fs_type->name;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RELATIME_PERIOD
 	fc->relatime_period = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RELATIME_PERIOD */
 
 	mutex_init(&fc->uapi_mutex);
 
@@ -677,7 +674,7 @@ static int legacy_init_fs_context(struct fs_context *fc)
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RELATIME_PERIOD
 static void option_erase(char *str) {
 	char *next = strchr(str, ',');
 
@@ -720,18 +717,18 @@ static int syno_sb_eat_mnt_opts(struct fs_context *fc, void *data) {
 	}
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RELATIME_PERIOD */
 
 int parse_monolithic_mount_data(struct fs_context *fc, void *data)
 {
 	int (*monolithic_mount_data)(struct fs_context *, void *);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RELATIME_PERIOD
 	int ret = 0;
 
 	ret = syno_sb_eat_mnt_opts(fc, data);
 	if (ret)
 		return ret;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RELATIME_PERIOD */
 
 	monolithic_mount_data = fc->ops->parse_monolithic;
 	if (!monolithic_mount_data)

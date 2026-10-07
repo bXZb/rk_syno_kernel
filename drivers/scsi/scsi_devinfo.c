@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 
 #include <linux/blkdev.h>
@@ -638,11 +635,11 @@ static int devinfo_seq_show(struct seq_file *m, void *v)
 	    devinfo_table->name)
 		seq_printf(m, "[%s]:\n", devinfo_table->name);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 	seq_printf(m, "'%.8s' '%."SYNO_DISK_MODEL_LEN"s' 0x%llx\n",
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 	seq_printf(m, "'%.8s' '%.16s' 0x%llx\n",
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 		   devinfo->vendor, devinfo->model, devinfo->flags);
 	return 0;
 }

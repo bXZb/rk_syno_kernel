@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/ext4/file.c
@@ -39,9 +36,9 @@
 #include "acl.h"
 #include "truncate.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_WINACL
 #include "syno_acl.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_WINACL */
 
 static bool ext4_dio_supported(struct inode *inode)
 {
@@ -935,37 +932,37 @@ const struct file_operations ext4_file_operations = {
 };
 
 const struct inode_operations ext4_file_inode_operations = {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_STAT
 	.syno_getattr	= ext4_syno_getattr,
-#endif /* MY_ABC_HERE */
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#endif /* CONFIG_SYNO_EXT4_STAT */
+#if defined(CONFIG_SYNO_EXT3_ARCHIVE_BIT) || defined(CONFIG_SYNO_EXT4_ARCHIVE_BIT)
 	.syno_set_archive_bit = ext4_syno_set_archive_bit,
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT3_ARCHIVE_BIT || CONFIG_SYNO_EXT4_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_VERSION
 	.syno_get_archive_version = ext4_syno_get_inode_archive_version,
 	.syno_set_archive_version = ext4_syno_set_inode_archive_version,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_VERSION */
 	.setattr	= ext4_setattr,
 	.getattr	= ext4_file_getattr,
 	.listxattr	= ext4_listxattr,
 	.get_acl	= ext4_get_acl,
 	.set_acl	= ext4_set_acl,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_WINACL
 	.syno_get_acl	= ext4_get_syno_acl,
 	.syno_set_acl	= ext4_set_syno_acl,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_WINACL */
 	.fiemap		= ext4_fiemap,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CREATE_TIME
 	.syno_get_crtime = ext4_syno_get_crtime,
 	.syno_set_crtime = ext4_syno_set_crtime,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT4_CREATE_TIME */
+#ifdef CONFIG_SYNO_FS_DEV
 	.fsdev_mapping = ext4_fsdev_mapping,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FS_DEV */
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 	.syno_rbd_meta_file_activate    = ext4_rbd_meta_file_activate,
 	.syno_rbd_meta_file_deactivate  = ext4_rbd_meta_file_deactivate,
 	.syno_rbd_meta_file_mapping 	= ext4_rbd_meta_file_mapping,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 };
 

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * UEFI Common Platform Error Record (CPER) support
@@ -406,7 +403,7 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
 	"%s""bridge: secondary_status: 0x%04x, control: 0x%04x\n",
 	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ACPI_APEI_AER_DBGMSG
     // Print AER register
     if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO) {
 		struct aer_capability_regs *aer;
@@ -431,7 +428,7 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
 			aer->header_log.dw0, aer->header_log.dw1,
 			aer->header_log.dw2, aer->header_log.dw3);
     }
-#else // MY_DEF_HERE
+#else // CONFIG_SYNO_ACPI_APEI_AER_DBGMSG
 	/* Fatal errors call __ghes_panic() before AER handler prints this */
 	if ((pcie->validation_bits & CPER_PCIE_VALID_AER_INFO) &&
 	    (gdata->error_severity & CPER_SEV_FATAL)) {
@@ -446,7 +443,7 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
 		       aer->header_log.dw0, aer->header_log.dw1,
 		       aer->header_log.dw2, aer->header_log.dw3);
 	}
-#endif // MY_DEF_HERE
+#endif // CONFIG_SYNO_ACPI_APEI_AER_DBGMSG
 }
 
 static const char * const fw_err_rec_type_strs[] = {

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/super.c
@@ -83,9 +80,9 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
 	if (!trylock_super(sb))
 		return SHRINK_STOP;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_FIX_FITHAW_DEADLOCK_WITH_SHRINKER_EVICT_UNLINKED_INODE
 	task_set_shrink(current);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_FIX_FITHAW_DEADLOCK_WITH_SHRINKER_EVICT_UNLINKED_INODE */
 
 	if (sb->s_op->nr_cached_objects)
 		fs_objects = sb->s_op->nr_cached_objects(sb, sc);
@@ -118,9 +115,9 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
 		freed += sb->s_op->free_cached_objects(sb, sc);
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_FIX_FITHAW_DEADLOCK_WITH_SHRINKER_EVICT_UNLINKED_INODE
 	task_clear_shrink(current);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_FIX_FITHAW_DEADLOCK_WITH_SHRINKER_EVICT_UNLINKED_INODE */
 
 	up_read(&sb->s_umount);
 	return freed;
@@ -191,11 +188,11 @@ static void destroy_unused_super(struct super_block *s)
 	up_write(&s->s_umount);
 	list_lru_destroy(&s->s_dentry_lru);
 	list_lru_destroy(&s->s_inode_lru);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 #ifdef CONFIG_SMP
 	free_percpu(s->s_files);
 #endif /* CONFIG_SMP */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_UNMOUNT */
 	security_sb_free(s);
 	put_user_ns(s->s_user_ns);
 	kfree(s->s_subtype);
@@ -247,7 +244,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags,
 	if (security_sb_alloc(s))
 		goto fail;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 	ratelimit_state_init(&s->rs, DEFAULT_RATELIMIT_INTERVAL, DEFAULT_RATELIMIT_BURST);
 #ifdef CONFIG_SMP
 	s->s_files = alloc_percpu(struct list_head);
@@ -258,7 +255,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags,
 #else /* CONFIG_SMP */
 	INIT_LIST_HEAD(&s->s_files);
 #endif /* CONFIG_SMP */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_UNMOUNT */
 
 	for (i = 0; i < SB_FREEZE_LEVELS; i++) {
 		if (__percpu_init_rwsem(&s->s_writers.rw_sem[i],
@@ -291,10 +288,10 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags,
 	s->s_time_max = TIME64_MAX;
 	s->cleancache_poolid = CLEANCACHE_NO_POOL;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_VERSION
 	init_rwsem(&s->s_archive_version_rwsem);
 	s->s_archive_version = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
 	s->s_shrink.seeks = DEFAULT_SEEKS;
 	s->s_shrink.scan_objects = super_cache_scan;
@@ -987,10 +984,10 @@ int reconfigure_super(struct fs_context *fc)
 		}
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RELATIME_PERIOD
 	if (fc->relatime_period > 0)
 		sb->relatime_period = fc->relatime_period;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RELATIME_PERIOD */
 	if (fc->ops->reconfigure) {
 		retval = fc->ops->reconfigure(fc);
 		if (retval) {
@@ -1453,10 +1450,10 @@ struct dentry *mount_bdev(struct file_system_type *fs_type,
 	} else {
 		s->s_mode = mode;
 		snprintf(s->s_id, sizeof(s->s_id), "%pg", bdev);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOBOOT_LOG
 		if (NULL != strstr(s->s_id, "synoboot"))
 			printk(KERN_NOTICE "%s: %s mounted, process=%s\n", fs_type->name, s->s_id, current->comm);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOBOOT_LOG */
 		sb_set_blocksize(s, block_size(bdev));
 		error = fill_super(s, data, flags & SB_SILENT ? 1 : 0);
 		if (error) {
@@ -1612,10 +1609,10 @@ int vfs_get_tree(struct fs_context *fc)
 	 */
 	smp_wmb();
 	sb->s_flags |= SB_BORN;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RELATIME_PERIOD
 	if (fc->relatime_period > 0)
 		sb->relatime_period = fc->relatime_period;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RELATIME_PERIOD */
 
 	error = security_sb_set_mnt_opts(sb, fc->security, 0, NULL);
 	if (unlikely(error)) {

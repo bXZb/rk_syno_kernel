@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/libata.h>
@@ -13,9 +10,9 @@ extern int SYNO_SUPPORT_HDD_DYNAMIC_ENABLE_POWER(int index);
 extern int SYNO_CTRL_HDD_POWERON(int index, int value);
 extern int SYNO_CHECK_HDD_ENABLE(int index);
 extern int SYNO_CHECK_HDD_DETECT(int index);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_INTERNAL_HD_NUM
 extern int gSynoInternalHddNumber;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_INTERNAL_HD_NUM */
 
 static ssize_t pwrctl_slot_show (struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {

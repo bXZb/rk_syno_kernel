@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 #include <linux/bitmap.h>
 #include <linux/kernel.h>
@@ -33,6 +30,10 @@
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/gpio.h>
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+#include <linux/synolib.h>
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
 
 /* Implementation infrastructure for GPIO interfaces.
  *
@@ -108,26 +109,26 @@ struct gpio_desc *gpio_to_desc(unsigned gpio)
 {
 	struct gpio_device *gdev;
 	unsigned long flags;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_GPIO_X86_PINCTRL_CALC_BASE
 	unsigned int gpio_base = 0;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_GPIO_X86_PINCTRL_CALC_BASE */
 
 	spin_lock_irqsave(&gpio_lock, flags);
 
 	list_for_each_entry(gdev, &gpio_devices, list) {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_GPIO_X86_PINCTRL_CALC_BASE
 		gpio_base = ARCH_NR_GPIOS - (gdev->base+gdev->ngpio);
 		if (gpio_base <= gpio && gpio_base + gdev->ngpio > gpio) {
 			spin_unlock_irqrestore(&gpio_lock, flags);
 			return &gdev->descs[gpio - gpio_base];
 		}
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_GPIO_X86_PINCTRL_CALC_BASE */
 		if (gdev->base <= gpio &&
 		    gdev->base + gdev->ngpio > gpio) {
 			spin_unlock_irqrestore(&gpio_lock, flags);
 			return &gdev->descs[gpio - gdev->base];
 		}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_GPIO_X86_PINCTRL_CALC_BASE */
 	}
 
 	spin_unlock_irqrestore(&gpio_lock, flags);
@@ -177,6 +178,27 @@ int desc_to_gpio(const struct gpio_desc *desc)
 }
 EXPORT_SYMBOL_GPL(desc_to_gpio);
 
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+int syno_desc_to_gpio(const struct gpio_desc *desc)
+{
+	struct gpio_device *gdev;
+	unsigned long flags;
+	unsigned int gpio_base = 0;
+
+	spin_lock_irqsave(&gpio_lock, flags);
+
+	list_for_each_entry(gdev, &gpio_devices, list) {
+		if (desc->gdev == gdev) {
+			break;
+		}
+		gpio_base += gdev->ngpio;
+	}
+
+	spin_unlock_irqrestore(&gpio_lock, flags);
+	return gpio_base + (desc - &desc->gdev->descs[0]);
+}
+EXPORT_SYMBOL_GPL(syno_desc_to_gpio);
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
 
 /**
  * gpiod_to_chip - Return the GPIO chip to which a GPIO descriptor belongs
@@ -2929,6 +2951,18 @@ static void gpiod_set_raw_value_commit(struct gpio_desc *desc, bool value)
 	gc->set(gc, gpio_chip_hwgpio(desc), value);
 }
 
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+static void gpiod_set_mux_commit(struct gpio_desc *desc, bool value)
+{
+	struct gpio_chip	*gc;
+
+	gc = desc->gdev->chip;
+	if (gc->syno_set_mux) {
+		gc->syno_set_mux(gc, gpio_chip_hwgpio(desc), value);
+	}
+}
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 /*
  * set multiple outputs on the same chip;
  * use the chip's set_multiple function if available;
@@ -3093,6 +3127,13 @@ static void gpiod_set_value_nocheck(struct gpio_desc *desc, int value)
 	else
 		gpiod_set_raw_value_commit(desc, value);
 }
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+static void gpiod_set_mux_nocheck(struct gpio_desc *desc, int value)
+{
+	gpiod_set_mux_commit(desc, value);
+}
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
 
 /**
  * gpiod_set_value() - assign a gpio's value
@@ -3531,6 +3572,16 @@ void gpiod_set_value_cansleep(struct gpio_desc *desc, int value)
 }
 EXPORT_SYMBOL_GPL(gpiod_set_value_cansleep);
 
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+void gpiod_set_mux_cansleep(struct gpio_desc *desc, int value)
+{
+	might_sleep_if(extra_checks);
+	VALIDATE_DESC_VOID(desc);
+	gpiod_set_mux_nocheck(desc, value);
+}
+EXPORT_SYMBOL_GPL(gpiod_set_mux_cansleep);
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 /**
  * gpiod_set_raw_array_value_cansleep() - assign values to an array of GPIOs
  * @array_size: number of elements in the descriptor array / value bitmap
@@ -3684,6 +3735,153 @@ found:
 	mutex_unlock(&gpio_lookup_lock);
 	return table;
 }
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+//
+// Parse DTS "recovery_gpio" node into gpiod_lookup_table for i2c_generic_scl_recovery in i2c subsystem
+//
+//  DP7200 example DTS node :
+//    gpioctrl0: gpio_controller@0 {
+//        acpi_hid  = "AMDI0030";
+//        acpi_uid  = "0";
+//        iomux_base       = <0xFED80D00>;
+//        iomux_base_leng  = <0x100>;
+//    };
+//
+//    i2c_bus@1 {
+//        acpi_hid = "AMDI0010";
+//        acpi_uid = "1";
+//        recovery_gpio {
+//            gpio_controller = <&gpioctrl0>;
+//            scl             = <147>;
+//            scl_mode_i2c    = <0>;
+//            scl_mode_gpio   = <1>;
+//            sda             = <148>;
+//        };
+//    };
+//
+//  will be parsed into :
+//    static struct gpiod_lookup_table gpios_i2c_table = {
+//        .dev_id = "AMDI0010:01",
+//        .table = {
+//            GPIO_LOOKUP("AMDI0030:00", 147, "scl", GPIO_OPEN_DRAIN|GPIO_PULL_UP),
+//            GPIO_LOOKUP("AMDI0030:00", 148, "sda", GPIO_OPEN_DRAIN|GPIO_PULL_UP),
+//            {}
+//        },
+//    };
+//
+#define NUM_LOOKUPS 3 // GPIO_LOOKUP*2 + empty*1
+void syno_dts_parse_gpiod_lookup_table(void)
+{
+	struct device_node *node = NULL;
+	struct device_node *ctrl_node = NULL;
+	struct device_node *parent_node = NULL;
+	const char *ctrl_hid = NULL;
+	const char *ctrl_uid = NULL;
+	const char *dev_hid = NULL;
+	const char *dev_uid = NULL;
+	char *dev_id = NULL;
+	struct gpiod_lookup_table *tbl = NULL;
+	struct gpiod_lookup *table = NULL;
+	u32 scl_pin, sda_pin;
+	int ctrl_uid_int, dev_uid_int;
+	int added = 0;
+
+	for_each_of_allnodes(node) {
+
+		// Go throuth DTS, find "recovery_gpio" node
+		if (!of_node_name_eq(node, DT_I2C_RCVY_RECOVERY_GPIO))
+			continue;
+
+		ctrl_node = of_parse_phandle(node, DT_GPIO_CONTROLLER, 0);
+		if (!ctrl_node) {
+			pr_err("%s : DTS node recovery_gpio missing gpio_controller\n", __func__);
+			continue;
+		}
+
+		// Parse DT_GPIO_CONTROLLER property
+		if (of_property_read_string(ctrl_node, DT_ACPI_HID, &ctrl_hid) ||
+		    of_property_read_string(ctrl_node, DT_ACPI_UID, &ctrl_uid)) {
+			pr_err("%s : DTS node gpio_controller missing property\n", __func__);
+			goto CLEAN;
+		}
+
+		// Parse recovery_gpio property
+		if (of_property_read_u32(node, DT_I2C_RCVY_SCL, &scl_pin) ||
+		    of_property_read_u32(node, DT_I2C_RCVY_SDA, &sda_pin)) {
+			pr_err("%s : DTS node recovery_gpio missing property\n", __func__);
+			goto CLEAN;
+		}
+
+		// Parse "recovery_gpio" parent node's property, e.g., i2c device info
+		parent_node = of_get_parent(node);
+		if (!parent_node) {
+			pr_err("%s : DTS node recovery_gpio missing parent node\n", __func__);
+			goto CLEAN;
+		}
+
+		if (of_property_read_string(parent_node, DT_ACPI_HID, &dev_hid) ||
+		    of_property_read_string(parent_node, DT_ACPI_UID, &dev_uid)) {
+			pr_err("%s : DTS recovery_gpio parent node missing property\n", __func__);
+			goto CLEAN;
+		}
+
+		if (kstrtoint(dev_uid, 10, &dev_uid_int)) {
+			pr_err("%s : Invalid dev_uid %s\n", __func__, dev_uid);
+			goto CLEAN;
+		}
+
+		if (kstrtoint(ctrl_uid, 10, &ctrl_uid_int)) {
+			pr_err("%s : Invalid ctrl_uid %s\n", __func__, ctrl_uid);
+			goto CLEAN;
+		}
+
+		// Allocate gpiod_lookup_table
+		tbl = kzalloc(struct_size(tbl, table, NUM_LOOKUPS), GFP_KERNEL);
+		if (!tbl) {
+			pr_err("%s : kzalloc failed\n", __func__);
+			goto CLEAN;
+		}
+
+		// Get gpiod_lookup_table.dev_id
+		tbl->dev_id = kasprintf(GFP_KERNEL, "%s:%02d", dev_hid, dev_uid_int);
+		if (!tbl->dev_id) {
+			pr_err("%s : kasprintf failed\n", __func__);
+			kfree(tbl);
+			goto CLEAN;
+		}
+
+		dev_id = kasprintf(GFP_KERNEL, "%s:%02d", ctrl_hid, ctrl_uid_int);
+		if (!dev_id) {
+			pr_err("%s : kasprintf failed\n", __func__);
+			kfree(tbl->dev_id);
+			kfree(tbl);
+			goto CLEAN;
+		}
+
+		table = &tbl->table[0];
+
+		// GPIO_LOOKUP("AMDI0030:00", 147, "scl", GPIO_OPEN_DRAIN|GPIO_PULL_UP),
+		table[0] = (struct gpiod_lookup)GPIO_LOOKUP(dev_id, scl_pin, DT_I2C_RCVY_SCL, GPIO_OPEN_DRAIN | GPIO_PULL_UP);
+
+		// GPIO_LOOKUP("AMDI0030:00", 148, "sda", GPIO_OPEN_DRAIN|GPIO_PULL_UP),
+		table[1] = (struct gpiod_lookup)GPIO_LOOKUP(dev_id, sda_pin, DT_I2C_RCVY_SDA, GPIO_OPEN_DRAIN | GPIO_PULL_UP);
+
+		// table[2] is empty, means end
+
+		gpiod_add_lookup_table(tbl);
+		added++;
+
+CLEAN:
+		if (ctrl_node) {
+			of_node_put(ctrl_node);
+		}
+		if (parent_node) {
+			of_node_put(parent_node);
+		}
+	}
+}
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
 
 static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
 				    unsigned int idx, unsigned long *flags)

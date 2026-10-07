@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_FS_NOTIFY_H
 #define _LINUX_FS_NOTIFY_H
@@ -19,24 +16,24 @@
 #include <linux/audit.h>
 #include <linux/slab.h>
 #include <linux/bug.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 #include <linux/mount.h>
 
 extern int SYNONotify(struct dentry *dentry, __u32 mask);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_ARCHIVE_BIT) || defined(CONFIG_SYNO_FS_ARCHIVE_VERSION)
 static inline void syno_archive_bit_modify(struct inode *inode, int set_smb_archive)
 {
 	struct dentry *dentry;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_BIT
 	u32 new_archive_bit;
 	u32 old_archive_bit;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_FS_ARCHIVE_VERSION
 	u32 sb_archive_ver;
 	int err;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
 	if (NULL == inode)
 		return;
@@ -49,7 +46,7 @@ static inline void syno_archive_bit_modify(struct inode *inode, int set_smb_arch
 	if (!dentry)
 		return;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_BIT
 	mutex_lock(&inode->i_archive_bit_mutex);
 	if (syno_op_get_archive_bit(dentry, &old_archive_bit))
 		goto unlock;
@@ -64,19 +61,19 @@ static inline void syno_archive_bit_modify(struct inode *inode, int set_smb_arch
 
 unlock:
 	mutex_unlock(&inode->i_archive_bit_mutex);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_VERSION
 	err = syno_op_get_sb_archive_version(inode->i_sb, &sb_archive_ver);
 	if (err)
 		goto out;
 	err = syno_op_set_inode_archive_version(dentry, sb_archive_ver + 1);
 out:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_VERSION */
 	if (dentry)
 		dput(dentry);
 }
-#endif /* MY_ABC_HERE || MY_ABC_HERE*/
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT || CONFIG_SYNO_FS_ARCHIVE_VERSION*/
 
 /*
  * Notify this @dir inode about a change in a child directory entry.
@@ -184,14 +181,14 @@ static inline void fsnotify_link_count(struct inode *inode)
 	fsnotify_inode(inode, FS_ATTRIB);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 struct synotify_rename_path {
 	char *old_full_path;
 	char *new_full_path;
 	struct vfsmount *vfs_mnt;
 	struct synotify_rename_path *next;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 /*
  * fsnotify_move - file old_name at old_dir was moved to new_name at new_dir
@@ -200,9 +197,9 @@ static inline void fsnotify_move(struct inode *old_dir, struct inode *new_dir,
 				 const struct qstr *old_name,
 				 int isdir, struct inode *target,
 				 struct dentry *moved
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 				 , struct synotify_rename_path *path_list, bool is_exchange
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 				 )
 {
 	struct inode *source = moved->d_inode;
@@ -219,7 +216,7 @@ static inline void fsnotify_move(struct inode *old_dir, struct inode *new_dir,
 		new_dir_mask |= FS_ISDIR;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	/* handle syno notify:
 	 * 1. we should check if file/dir moved within same mnt point. If does, we simply
 	 *    notify a rename event.
@@ -245,28 +242,28 @@ static inline void fsnotify_move(struct inode *old_dir, struct inode *new_dir,
 		}
 		path_list = path_list->next;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	fsnotify_name(old_dir, old_dir_mask, source, old_name, fs_cookie);
 	fsnotify_name(new_dir, new_dir_mask, source, new_name, fs_cookie);
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_ARCHIVE_BIT) || defined(CONFIG_SYNO_FS_ARCHIVE_VERSION)
 	syno_archive_bit_modify(old_dir, 0);
 	if (old_dir != new_dir)
 		syno_archive_bit_modify(new_dir, 0);
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT || CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
 	if (target)
 		fsnotify_link_count(target);
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_ARCHIVE_BIT) || defined(CONFIG_SYNO_FS_ARCHIVE_VERSION)
 	if (target)
 		syno_archive_bit_modify(target, 0);
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT || CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
 	fsnotify_inode(source, FS_MOVE_SELF);
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_ARCHIVE_BIT) || defined(CONFIG_SYNO_FS_ARCHIVE_VERSION)
 	syno_archive_bit_modify(source, 1);
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT || CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
 	audit_inode_child(new_dir, moved, AUDIT_TYPE_CHILD_CREATE);
 }
@@ -303,13 +300,13 @@ static inline void fsnotify_create(struct inode *inode, struct dentry *dentry)
 {
 	audit_inode_child(inode, dentry, AUDIT_TYPE_CHILD_CREATE);
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_ARCHIVE_BIT) || defined(CONFIG_SYNO_FS_ARCHIVE_VERSION)
 	syno_archive_bit_modify(dentry->d_inode, 0);
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT || CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	SYNONotify(dentry, FS_CREATE);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	fsnotify_dirent(inode, dentry, FS_CREATE);
 }
@@ -325,9 +322,9 @@ static inline void fsnotify_link(struct inode *dir, struct inode *inode,
 	fsnotify_link_count(inode);
 	audit_inode_child(dir, new_dentry, AUDIT_TYPE_CHILD_CREATE);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	SYNONotify(new_dentry, FS_CREATE);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	fsnotify_name(dir, FS_CREATE, inode, &new_dentry->d_name, 0);
 }
@@ -342,13 +339,13 @@ static inline void fsnotify_unlink(struct inode *dir, struct dentry *dentry)
 	/* Expected to be called before d_delete() */
 	WARN_ON_ONCE(d_is_negative(dentry));
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_ARCHIVE_BIT) || defined(CONFIG_SYNO_FS_ARCHIVE_VERSION)
 	syno_archive_bit_modify(dir, 0);
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT || CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	SYNONotify(dentry, FS_DELETE);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	fsnotify_dirent(dir, dentry, FS_DELETE);
 }
@@ -360,13 +357,13 @@ static inline void fsnotify_mkdir(struct inode *inode, struct dentry *dentry)
 {
 	audit_inode_child(inode, dentry, AUDIT_TYPE_CHILD_CREATE);
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_ARCHIVE_BIT) || defined(CONFIG_SYNO_FS_ARCHIVE_VERSION)
 	syno_archive_bit_modify(dentry->d_inode, 0);
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT || CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	SYNONotify(dentry, FS_CREATE | FS_ISDIR);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	fsnotify_dirent(inode, dentry, FS_CREATE | FS_ISDIR);
 }
@@ -381,13 +378,13 @@ static inline void fsnotify_rmdir(struct inode *dir, struct dentry *dentry)
 	/* Expected to be called before d_delete() */
 	WARN_ON_ONCE(d_is_negative(dentry));
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_ARCHIVE_BIT) || defined(CONFIG_SYNO_FS_ARCHIVE_VERSION)
 	syno_archive_bit_modify(dir, 0);
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT || CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	SYNONotify(dentry, FS_DELETE | FS_ISDIR);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	fsnotify_dirent(dir, dentry, FS_DELETE | FS_ISDIR);
 }
@@ -405,9 +402,9 @@ static inline void fsnotify_access(struct file *file)
  */
 static inline void fsnotify_modify(struct file *file)
 {
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_ARCHIVE_BIT) || defined(CONFIG_SYNO_FS_ARCHIVE_VERSION)
 	syno_archive_bit_modify(file_inode(file), 1);
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT || CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
 	fsnotify_file(file, FS_MODIFY);
 }
@@ -441,20 +438,20 @@ static inline void fsnotify_close(struct file *file)
  */
 static inline void fsnotify_xattr(struct dentry *dentry)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	__u32 mask = FS_ATTRIB;
 
 	if (S_ISDIR(dentry->d_inode->i_mode))
 		mask |= FS_ISDIR;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_ARCHIVE_BIT) || defined(CONFIG_SYNO_FS_ARCHIVE_VERSION)
 	syno_archive_bit_modify(dentry->d_inode, 1);
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT || CONFIG_SYNO_FS_ARCHIVE_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	SYNONotify(dentry, mask);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	fsnotify_dentry(dentry, FS_ATTRIB);
 }
@@ -473,10 +470,10 @@ static inline void fsnotify_change(struct dentry *dentry, unsigned int ia_valid)
 		mask |= FS_ATTRIB;
 	if (ia_valid & ATTR_SIZE)
 		mask |= FS_MODIFY;
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FS_ARCHIVE_BIT) || defined(CONFIG_SYNO_FS_ARCHIVE_VERSION)
 	if (ia_valid & ATTR_SIZE)
 		syno_archive_bit_modify(dentry->d_inode, 1);
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT || CONFIG_SYNO_FS_ARCHIVE_BIT */
 
 	/* both times implies a utime(s) call */
 	if ((ia_valid & (ATTR_ATIME | ATTR_MTIME)) == (ATTR_ATIME | ATTR_MTIME))
@@ -492,17 +489,17 @@ static inline void fsnotify_change(struct dentry *dentry, unsigned int ia_valid)
 	if (mask)
 		fsnotify_dentry(dentry, mask);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	if (mask) {
 		if (S_ISDIR(dentry->d_inode->i_mode))
 			mask |= FS_ISDIR;
 		SYNONotify(dentry, mask);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 extern void free_rename_path_list(struct synotify_rename_path * rename_path_list);
 extern struct synotify_rename_path * get_rename_path_list(struct dentry *old_dentry, struct dentry *new_dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 #endif	/* _LINUX_FS_NOTIFY_H */

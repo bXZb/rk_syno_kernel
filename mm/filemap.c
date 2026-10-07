@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *	linux/mm/filemap.c
@@ -57,11 +54,11 @@
 
 #include <asm/mman.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RECVFILE
 #include <linux/net.h>
 #include <linux/socket.h>
 #include <net/sock.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RECVFILE */
 
 /*
  * Shared mappings implemented 30.11.1994. It's not fully working yet,
@@ -2922,11 +2919,11 @@ vm_fault_t filemap_page_mkwrite(struct vm_fault *vmf)
 	vm_fault_t ret = VM_FAULT_LOCKED;
 
 	sb_start_pagefault(inode->i_sb);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 	vma_file_update_time(vmf->vma);
 #else
 	file_update_time(vmf->vma->vm_file);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 	lock_page(page);
 	if (page->mapping != inode->i_mapping) {
 		unlock_page(page);
@@ -3177,7 +3174,7 @@ int pagecache_write_end(struct file *file, struct address_space *mapping,
 }
 EXPORT_SYMBOL(pagecache_write_end);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RECVFILE
 static int sock2iov(struct socket *sock, struct kvec *iov,
 			int page_count, int start_page, size_t bytes_to_received, size_t *bytes_received)
 {
@@ -3268,7 +3265,7 @@ end:
 	return err ? err : bytes_total_received;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_AGGREGATE_RECVFILE
 static int __do_recvfile_with_aggregate_write_end(struct file *file, struct socket *sock, loff_t pos,
 			size_t count, size_t * rbytes, size_t * wbytes)
 {
@@ -3346,27 +3343,27 @@ release_pages:
 end:
 	return err ? err : bytes_received;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_AGGREGATE_RECVFILE */
 
 int do_recvfile(struct file *file, struct socket *sock, loff_t pos,
 			size_t count, size_t * rbytes, size_t * wbytes)
 {
 	int ret;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_AGGREGATE_RECVFILE
 	struct address_space  *mapping = file->f_mapping;
 
 	if (mapping->a_ops->aggregate_write_end)
 		ret = __do_recvfile_with_aggregate_write_end(file, sock, pos, count, rbytes, wbytes);
 	else
 		ret = __do_recvfile(file, sock, pos, count, rbytes, wbytes);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_AGGREGATE_RECVFILE */
 	ret = __do_recvfile(file, sock, pos, count, rbytes, wbytes);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_AGGREGATE_RECVFILE */
 
 	return ret;
 }
 EXPORT_SYMBOL(do_recvfile);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RECVFILE */
 
 /*
  * Warn about a page cache invalidation failure during a direct I/O write.

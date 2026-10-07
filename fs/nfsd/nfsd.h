@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Hodge-podge collection of knfsd-related stuff.
@@ -65,7 +62,7 @@ struct readdir_cd {
 	__be32			err;	/* 0, nfserr, or nfserr_eof */
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_SYNO_FILE_STATS
 #define NFSD_SYNO_FILE_STATS_KEY_MAX 128
 
 #define NFSD_SYNO_FILE_STATS_OPTION_CASE_INSENSITIVE 0x0001
@@ -86,7 +83,7 @@ struct syno_file_stats {
 };
 
 void update_syno_file_stats(struct dentry *dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_SYNO_FILE_STATS */
 
 extern struct svc_program	nfsd_program;
 extern const struct svc_version	nfsd_version2, nfsd_version3,
@@ -510,8 +507,8 @@ static inline int nfsd4_is_junction(struct dentry *dentry)
 
 #endif /* CONFIG_NFSD_V4 */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 struct inode *nfsd_get_inode(struct super_block *sb, umode_t mode);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 #endif /* LINUX_NFSD_NFSD_H */

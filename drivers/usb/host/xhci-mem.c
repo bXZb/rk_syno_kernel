@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * xHCI host controller driver
@@ -1060,7 +1057,7 @@ void xhci_copy_ep0_dequeue_into_input_ctx(struct xhci_hcd *xhci,
 	virt_dev = xhci->devs[udev->slot_id];
 	ep0_ctx = xhci_get_ep_ctx(xhci, virt_dev->in_ctx, 0);
 	ep_ring = virt_dev->eps[0].ring;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #if 1
@@ -1126,7 +1123,7 @@ void xhci_copy_ep0_dequeue_into_input_ctx(struct xhci_hcd *xhci,
 #endif
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	/*
 	 * FIXME we don't keep track of the dequeue pointer very well after a
 	 * Set TR dequeue pointer, so we're setting the dequeue pointer of the
@@ -2291,12 +2288,12 @@ static void xhci_add_in_port(struct xhci_hcd *xhci, unsigned int num_ports,
 
 	if ((xhci->hci_version >= 0x100) && (major_revision != 0x03) &&
 		 (temp & XHCI_HLC)) {
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_USB_DISABLE_USB2_HW_LPM_SUPPORT_CHECK
+#else /* CONFIG_SYNO_USB_DISABLE_USB2_HW_LPM_SUPPORT_CHECK */
 		xhci_dbg_trace(xhci, trace_xhci_dbg_init,
 			       "xHCI 1.0: support USB2 hardware lpm");
 		xhci->hw_lpm_support = 1;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_DISABLE_USB2_HW_LPM_SUPPORT_CHECK */
 	}
 
 	port_offset--;

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/ext4/namei.c
@@ -42,12 +39,12 @@
 #include "ext4.h"
 #include "ext4_jbd2.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 #include <linux/namei.h>
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
+#ifdef CONFIG_SYNO_EXT4_WINACL
 #include "syno_acl.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_WINACL */
 
 #include "xattr.h"
 #include "acl.h"
@@ -60,7 +57,7 @@
 #define NAMEI_RA_BLOCKS  4
 #define NAMEI_RA_SIZE	     (NAMEI_RA_CHUNKS * NAMEI_RA_BLOCKS)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 /* Hash a string to an integer in a caseless way */
 static int ext4_dentry_hash(const struct dentry *dentry, struct qstr *this)
 {
@@ -116,7 +113,7 @@ const struct dentry_operations ext4_dentry_operations =
 	.d_hash         = ext4_dentry_hash,
 	.d_compare_case = ext4_dentry_compare,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 
 static struct buffer_head *ext4_append(handle_t *handle,
 					struct inode *inode,
@@ -364,9 +361,9 @@ static int ext4_htree_next_block(struct inode *dir, __u32 hash,
 static struct buffer_head * ext4_dx_find_entry(struct inode *dir,
 		struct ext4_filename *fname,
 		struct ext4_dir_entry_2 **res_dir
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 		, int caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 		);
 
 static int ext4_dx_add_entry(handle_t *handle, struct ext4_filename *fname,
@@ -1268,16 +1265,16 @@ static inline int search_dirblock(struct buffer_head *bh,
 				  struct ext4_filename *fname,
 				  unsigned int offset,
 				  struct ext4_dir_entry_2 **res_dir
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 				  , int caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 				  )
 {
 	return ext4_search_dir(bh, bh->b_data, dir->i_sb->s_blocksize, dir,
 			       fname, offset, res_dir
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 			       , caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 			       );
 }
 
@@ -1426,9 +1423,9 @@ void ext4_fname_setup_ci_filename(struct inode *dir, const struct qstr *iname,
 static inline bool ext4_match(const struct inode *parent,
 			      const struct ext4_filename *fname,
 			      const struct ext4_dir_entry_2 *de
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 			      , int caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 			      )
 
 {
@@ -1458,12 +1455,12 @@ static inline bool ext4_match(const struct inode *parent,
 	}
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 	if (caseless)
 		return !syno_utf8_strcmp(de->name, fname->usr_fname->name,
 					 de->name_len, fname->usr_fname->len,
 					 NULL);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 
 	return fscrypt_match_name(&f, de->name, de->name_len);
 }
@@ -1474,9 +1471,9 @@ static inline bool ext4_match(const struct inode *parent,
 int ext4_search_dir(struct buffer_head *bh, char *search_buf, int buf_size,
 		    struct inode *dir, struct ext4_filename *fname,
 		    unsigned int offset, struct ext4_dir_entry_2 **res_dir
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 		    , int caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 		    )
 {
 	struct ext4_dir_entry_2 * de;
@@ -1490,9 +1487,9 @@ int ext4_search_dir(struct buffer_head *bh, char *search_buf, int buf_size,
 		/* do minimal checking `by hand' */
 		if ((char *) de + de->name_len <= dlimit &&
 		    ext4_match(dir, fname, de
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 			    , caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 			    )) {
 			/* found a match - just to be sure, do
 			 * a full check */
@@ -1544,9 +1541,9 @@ static struct buffer_head *__ext4_find_entry(struct inode *dir,
 					     struct ext4_filename *fname,
 					     struct ext4_dir_entry_2 **res_dir,
 					     int *inlined
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 					     , int caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 					     )
 {
 	struct super_block *sb;
@@ -1571,9 +1568,9 @@ static struct buffer_head *__ext4_find_entry(struct inode *dir,
 		int has_inline_data = 1;
 		ret = ext4_find_inline_entry(dir, fname, res_dir,
 					     &has_inline_data
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 					     , caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 					     );
 		if (has_inline_data) {
 			if (inlined)
@@ -1593,11 +1590,11 @@ static struct buffer_head *__ext4_find_entry(struct inode *dir,
 		goto restart;
 	}
 	if (is_dx(dir)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 		ret = ext4_dx_find_entry(dir, fname, res_dir, caseless);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 		ret = ext4_dx_find_entry(dir, fname, res_dir);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 		/*
 		 * On success, or if the error was file not found,
 		 * return.  Otherwise, fall back to doing a search the
@@ -1665,9 +1662,9 @@ restart:
 		set_buffer_verified(bh);
 		i = search_dirblock(bh, dir, fname,
 			    block << EXT4_BLOCK_SIZE_BITS(sb), res_dir
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 			    , caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 			    );
 		if (i == 1) {
 			EXT4_I(dir)->i_dir_start_lookup = block;
@@ -1716,17 +1713,17 @@ static struct buffer_head *ext4_find_entry(struct inode *dir,
 	if (err)
 		return ERR_PTR(err);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 	bh = __ext4_find_entry(dir, &fname, res_dir, inlined, 0);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 	bh = __ext4_find_entry(dir, &fname, res_dir, inlined);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 
 	ext4_fname_free_filename(&fname);
 	return bh;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 static inline int ext4_replace_caseless_dentry_name(struct dentry *dentry,
 					const struct ext4_dir_entry_2 *de)
 {
@@ -1736,14 +1733,14 @@ static inline int ext4_replace_caseless_dentry_name(struct dentry *dentry,
 		return 0;
 	return dentry_replace_name(dentry, de->name, de->name_len);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 
 static struct buffer_head *ext4_lookup_entry(struct inode *dir,
 					     struct dentry *dentry,
 					     struct ext4_dir_entry_2 **res_dir
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 					     , int caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 					     )
 {
 	int err;
@@ -1756,13 +1753,13 @@ static struct buffer_head *ext4_lookup_entry(struct inode *dir,
 	if (err)
 		return ERR_PTR(err);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 	bh = __ext4_find_entry(dir, &fname, res_dir, NULL, caseless);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 	bh = __ext4_find_entry(dir, &fname, res_dir, NULL);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 	/*
 	 * If we do caseless lookup after dentry queue of parent be cleared,
 	 * file name may async between dentry queue and disk.
@@ -1776,7 +1773,7 @@ static struct buffer_head *ext4_lookup_entry(struct inode *dir,
 			return ERR_PTR(err);
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 
 	ext4_fname_free_filename(&fname);
 	return bh;
@@ -1785,9 +1782,9 @@ static struct buffer_head *ext4_lookup_entry(struct inode *dir,
 static struct buffer_head * ext4_dx_find_entry(struct inode *dir,
 			struct ext4_filename *fname,
 			struct ext4_dir_entry_2 **res_dir
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 			, int caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 			)
 {
 	struct super_block * sb = dir->i_sb;
@@ -1811,9 +1808,9 @@ static struct buffer_head * ext4_dx_find_entry(struct inode *dir,
 		retval = search_dirblock(bh, dir, fname,
 					 block << EXT4_BLOCK_SIZE_BITS(sb),
 					 res_dir
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 					 , caseless
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 					 );
 		if (retval == 1)
 			goto success;
@@ -1848,7 +1845,7 @@ static struct dentry *ext4_lookup(struct inode *dir, struct dentry *dentry, unsi
 	struct inode *inode;
 	struct ext4_dir_entry_2 *de;
 	struct buffer_head *bh;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 	int caseless = 0;
 
 	if (flags & LOOKUP_CASELESS_COMPARE) {
@@ -1860,16 +1857,16 @@ static struct dentry *ext4_lookup(struct inode *dir, struct dentry *dentry, unsi
 			return ERR_PTR(-EOPNOTSUPP);
 		caseless = 1;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 
 	if (dentry->d_name.len > EXT4_NAME_LEN)
 		return ERR_PTR(-ENAMETOOLONG);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 	bh = ext4_lookup_entry(dir, dentry, &de, caseless);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 	bh = ext4_lookup_entry(dir, dentry, &de);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 	if (IS_ERR(bh))
 		return ERR_CAST(bh);
 	inode = NULL;
@@ -2129,11 +2126,11 @@ int ext4_find_dest_de(struct inode *dir, struct inode *inode,
 		if (ext4_check_dir_entry(dir, NULL, de, bh,
 					 buf, buf_size, offset))
 			return -EFSCORRUPTED;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 		if (ext4_match(dir, fname, de, 0))
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 		if (ext4_match(dir, fname, de))
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 			return -EEXIST;
 		nlen = EXT4_DIR_REC_LEN(de->name_len);
 		rlen = ext4_rec_len_from_disk(de->rec_len, buf_size);
@@ -2440,11 +2437,11 @@ static int ext4_add_entry(handle_t *handle, struct dentry *dentry,
 			goto out;
 
 		if (blocks == 1 && !dx_fallback &&
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 		    (is_syno_ext(sb) || ext4_has_feature_dir_index(sb))) {
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 		    ext4_has_feature_dir_index(sb)) {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 			retval = make_indexed_dir(handle, &fname, dir,
 						  inode, bh);
 			bh = NULL; /* make_indexed_dir releases bh */
@@ -3594,9 +3591,9 @@ static int ext4_symlink(struct inode *dir,
 		       disk_link.len);
 		inode->i_size = disk_link.len - 1;
 	}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_SYMLINK_IOCTL
 	inode->i_fop = &ext4_symlink_file_operations;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_SYMLINK_IOCTL */
 	EXT4_I(inode)->i_disksize = inode->i_size;
 	err = ext4_add_nondir(handle, dentry, &inode);
 	if (handle)
@@ -4337,16 +4334,16 @@ static int ext4_rename2(struct inode *old_dir, struct dentry *old_dentry,
  * directories can handle most operations...
  */
 const struct inode_operations ext4_dir_inode_operations = {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_STAT
 	.syno_getattr	= ext4_syno_getattr,
-#endif /* MY_ABC_HERE */
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#endif /* CONFIG_SYNO_EXT4_STAT */
+#if defined(CONFIG_SYNO_EXT3_ARCHIVE_BIT) || defined(CONFIG_SYNO_EXT4_ARCHIVE_BIT)
 	.syno_set_archive_bit = ext4_syno_set_archive_bit,
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT3_ARCHIVE_BIT || CONFIG_SYNO_EXT4_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_VERSION
 	.syno_get_archive_version = ext4_syno_get_inode_archive_version,
 	.syno_set_archive_version = ext4_syno_set_inode_archive_version,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_VERSION */
 	.create		= ext4_create,
 	.lookup		= ext4_lookup,
 	.link		= ext4_link,
@@ -4362,35 +4359,35 @@ const struct inode_operations ext4_dir_inode_operations = {
 	.listxattr	= ext4_listxattr,
 	.get_acl	= ext4_get_acl,
 	.set_acl	= ext4_set_acl,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_WINACL
 	.syno_get_acl	= ext4_get_syno_acl,
 	.syno_set_acl	= ext4_set_syno_acl,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_WINACL */
 	.fiemap         = ext4_fiemap,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CREATE_TIME
 	.syno_get_crtime = ext4_syno_get_crtime,
 	.syno_set_crtime = ext4_syno_set_crtime,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CREATE_TIME */
 };
 
 const struct inode_operations ext4_special_inode_operations = {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_STAT
 	.syno_getattr	= ext4_syno_getattr,
-#endif /* MY_ABC_HERE */
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#endif /* CONFIG_SYNO_EXT4_STAT */
+#if defined(CONFIG_SYNO_EXT3_ARCHIVE_BIT) || defined(CONFIG_SYNO_EXT4_ARCHIVE_BIT)
 	.syno_set_archive_bit = ext4_syno_set_archive_bit,
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT3_ARCHIVE_BIT || CONFIG_SYNO_EXT4_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_VERSION
 	.syno_get_archive_version = ext4_syno_get_inode_archive_version,
 	.syno_set_archive_version = ext4_syno_set_inode_archive_version,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_VERSION */
 	.setattr	= ext4_setattr,
 	.getattr	= ext4_getattr,
 	.listxattr	= ext4_listxattr,
 	.get_acl	= ext4_get_acl,
 	.set_acl	= ext4_set_acl,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CREATE_TIME
 	.syno_get_crtime = ext4_syno_get_crtime,
 	.syno_set_crtime = ext4_syno_set_crtime,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CREATE_TIME */
 };

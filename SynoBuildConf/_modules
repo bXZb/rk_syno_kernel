@@ -529,6 +529,8 @@ declare -A _mapping_idx=(
     [V1000NK]=4
     [GEMINILAKENK]=3
     [R1000NK]=30
+    [EPYC7003]=31
+    [RAPTORLAKEU]=32
 )
 
 _mapping="
@@ -562,76 +564,84 @@ _mapping="
 # KV2: KVMX64V2
 # RPLS: RAPTORLAKES
 # R1K: R1000NK
+# EPC3: EPYC7003
+# KSH: KAISHENG
+# R7K: RYZEN7K
+# ADL: ALDERLAKEN
+# RPLU: RAPTORLAKEU
 
-# Modules               KVM GML V1K BRW BRN BNT BAP DNV APL R96 PUR A37 CFL NXT R19 SKL KCL R19B ICXD EPC2 EPSO VSO KVSO R19M R5K EPC3N KV2 RPLS R1K
-mod_crypto              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_crypto_intel        o   o   o   o   o   o   o   o   o   x   o   x   o   o   x   o   o   x    o    o    o    o   o    x    o   o     o   o    o
-mod_fs_misc             o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_fs_enc              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_fs_fuse             o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_fs_iso              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_fs_nfsd             o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_fs_nfs              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_fs_cifs             o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_fs_btrfs            o   o   o   o   o   o   o   o   o   o   o   x   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_fs_btrfs_cp         x   x   x   x   x   x   o   x   x   x   x   x   x   x   x   x   x   x    x    x    x    x   x    x    x   x     x   x    x
-mod_net_bonding         o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_net_firewall        o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_net_ppp             o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_net_tunnel          o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_net_filter          o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_net_bridge          o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_net_tc              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_net_fw_security     o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_net_vlan            o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_net_ipsec           o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_net_openvswitch     o   o   o   o   o   o   o   o   o   x   o   o   o   o   x   o   o   x    o    o    o    o   o    x    o   o     o   o    o
-mod_net_console         x   o   o   o   o   x   x   o   o   x   o   o   o   x   x   o   x   x    o    o    o    o   x    x    o   o     x   o    o    # XXX: need review ??
-mod_ipv6                o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_ipv6_firewall       o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_ipv6_tunnel         o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_iscsi               o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_scsi                o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_scsi_fc             x   x   o   o   o   o   x   x   x   x   o   x   x   x   x   x   x   x    o    o    o    x   x    x    o   o     x   o    x
-mod_sound               o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_sound_alsa          o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_raid                o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o
-mod_cpufreq             o   o   o   o   o   o   o   o   o   x   o   x   o   o   x   o   o   x    o    o    o    o   o    x    o   o     o   o    o
-mod_zram                o   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o   o   x    o    o    o    o   o    x    o   o     o   o    o    # XXX: why not installed in REALTEK_RTD1619 ??
-mod_vaapi               x   o   x   x   x   x   x   x   o   x   x   x   x   x   x   x   x   x    x    x    x    o   x    x    x   x     x   x    x
-mod_kvm                 x   o   x   o   o   o   o   o   o   x   o   x   o   o   x   o   x   x    x    x    x    o   x    x    x   x     x   x    x
-mod_virtio              o   x   x   x   x   x   x   x   x   x   x   x   x   o   x   x   o   x    x    x    x    x   o    x    x   x     o   x    x
-
-# Modules               KVM GML V1K BRW BRN BNT BAP DNV APL R96 PUR A37 CFL NXT R19 SKL KCL R19B ICXD EPC2 EPSO VSO KVSO R19M R5k EPC3N KV2 RPLS R1K
-mod_usb                 o   o   x   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o    o    o    o    o   o    o    o   x     o   o    x
-mod_usb_printer         o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o    o    o    o    o   o    o    o   o     o   o    o
-mod_usb_ehci            o   o   o   x   x   o   o   o   o   o   o   o   o   o   o   o   x   o    o    o    o    o   o    o    o   o     o   o    o    # XXX: not consistent in broadwell/kvm series ??
-mod_usb_ip              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o    o    o    o    o   o    o    o   o     o   o    o
-mod_usb_wimax           o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o    o    o    o    o   o    o    o   o     o   o    o    # deprecated
-mod_usb_serial          o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o    o    o    o    o   o    o    o   o     o   o    o
-mod_usb_alsa            o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o    o    o    o    o   o    o    o   o     o   o    o
-mod_led_lp3943          x   o   o   o   o   o   o   o   o   x   o   x   o   x   x   x   x   x    x    x    x    o   x    x    x   x     x   x    x    # XXX: need review ??
-mod_led_atmega1608      x   o   o   x   x   x   x   x   x   x   o   x   x   x   x   x   x   x    o    o    o    o   x    x    o   o     x   o    o
-mod_led_atmega1608_seg7 x   x   o   x   x   x   x   x   x   x   o   x   x   x   x   x   x   x    o    o    o    o   x    x    o   x     x   o    o
-mod_vfio                x   o   o   o   o   o   x   o   o   x   o   x   o   o   x   o   x   x    o    o    o    o   o    x    o   o     x   o    o    # XXX: need review ??
-mod_i2c                 o   o   x   o   o   o   o   o   o   x   o   x   o   o   x   o   x   x    o    o    o    x   o    x    o   o     o   o    x
-mod_hwmon_adt           x   x   o   o   o   o   o   x   x   x   x   x   o   x   x   x   x   x    o    o    o    o   x    x    o   o     x   o    o
-mod_hwmon_disk_pwctl    x   o   o   o   o   o   o   o   o   o   x   o   o   x   o   x   x   o    x    x    x    o   x    o    x   x     x   x    x    # XXX: need review ??
-mod_dca                 x   x   x   o   o   o   o   x   x   x   x   x   o   x   x   x   x   x    o    x    x    x   x    x    x   x     x   o    x
-mod_ntb                 x   x   x   x   x   o   o   x   x   x   x   x   x   x   x   x   x   x    x    x    x    x   x    x    x   x     x   x    x
-mod_ntb_brd             x   x   x   x   x   x   o   x   x   x   x   x   x   x   x   x   x   x    x    x    x    x   x    x    x   x     x   x    x
-mod_docker              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o    # deprecated
-mod_docker_ingress      o   o   o   o   o   o   o   o   o   x   o   x   o   o   x   o   o   o    o    o    o    o   o    x    o   o     o   o    o
-mod_acpi                x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   o   x    x    x    x    x   x    x    x   x     x   x    x
-mod_dm_multipath        x   x   x   x   x   x   x   x   x   x   o   x   x   x   x   x   x   x    x    x    x    x   x    x    x   x     x   x    x
-mod_dm_snapshot         o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o    # deprecated
-mod_fc                  x   x   x   o   o   o   o   x   x   x   o   x   x   x   x   x   x   x    o    o    o    x   x    x    o   o     x   o    x
-mod_usb_rtk             x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   o    x    x    x    x   x    o    x   x     x   x    x
-mod_bnx2x               o   x   x   o   x   x   x   x   x   x   o   x   x   x   x   x   x   x    o    o    o    x   o    x    o   o     o   o    x
-mod_cpufreq_rtk         x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   o    x    x    x    x   x    o    x   x     x   x    x
-mod_dm_crypt            o   o   o   o   o   o   o   o   o   x   o   x   o   o   x   o   o   x    o    o    o    o   o    x    o   o     o   o    o
-mod_ceph                x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x    x    x    o    o   o    x    x   x     x   x    x
-mod_tpm                 x   o   o   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x    x    x    x    x   x    x    o   x     x   x    o
+# Modules               KVM GML V1K BRW BRN BNT BAP DNV APL R96 PUR A37 CFL NXT R19 SKL KCL R19B ICXD EPC2 EPSO VSO KVSO R19M R5K EPC3N KV2 RPLS R1K EPC3 RPLU
+mod_crypto              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_crypto_intel        o   o   o   o   o   o   o   o   o   x   o   x   o   o   x   o   o   x    o    o    o    o   o    x    o   o     o   o    o   o    o   
+mod_fs_misc             o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_fs_enc              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_fs_fuse             o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_fs_iso              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_fs_nfsd             o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_fs_nfs              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_fs_cifs             o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_fs_btrfs            o   o   o   o   o   o   o   o   o   o   o   x   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_fs_btrfs_cp         x   x   x   x   x   x   o   x   x   x   x   x   x   x   x   x   x   x    x    x    x    x   x    x    x   x     x   x    x   x    x   
+mod_net_bonding         o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_net_firewall        o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_net_ppp             o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_net_tunnel          o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_net_filter          o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_net_bridge          o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_net_tc              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_net_fw_security     o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_net_vlan            o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_net_ipsec           o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_net_openvswitch     o   o   o   o   o   o   o   o   o   x   o   o   o   o   x   o   o   x    o    o    o    o   o    x    o   o     o   o    o   o    o   
+mod_net_console         x   o   o   o   o   x   x   o   o   x   o   o   o   x   x   o   x   x    o    o    o    o   x    x    o   o     x   o    o   o    o     # XXX: need review ??
+mod_ipv6                o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_ipv6_firewall       o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_ipv6_tunnel         o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_iscsi               o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_scsi                o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_scsi_fc             x   x   o   o   o   o   x   x   x   x   o   x   x   x   x   x   x   x    o    o    o    x   x    x    o   o     x   o    x   o    x   
+mod_sound               o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_sound_alsa          o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_raid                o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_cpufreq             o   o   o   o   o   o   o   o   o   x   o   x   o   o   x   o   o   x    o    o    o    o   o    x    o   o     o   o    o   o    o   
+mod_zram                o   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o   o   x    o    o    o    o   o    x    o   o     o   o    o   o    o     # XXX: why not installed in REALTEK_RTD1619 ??
+mod_vaapi               x   o   x   x   x   x   x   x   o   x   x   x   x   x   x   x   x   x    x    x    x    o   x    x    x   x     x   x    x   x    o   
+mod_i915                x   o   x   x   x   x   x   x   o   x   x   x   x   x   x   x   x   x    x    x    x    o   x    x    x   x     x   x    x   x    x   
+mod_kvm                 x   o   x   o   o   o   o   o   o   x   o   x   o   o   x   o   x   x    o    x    x    o   x    x    x   x     x   x    x   x    o   
+mod_virtio              o   x   x   x   x   x   x   x   x   x   x   x   x   o   x   x   o   x    x    x    x    x   o    x    x   x     o   x    x   x    x   
+                                                                                                                                                                 
+# Modules               KVM GML V1K BRW BRN BNT BAP DNV APL R96 PUR A37 CFL NXT R19 SKL KCL R19B ICXD EPC2 EPSO VSO KVSO R19M R5k EPC3N KV2 RPLS R1K EPC3 RPLU
+mod_usb                 o   o   x   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o    x    o    o    o   o    o    o   x     o   o    x   x    x   
+mod_usb_printer         o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_usb_ehci            o   o   o   x   x   o   o   o   o   o   o   o   o   o   o   o   x   o    o    o    o    o   o    o    o   o     o   o    o   o    o     # XXX: not consistent in broadwell/kvm series ??
+mod_usb_ip              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_usb_wimax           o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o    o    o    o    o   o    o    o   o     o   o    o   o    o     # deprecated
+mod_usb_serial          o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_usb_alsa            o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   x   o    o    o    o    o   o    o    o   o     o   o    o   o    o   
+mod_led_lp3943          x   o   o   o   o   o   o   o   o   x   o   x   o   x   x   x   x   x    x    x    x    o   x    x    x   x     x   x    x   x    x     # XXX: need review ??
+mod_led_atmega1608      x   o   o   x   x   x   x   x   x   x   o   x   x   x   x   x   x   x    o    o    o    o   x    x    o   o     x   o    o   o    o   
+mod_led_atmega1608_seg7 x   x   o   x   x   x   x   x   x   x   o   x   x   x   x   x   x   x    o    o    o    o   x    x    o   x     x   o    o   x    x   
+mod_vfio                x   o   o   o   o   o   x   o   o   x   o   x   o   o   x   o   x   x    o    o    o    o   o    x    o   o     x   o    o   o    o     # XXX: need review ??
+mod_i2c                 o   o   x   o   o   o   o   o   o   x   o   x   o   o   x   o   x   x    o    o    o    x   o    x    o   o     o   o    x   o    o   
+mod_hwmon_adt           x   x   o   o   o   o   o   x   x   x   x   x   o   x   x   x   x   x    o    o    o    o   x    x    o   o     x   o    o   o    o   
+mod_hwmon_disk_pwctl    x   o   o   o   o   o   o   o   o   o   x   o   o   x   o   x   x   o    x    x    x    o   x    o    x   x     x   x    o   x    x     # XXX: need review ??
+mod_dca                 x   x   x   o   o   o   o   x   x   x   x   x   o   x   x   x   x   x    o    x    x    x   x    x    x   x     x   o    x   x    o   
+mod_ntb                 x   x   x   x   x   o   o   x   x   x   x   x   x   x   x   x   x   x    x    x    x    x   x    x    x   x     x   x    x   x    x   
+mod_ntb_brd             x   x   x   x   x   x   o   x   x   x   x   x   x   x   x   x   x   x    x    x    x    x   x    x    x   x     x   x    x   x    x   
+mod_docker              o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o     # deprecated
+mod_docker_ingress      o   o   o   o   o   o   o   o   o   x   o   x   o   o   x   o   o   o    o    o    o    o   o    x    o   o     o   o    o   o    o   
+mod_acpi                x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   o   x    x    x    x    x   x    x    x   x     x   x    x   x    x   
+mod_dm_multipath        x   x   x   x   x   x   x   x   x   x   o   x   x   x   x   x   x   x    x    x    x    x   x    x    x   x     x   x    x   o    x   
+mod_dm_snapshot         o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o   o    o    o    o    o   o    o    o   o     o   o    o   o    o     # deprecated
+mod_fc                  x   x   x   o   o   o   o   x   x   x   o   x   x   x   x   x   x   x    o    o    o    x   x    x    o   o     x   o    x   o    x   
+mod_usb_rtk             x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   o    x    x    x    x   x    o    x   x     x   x    x   x    x   
+mod_bnx2x               o   x   x   o   x   x   x   x   x   x   o   x   x   x   x   x   x   x    o    o    o    x   o    x    o   o     o   o    x   o    o   
+mod_cpufreq_rtk         x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   o    x    x    x    x   x    o    x   x     x   x    x   x    x   
+mod_dm_crypt            o   o   o   o   o   o   o   o   o   x   o   x   o   o   x   o   o   x    o    o    o    o   o    x    o   o     o   o    o   o    o   
+mod_ceph                x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x    x    x    o    o   o    x    x   x     x   x    x   x    x   
+mod_tpm                 x   o   o   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x    x    x    x    x   x    x    o   x     x   x    o   x    o   
+mod_tpm_tis             x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x    x    x    x    x   x    x    x   x     x   x    x   x    x   
+mod_ipmi                x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x   x    x    x    x    x   x    x    x   x     x   x    x   x    x   
 "
 
 modules_customized()
@@ -729,6 +739,14 @@ modules_customized()
             "
             ;;
         ICELAKED)
+            _modules="
+                drivers/hid/hid.ko
+                drivers/usb/storage/uas.ko
+                drivers/usb/storage/usb-storage.ko
+                drivers/hid/usbhid/usbhid.ko
+                drivers/usb/host/uhci-hcd.ko
+                drivers/hid/hid-generic.ko
+            "
             ;;
         EPYC7002)
             _modules="
@@ -751,6 +769,21 @@ modules_customized()
         RYZEN5K)
             _modules="
                 drivers/hwmon/hwmon-vid.ko
+            "
+            ;;
+        EPYC7003)
+            _modules="
+                drivers/hwmon/hwmon-vid.ko
+                virt/lib/irqbypass.ko
+                arch/x86/kvm/kvm.ko
+                arch/x86/kvm/kvm-amd.ko
+                drivers/pci/pci-stub.ko
+                drivers/hid/hid.ko
+                drivers/hid/hid-generic.ko
+                drivers/hid/usbhid/usbhid.ko
+                drivers/usb/host/uhci-hcd.ko
+                drivers/usb/storage/usb-storage.ko
+                drivers/usb/storage/uas.ko
             "
             ;;
         EPYC7003NTB)
@@ -786,6 +819,16 @@ modules_customized()
                 drivers/usb/host/uhci-hcd.ko
                 drivers/usb/storage/usb-storage.ko
                 drivers/usb/storage/uas.ko
+            "
+            ;;
+        RAPTORLAKEU)
+            _modules="
+                drivers/hid/hid.ko
+                drivers/usb/storage/uas.ko
+                drivers/usb/storage/usb-storage.ko
+                drivers/hid/usbhid/usbhid.ko
+                drivers/usb/host/uhci-hcd.ko
+                drivers/hid/hid-generic.ko
             "
             ;;
     esac

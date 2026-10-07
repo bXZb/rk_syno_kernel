@@ -294,7 +294,10 @@ void rq_qos_wait(struct rq_wait *rqw, void *private_data,
 
 void rq_qos_exit(struct request_queue *q)
 {
+#ifdef CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX
+#else /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 	blk_mq_debugfs_unregister_queue_rqos(q);
+#endif /* CONFIG_SYNO_MULTIPATH_DEBUGFS_FIX */
 
 	while (q->rq_qos) {
 		struct rq_qos *rqos = q->rq_qos;

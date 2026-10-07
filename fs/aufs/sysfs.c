@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2005-2019 Junjiro R. Okajima
@@ -34,12 +31,12 @@ static ssize_t config_show(struct kobject *kobj, struct kobj_attribute *attr,
 {
 	ssize_t err;
 	static char *conf =
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_NO_AUTOGEN
 		""
 #else
 /* this file is generated at compiling */
 #include "conf.str"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_NO_AUTOGEN */
 		;
 
 	err = snprintf(buf, PAGE_SIZE, conf);

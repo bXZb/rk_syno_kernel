@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * scsi_scan.c
@@ -52,17 +49,17 @@
 
 #include "scsi_priv.h"
 #include "scsi_logging.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_ERROR_REPORT
 #include "libsyno_report.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_ERROR_REPORT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 #include <linux/libata.h>
 #define to_ata_port(d) container_of(d, struct ata_port, tdev)
 extern u8 syno_is_synology_pm(const struct ata_port *ap);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INQUIRY_STANDARD
 #define SYNO_INQUIRY_TMP_LEN 32
 #define SZ_STAT_DISK_VENDOR "ATA     "
 #define SYNO_INQUIRY_VENDOR_LEN 8
@@ -78,14 +75,14 @@ SYNO_DISK_VENDOR gDiskVendor[] = {
 	{"MICRON", 6},
 	{NULL, 0}
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INQUIRY_STANDARD */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 #define SYNO_RESULT_LEN 512
 /* The IDENTIFY DEVICE command will get most 40 characters */
 #define SYNO_IDENTIFY_DEVICE_TMP_LEN 40
 extern int syno_get_ata_identity(struct scsi_device *sdev, u16 *id);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 
 #define ALLOC_FAILURE_MSG	KERN_ERR "%s: Allocation failure during" \
 	" SCSI scanning, some SCSI devices might not be configured\n"
@@ -255,9 +252,9 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
 	struct scsi_device *sdev;
 	int display_failure_msg = 1, ret;
 	struct Scsi_Host *shost = dev_to_shost(starget->dev.parent);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SPINUP_DELAY
 	extern void SynoSubmitSpinupReq(struct work_struct *work);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SPINUP_DELAY */
 
 	sdev = kzalloc(sizeof(*sdev) + shost->transportt->device_size,
 		       GFP_KERNEL);
@@ -265,10 +262,10 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
 		goto out;
 
 	sdev->vendor = scsi_null_device_strs;
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
+#else /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 	sdev->model = scsi_null_device_strs;
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 	sdev->rev = scsi_null_device_strs;
 	sdev->host = shost;
 	sdev->queue_ramp_up_period = SCSI_DEFAULT_RAMP_UP_PERIOD;
@@ -285,17 +282,17 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
 	mutex_init(&sdev->inquiry_mutex);
 	INIT_WORK(&sdev->event_work, scsi_evt_thread);
 	INIT_WORK(&sdev->requeue_work, scsi_requeue_run_queue);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SPINUP_DELAY
 	INIT_WORK(&sdev->spinup_work, SynoSubmitSpinupReq);
 	INIT_LIST_HEAD(&sdev->spinup_list);
 	sdev->spinup_in_process = 0;
 	sdev->spinup_timer = 0;
 	sdev->spinup_queue = NULL;
-#endif /* MY_DEF_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SAS_SPINUP_DELAY */
+#ifdef CONFIG_SYNO_SCSI_DISK_ERROR_REPORT
 	INIT_WORK(&sdev->sendScsiErrorEventTask, SynoSendScsiErrorEvent);
 	memset(&sdev->scsiErrorEventParm, 0, sizeof(sdev->scsiErrorEventParm));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_ERROR_REPORT */
 
 	sdev->sdev_gendev.parent = get_device(&starget->dev);
 	sdev->sdev_target = starget;
@@ -348,9 +345,9 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
 		}
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP
 	sdev->sas_sata_standby_flag = 0;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP */
 
 	return sdev;
 
@@ -572,7 +569,7 @@ void scsi_target_reap(struct scsi_target *starget)
 	scsi_target_reap_ref_put(starget);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INQUIRY_STANDARD
 /**
  * ssyno_standard_inquiry_strin - refine the vendor and model strings of SATA disks
  * @szInqStr: INQUIRY result string to be refined
@@ -679,9 +676,9 @@ static void syno_standard_vendor_string(unsigned char *szInqStr, unsigned int ui
 END:
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INQUIRY_STANDARD */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 /**
  * Description:
  * 	The result of SCSI INQUIRY from a SATA disk might set vendor as "ATA"
@@ -772,7 +769,7 @@ static void scsi_ata_identify_device_get_model_name(struct scsi_device *sdev, un
 
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 
 /**
  * scsi_sanitize_inquiry_string - remove non-graphical chars from an
@@ -802,7 +799,7 @@ void scsi_sanitize_inquiry_string(unsigned char *s, int len)
 }
 EXPORT_SYMBOL(scsi_sanitize_inquiry_string);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 static int syno_is_pmp_device(struct device *dev)
 {
 	struct ata_port *pPmPort = NULL;
@@ -828,9 +825,9 @@ static int syno_is_pmp_device(struct device *dev)
 End:
 	return iRet;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_SERIAL
 #define SERIAL_RESULT_BUF_SIZE 252
 #define VPD_SUPPORTED_VPDS 0x00
 #define VPD_UNIT_SERIAL_NUM 0x80
@@ -910,7 +907,7 @@ static int syno_fetch_unit_serial_num(struct scsi_device *sdev)
 END:
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_SERIAL */
 
 /**
  * scsi_probe_lun - probe a single LUN using a SCSI INQUIRY
@@ -934,7 +931,7 @@ static int scsi_probe_lun(struct scsi_device *sdev, unsigned char *inq_result,
 	int response_len = 0;
 	int pass, count, result;
 	struct scsi_sense_hdr sshdr;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 	/* Standard Inquiry Data for Virtual Device */
 	unsigned char SYNO_INQUIRY_VIRTUALD_DATA[] = {
 					0x03,0x00,0x04,0x02,0x20,0x00,0x00,0x00,
@@ -944,7 +941,7 @@ static int scsi_probe_lun(struct scsi_device *sdev, unsigned char *inq_result,
 					0x31,0x2E,0x30,0x30
 					};
 	int iVirtualInquiryLen = 36;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
 	*bflags = 0;
 
@@ -970,7 +967,7 @@ static int scsi_probe_lun(struct scsi_device *sdev, unsigned char *inq_result,
 
 		memset(inq_result, 0, try_inquiry_len);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 		if (sdev->channel == SYNO_PM_VIRTUAL_SCSI_CHANNEL) {
 			result = 0;
 			if (syno_is_pmp_device(&sdev->sdev_gendev)) {
@@ -979,14 +976,14 @@ static int scsi_probe_lun(struct scsi_device *sdev, unsigned char *inq_result,
 				sdev->inquiry_len = iVirtualInquiryLen;
 			}
 		} else {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 		result = scsi_execute_req(sdev,  scsi_cmd, DMA_FROM_DEVICE,
 					  inq_result, try_inquiry_len, &sshdr,
 					  HZ / 2 + HZ * scsi_inq_timeout, 3,
 					  &resid);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
 		SCSI_LOG_SCAN_BUS(3, sdev_printk(KERN_INFO, sdev,
 				"scsi scan: INQUIRY %s with code 0x%x\n",
@@ -1020,7 +1017,7 @@ static int scsi_probe_lun(struct scsi_device *sdev, unsigned char *inq_result,
 	}
 
 	if (result == 0) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INQUIRY_STANDARD
 		/*
 		 * Only transfering the strings that vendor is ATA.
 		 * vendor set as "ATA" means the disk is a SATA disk
@@ -1030,7 +1027,7 @@ static int scsi_probe_lun(struct scsi_device *sdev, unsigned char *inq_result,
 		} else {
 			syno_standard_vendor_string(&inq_result[8], 8);
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INQUIRY_STANDARD */
 		scsi_sanitize_inquiry_string(&inq_result[8], 8);
 		scsi_sanitize_inquiry_string(&inq_result[16], 16);
 		scsi_sanitize_inquiry_string(&inq_result[32], 4);
@@ -1147,10 +1144,10 @@ static int scsi_probe_lun(struct scsi_device *sdev, unsigned char *inq_result,
 	    !sdev->host->no_scsi2_lun_in_cdb)
 		sdev->lun_in_cdb = 1;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_SERIAL
 	memset(sdev->syno_disk_serial, 0, sizeof(sdev->syno_disk_serial));
 	syno_fetch_unit_serial_num(sdev);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_SERIAL */
 
 	return 0;
 }
@@ -1174,9 +1171,9 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
 		blist_flags_t *bflags, int async)
 {
 	int ret;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 	unsigned char szDiskModel[SYNO_DISK_MODEL_NUM + 4] = {'\0'};
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 
 	/*
 	 * XXX do not save the inquiry, since it can change underneath us,
@@ -1205,12 +1202,12 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
 		return SCSI_SCAN_NO_RESPONSE;
 
 	sdev->vendor = (char *) (sdev->inquiry + 8);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 	if (!(SYNO_PORT_TYPE_USB == sdev->host->hostt->syno_port_type)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 		if(sdev->channel != SYNO_PM_VIRTUAL_SCSI_CHANNEL ||
 				!syno_is_pmp_device(&sdev->sdev_gendev))
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 		scsi_ata_identify_device_get_model_name(sdev, (unsigned char *)&szDiskModel);
 	}
 
@@ -1230,9 +1227,9 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
 		return SCSI_SCAN_NO_RESPONSE;
 
 	scsi_sanitize_inquiry_string((unsigned char *) sdev->model, SYNO_DISK_MODEL_NUM);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 	sdev->model = (char *) (sdev->inquiry + 16);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 	sdev->rev = (char *) (sdev->inquiry + 32);
 
 	if (strncmp(sdev->vendor, "ATA     ", 8) == 0) {
@@ -1303,11 +1300,11 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
 	if (inq_result[7] & 0x10)
 		sdev->sdtr = 1;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 	sdev_printk(KERN_NOTICE, sdev, "%s %.8s %."SYNO_DISK_MODEL_LEN"s %.4s PQ: %d "
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 	sdev_printk(KERN_NOTICE, sdev, "%s %.8s %.16s %.4s PQ: %d "
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 			"ANSI: %d%s\n", scsi_device_type(sdev->type),
 			sdev->vendor, sdev->model, sdev->rev,
 			sdev->inq_periph_qual, inq_result[2] & 0x07,
@@ -1514,6 +1511,17 @@ static int scsi_probe_and_add_lun(struct scsi_target *starget,
 				*bflagsp = scsi_get_device_flags(sdev,
 								 sdev->vendor,
 								 sdev->model);
+
+#if defined(CONFIG_SYNO_BLK_DEV_WAIT_DISK_READY) && defined(CONFIG_SYNO_DISK_POWER_MANAGER)
+			if (sdev->host->hostt->syno_disk_not_ready_count_decrease
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
+				&& SYNO_PM_VIRTUAL_SCSI_CHANNEL != sdev->channel
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
+			) {
+				sdev->host->hostt->syno_disk_not_ready_count_decrease();
+			}
+#endif /* CONFIG_SYNO_BLK_DEV_WAIT_DISK_READY && CONFIG_SYNO_DISK_POWER_MANAGER */
+
 			return SCSI_SCAN_LUN_PRESENT;
 		}
 		scsi_device_put(sdev);

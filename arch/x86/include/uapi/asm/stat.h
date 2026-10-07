@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 #ifndef _ASM_X86_STAT_H
 #define _ASM_X86_STAT_H
@@ -138,7 +135,7 @@ struct __old_kernel_stat {
 #endif
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_STAT
 #ifdef __KERNEL__
 #include <linux/time.h>
 #endif
@@ -160,6 +157,6 @@ struct SYNOSTAT {
 	struct stat st;
 	struct SYNOSTAT_EXTRA ext;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_STAT */
 
 #endif /* _ASM_X86_STAT_H */

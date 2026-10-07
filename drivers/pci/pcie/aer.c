@@ -31,6 +31,10 @@
 #include <acpi/apei.h>
 #include <ras/ras_event.h>
 
+#ifdef CONFIG_SYNO_PCI_DTS_LABEL
+#include <linux/synolib.h>
+#endif /* CONFIG_SYNO_PCI_DTS_LABEL */
+
 #include "../pci.h"
 #include "portdrv.h"
 
@@ -697,6 +701,9 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
 	int layer, agent;
 	int id = ((dev->bus->number << 8) | dev->devfn);
 	const char *level;
+#ifdef CONFIG_SYNO_PCI_DTS_LABEL
+	char label[SYNO_PCI_LABEL_MAX_LEN] = {'\0'};
+#endif /* CONFIG_SYNO_PCI_DTS_LABEL */
 
 	if (!info->status) {
 		pci_err(dev, "PCIe Bus Error: severity=%s, type=Inaccessible, (Unregistered Agent ID)\n",
@@ -715,6 +722,11 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
 
 	pci_printk(level, dev, "  device [%04x:%04x] error status/mask=%08x/%08x\n",
 		   dev->vendor, dev->device, info->status, info->mask);
+
+#ifdef CONFIG_SYNO_PCI_DTS_LABEL
+	if (pci_get_syno_label(dev, label, sizeof(label)) > 0)
+		pci_printk(level, dev, "  device label: %s\n", label);
+#endif /* CONFIG_SYNO_PCI_DTS_LABEL */
 
 	__aer_print_error(dev, info);
 
@@ -1195,6 +1207,10 @@ static irqreturn_t aer_irq(int irq, void *context)
 
 	if (!kfifo_put(&rpc->aer_fifo, e_src))
 		return IRQ_HANDLED;
+#ifdef CONFIG_SYNO_PCI_DEEP_RETRY
+	if (1 == atomic_read(&rp->syno_skip_irq))
+		return IRQ_HANDLED;
+#endif /* CONFIG_SYNO_PCI_DEEP_RETRY */
 
 	return IRQ_WAKE_THREAD;
 }

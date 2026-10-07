@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * scsi_sysfs.c
@@ -29,19 +26,21 @@
 #include "scsi_priv.h"
 #include "scsi_logging.h"
 
-#ifdef MY_DEF_HERE
-#include "sd.h"
+#if defined(CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD) || defined(CONFIG_SYNO_USB_EUNIT_CONTROL)
 #include <linux/synolib.h>
+#endif /* CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD || CONFIG_SYNO_USB_EUNIT_CONTROL */
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
+#include "sd.h"
 #include <linux/synobios.h>
 extern struct syno_control_operations syno_control_operations_lists[];
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_PROMOTE_INFO_LOG_LEVEL
 #ifdef KERN_INFO
 #undef KERN_INFO
 #define KERN_INFO KERN_NOTICE
 #endif
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_PROMOTE_INFO_LOG_LEVEL */
 
 static struct device_type scsi_dev_type;
 
@@ -514,9 +513,9 @@ static void scsi_device_dev_release_usercontext(struct work_struct *work)
 	if (vpd_pg89)
 		kfree_rcu(vpd_pg89, rcu);
 	kfree(sdev->inquiry);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 	kfree(sdev->model);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 	kfree(sdev);
 
 	if (parent)
@@ -596,7 +595,7 @@ void scsi_sysfs_unregister(void)
  * sdev_show_function: macro to create an attr function that can be used to
  * show a non-bit field.
  */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 #define sdev_show_function(field, format_string)				\
 static ssize_t								\
 sdev_show_##field (struct device *dev, struct device_attribute *attr,	\
@@ -607,7 +606,7 @@ sdev_show_##field (struct device *dev, struct device_attribute *attr,	\
 	return snprintf (buf, SYNO_DISK_MODEL_NUM + 4, format_string, sdev->field);		\
 }									\
 
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 #define sdev_show_function(field, format_string)				\
 static ssize_t								\
 sdev_show_##field (struct device *dev, struct device_attribute *attr,	\
@@ -618,7 +617,7 @@ sdev_show_##field (struct device *dev, struct device_attribute *attr,	\
 	return snprintf (buf, 20, format_string, sdev->field);		\
 }									\
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 
 /*
  * sdev_rd_attr: macro to create a function and attribute variable for a
@@ -691,7 +690,7 @@ static int scsi_sdev_check_buf_bit(const char *buf)
 }
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_SERIAL
 static ssize_t
 syno_disk_serial_show(struct device *device, struct device_attribute *attr, char *buf)
 {
@@ -707,28 +706,28 @@ END:
 	return len;
 }
 static DEVICE_ATTR(syno_disk_serial, S_IRUGO, syno_disk_serial_show, NULL);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_SERIAL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 static ssize_t
 syno_block_info_show(struct device *device, struct device_attribute *attr, char *buf)
 {
 	struct scsi_device *sdev = NULL;
 	ssize_t len = -EFAULT;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	char *control_method = NULL;
 	struct syno_control_operations *ctrl_op = NULL;
 	char unique[SYNO_EBOX_UNIQUE_MAX_LEN] = {0};
 	char syno_block_info_tmp[BLOCK_INFO_SIZE] = {0};
 	struct scsi_disk *sdkp = NULL;
 	int container_index = 0;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	if (NULL == (sdev = to_scsi_device(device))) {
 		goto END;
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	for (ctrl_op = syno_control_operations_lists; ctrl_op && strlen(ctrl_op->control_method); ctrl_op++) {
 		read_lock(&(sdev->syno_block_info_rwlock));
 		control_method = strstr(sdev->syno_block_info, ctrl_op->control_method);
@@ -757,7 +756,7 @@ syno_block_info_show(struct device *device, struct device_attribute *attr, char 
 		}
 		
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	read_lock(&(sdev->syno_block_info_rwlock));
 	len = snprintf(buf, BLOCK_INFO_SIZE , "%s", sdev->syno_block_info);
@@ -766,9 +765,9 @@ END:
 	return len;
 }
 static DEVICE_ATTR(syno_block_info, S_IRUGO, syno_block_info_show, NULL);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DEVICE_IDLE_TIME
 /* FIXME: We don't know why SAS disks led blinking when open it, so we add a sysfs interface to prevent it
  * The following code is copied from "case SD_IOCTL_IDLE: " ind "sd.c" */
 static ssize_t
@@ -806,9 +805,9 @@ END:
 }
 
 static DEVICE_ATTR(syno_idle_time, S_IRUGO | S_IWUSR, sdev_show_syno_idle_time, sdev_store_syno_idle_time);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DEVICE_IDLE_TIME */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DISK_HIBERNATION
 static ssize_t
 sdev_show_syno_spindown(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -828,7 +827,7 @@ END:
 static DEVICE_ATTR(syno_spindown, S_IRUGO, sdev_show_syno_spindown, NULL);
 
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP
 static ssize_t
 sdev_show_syno_sas_sata_standby_flag(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -846,7 +845,7 @@ END:
 }
 
 static DEVICE_ATTR(syno_sas_sata_standby_flag, S_IRUGO, sdev_show_syno_sas_sata_standby_flag, NULL);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP */
 
 static ssize_t
 sdev_show_syno_standby_syncing(struct device *dev, struct device_attribute *attr, char *buf)
@@ -886,9 +885,9 @@ END:
 }
 
 static DEVICE_ATTR(syno_standby_syncing, S_IRUGO | S_IWUSR, sdev_show_syno_standby_syncing, sdev_store_syno_standby_syncing);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DISK_HIBERNATION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT
 /**
  * Show customized timeout of the disk
  */
@@ -940,7 +939,7 @@ END:
 	return ret;
 }
 DEVICE_ATTR(syno_scmd_min_timeout, S_IRUGO | S_IWUSR, syno_scmd_min_timeout_show, syno_scmd_min_timeout_store);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT */
 
 #ifdef CONFIG_SYNO_SCSI_DEVICE_SPINDOWN_BEFORE_POWEROFF
 static ssize_t
@@ -987,11 +986,11 @@ static DEVICE_ATTR(syno_spindown_before_poweroff, S_IRUGO | S_IWUSR,
 sdev_rd_attr (type, "%d\n");
 sdev_rd_attr (scsi_level, "%d\n");
 sdev_rd_attr (vendor, "%.8s\n");
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH
 sdev_rd_attr (model, "%."SYNO_DISK_MODEL_LEN"s\n");
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 sdev_rd_attr (model, "%.16s\n");
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_INCREASE_DISK_MODEL_NAME_LENGTH */
 sdev_rd_attr (rev, "%.4s\n");
 
 static ssize_t
@@ -1595,28 +1594,28 @@ static struct attribute *scsi_sdev_attrs[] = {
 	&dev_attr_preferred_path.attr,
 #endif
 	&dev_attr_queue_ramp_up_period.attr,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 	&dev_attr_syno_block_info.attr,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
+#ifdef CONFIG_SYNO_SCSI_DEVICE_IDLE_TIME
 	&dev_attr_syno_idle_time.attr,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SCSI_DEVICE_IDLE_TIME */
+#ifdef CONFIG_SYNO_DISK_HIBERNATION
 	&dev_attr_syno_spindown.attr,
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP
 	&dev_attr_syno_sas_sata_standby_flag.attr,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP */
 	&dev_attr_syno_standby_syncing.attr,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DISK_HIBERNATION */
 #ifdef CONFIG_SYNO_SCSI_DEVICE_SPINDOWN_BEFORE_POWEROFF
 	&dev_attr_syno_spindown_before_poweroff.attr,
 #endif /* CONFIG_SYNO_SCSI_DEVICE_SPINDOWN_BEFORE_POWEROFF */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_SERIAL
 	&dev_attr_syno_disk_serial.attr,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SCSI_DISK_SERIAL */
+#ifdef CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT
 	&dev_attr_syno_scmd_min_timeout.attr,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT */
 	REF_EVT(media_change),
 	REF_EVT(inquiry_change_reported),
 	REF_EVT(capacity_change_reported),
@@ -1817,10 +1816,10 @@ void __scsi_remove_device(struct scsi_device *sdev)
 	put_device(dev);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY
 int (*syno_raid_scsi_unplug)(char *szDiskName) = NULL;
 EXPORT_SYMBOL(syno_raid_scsi_unplug);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY */
 /**
  * scsi_remove_device - unregister a device from the scsi bus
  * @sdev:	scsi_device to unregister
@@ -1832,15 +1831,15 @@ void scsi_remove_device(struct scsi_device *sdev)
 	mutex_lock(&shost->scan_mutex);
 	__scsi_remove_device(sdev);
 	mutex_unlock(&shost->scan_mutex);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SAS_SPINUP_DELAY
 	SynoSpinupRemove(sdev);
-#endif /* MY_DEF_HERE */
-#ifdef MY_ABC_HERE
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SAS_SPINUP_DELAY */
+#ifdef CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 	if (syno_raid_scsi_unplug)
 		syno_raid_scsi_unplug(sdev->syno_disk_name);
-#endif /* MY_ABC_HERE */
-#endif  /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
+#endif  /* CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY */
 }
 EXPORT_SYMBOL(scsi_remove_device);
 
@@ -2005,6 +2004,171 @@ int scsi_is_sdev_device(const struct device *dev)
 	return dev->type == &scsi_dev_type;
 }
 EXPORT_SYMBOL(scsi_is_sdev_device);
+
+#ifdef CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD
+
+/* Those attrs are picked from scsi_sdev_attrs which ara the attrs Synology used */
+static struct attribute *syno_used_scsi_sdev_attrs[] = {
+	&dev_attr_scsi_level.attr,
+	&dev_attr_vendor.attr,
+	&dev_attr_model.attr,
+	&dev_attr_state.attr,
+	&dev_attr_timeout.attr,
+	&dev_attr_queue_depth.attr,
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
+	&dev_attr_syno_block_info.attr,
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
+#ifdef CONFIG_SYNO_SCSI_DEVICE_IDLE_TIME
+	&dev_attr_syno_idle_time.attr,
+#endif /* CONFIG_SYNO_SCSI_DEVICE_IDLE_TIME */
+#ifdef CONFIG_SYNO_DISK_HIBERNATION
+	&dev_attr_syno_spindown.attr,
+#ifdef CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP
+	&dev_attr_syno_sas_sata_standby_flag.attr,
+#endif /* CONFIG_SYNO_SAS_SATA_EARLY_WAKEUP */
+	&dev_attr_syno_standby_syncing.attr,
+#endif /* CONFIG_SYNO_DISK_HIBERNATION */
+#ifdef CONFIG_SYNO_SCSI_DEVICE_SPINDOWN_BEFORE_POWEROFF
+	&dev_attr_syno_spindown_before_poweroff.attr,
+#endif /* CONFIG_SYNO_SCSI_DEVICE_SPINDOWN_BEFORE_POWEROFF */
+#ifdef CONFIG_SYNO_SCSI_DISK_SERIAL
+	&dev_attr_syno_disk_serial.attr,
+#endif /* CONFIG_SYNO_SCSI_DISK_SERIAL */
+#ifdef CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT
+	&dev_attr_syno_scmd_min_timeout.attr,
+#endif /* CONFIG_SYNO_SCSI_CUSTOM_SCMD_TIMEOUT */
+	NULL
+};
+
+SYNO_MPATH_SYSFS_SHOW_AGGR_METHOD
+SynoMultipathSCSISysfsShowAggrMethodGet(struct attribute *attr)
+{
+	SYNO_MPATH_SYSFS_SHOW_AGGR_METHOD ret = MPATH_SYSFS_SHOW_AGGR_ARBITRARY;
+
+	if (attr == &dev_attr_syno_idle_time.attr) {
+		ret = MPATH_SYSFS_SHOW_AGGR_MIN_UL_DEC;
+	}
+
+	return ret;
+}
+
+static struct scsi_device *SdevFromGendiskGet(struct gendisk *disk)
+{
+	struct device *ddev = NULL;
+	struct scsi_device *sdev = NULL;
+
+	ddev = disk_to_dev(disk);
+	if (NULL == ddev) {
+		return NULL;
+	}
+
+	sdev = to_scsi_device(ddev->parent);
+	if (NULL == sdev) {
+		return NULL;
+	}
+
+	if (0 != scsi_device_get(sdev)) {
+		return NULL;
+	}
+
+	return sdev;
+}
+
+
+ssize_t SynoMultipathSCSISysfsShow(
+	struct gendisk *disk, struct attribute *attr, char *page)
+{
+	ssize_t ret = -EIO;
+	struct scsi_device *sdev = NULL;
+	const struct sysfs_ops *targetSysfsOps = NULL;
+
+	if (NULL == disk) {
+		return -EINVAL;
+	}
+
+	sdev = SdevFromGendiskGet(disk);
+	if (NULL == sdev) {
+		return -EINVAL;
+	}
+
+	targetSysfsOps = sdev->sdev_gendev.kobj.ktype->sysfs_ops;
+
+	if (targetSysfsOps->show) {
+		ret = targetSysfsOps->show(&(sdev->sdev_gendev.kobj), attr, page);
+	}
+
+	scsi_device_put(sdev);
+	return ret;
+}
+EXPORT_SYMBOL(SynoMultipathSCSISysfsShow);
+
+ssize_t SynoMultipathSCSISysfsStore(
+	struct gendisk *disk, struct attribute *attr, const char *page, size_t count)
+{
+	ssize_t ret = -EIO;
+	struct scsi_device *sdev = NULL;
+	const struct sysfs_ops *targetSysfsOps = NULL;
+
+	if (NULL == disk) {
+		return -EINVAL;
+	}
+
+	sdev = SdevFromGendiskGet(disk);
+	if (NULL == sdev) {
+		return -EINVAL;
+	}
+
+	targetSysfsOps = sdev->sdev_gendev.kobj.ktype->sysfs_ops;
+
+	if (targetSysfsOps->store) {
+		ret = targetSysfsOps->store(&(sdev->sdev_gendev.kobj), attr, page, count);
+	}
+
+	scsi_device_put(sdev);
+	return ret;
+}
+EXPORT_SYMBOL(SynoMultipathSCSISysfsStore);
+
+int SynoMultipathSCSISysfsToDMReg(
+	struct gendisk *disk, SYNO_MPATH_TARGET_SYSFS *pTargetSysfs)
+{
+	int iRet = -1;
+	struct scsi_device *sdev = NULL;
+
+	if (NULL == disk) {
+		goto ERR;
+	}
+
+	sdev = SdevFromGendiskGet(disk);
+	if (NULL == sdev) {
+		goto ERR;
+	}
+
+	pTargetSysfs->deviceKtype.default_attrs = syno_used_scsi_sdev_attrs;
+	pTargetSysfs->funcTargetSysfsShow = &SynoMultipathSCSISysfsShow;
+	pTargetSysfs->funcTargetSysfsStore = &SynoMultipathSCSISysfsStore;
+	pTargetSysfs->funcTargetShowAggrMethod = &SynoMultipathSCSISysfsShowAggrMethodGet;
+
+	if (0 != kobject_init_and_add(
+					&(pTargetSysfs->deviceKobj),
+					&(pTargetSysfs->deviceKtype),
+					pTargetSysfs->parent,
+					"%s", "device")) {
+		sdev_printk(KERN_ERR, sdev, "failed to register sysfs to multipath device\n");
+		goto ERR;
+	} else {
+		kobject_uevent(&(pTargetSysfs->deviceKobj), KOBJ_ADD);
+	}
+
+	iRet = 0;
+ERR:
+	if (NULL != sdev) {
+		scsi_device_put(sdev);
+	}
+	return iRet;
+}
+EXPORT_SYMBOL(SynoMultipathSCSISysfsToDMReg);
+#endif /* CONFIG_SYNO_MULTIPATH_DEVICE_SYSFS_FORWARD */
 
 /* A blank transport template that is used in drivers that don't
  * yet implement Transport Attributes */

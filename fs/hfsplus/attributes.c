@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * linux/fs/hfsplus/attributes.c
@@ -58,11 +55,11 @@ int hfsplus_attr_build_key(struct super_block *sb, hfsplus_btree_key *key,
 	memset(key, 0, sizeof(struct hfsplus_attr_key));
 	key->attr.cnid = cpu_to_be32(cnid);
 	if (name) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_EA
 		int res = hfsplus_attr_asc2uni(sb,
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_HFSPLUS_EA */
 		int res = hfsplus_asc2uni(sb,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_EA */
 				(struct hfsplus_unistr *)&key->attr.key_name,
 				HFSPLUS_ATTR_MAX_STRLEN, name, strlen(name));
 		if (res)

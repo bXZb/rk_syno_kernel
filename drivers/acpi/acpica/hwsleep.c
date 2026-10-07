@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
 /******************************************************************************
  *
@@ -14,9 +11,9 @@
 #include <acpi/acpi.h>
 #include "accommon.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_POWEROFF_INFO_PRINT
 #include <linux/delay.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_POWEROFF_INFO_PRINT */
 
 #define _COMPONENT          ACPI_HARDWARE
 ACPI_MODULE_NAME("hwsleep")
@@ -106,10 +103,10 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
 	/* Write #1: write the SLP_TYP data to the PM1 Control registers */
 
 	status = acpi_hw_write_pm1_control(pm1a_control, pm1b_control);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_POWEROFF_INFO_PRINT
 	printk("Confirm SLP_TYP poweroff status %x pm1a %x pm1b %x\n", status, pm1a_control, pm1b_control);
 	mdelay(10);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_POWEROFF_INFO_PRINT */
 	if (ACPI_FAILURE(status)) {
 		return_ACPI_STATUS(status);
 	}
@@ -124,10 +121,10 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
 	ACPI_FLUSH_CPU_CACHE();
 
 	status = acpi_os_enter_sleep(sleep_state, pm1a_control, pm1b_control);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_POWEROFF_INFO_PRINT
 	printk("Confirm OS poweroff status %x pm1a %x pm1b %x\n", status, pm1a_control, pm1b_control);
 	mdelay(10);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_POWEROFF_INFO_PRINT */
 	if (status == AE_CTRL_TERMINATE) {
 		return_ACPI_STATUS(AE_OK);
 	}
@@ -138,9 +135,9 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
 	/* Write #2: Write both SLP_TYP + SLP_EN */
 
 	status = acpi_hw_write_pm1_control(pm1a_control, pm1b_control);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_POWEROFF_INFO_PRINT
 	printk("Confirm SLP_EN poweroff status %x pm1a %x pm1b %x\n", status, pm1a_control, pm1b_control);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_POWEROFF_INFO_PRINT */
 	if (ACPI_FAILURE(status)) {
 		return_ACPI_STATUS(status);
 	}

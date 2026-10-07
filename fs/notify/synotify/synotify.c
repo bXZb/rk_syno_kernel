@@ -101,7 +101,7 @@ RESOURCE_PUT:
 	return ret;
 }
 
-static int synotify_fetch_path(struct fsnotify_event *fsnotify_event, struct fsnotify_group *group)
+static int synotify_handle_path(struct fsnotify_event *fsnotify_event, struct fsnotify_group *group)
 {
 	struct synotify_event_info *event = SYNOTIFY_E(fsnotify_event);
 	char *synotify_full_path_buf = NULL;
@@ -111,8 +111,11 @@ static int synotify_fetch_path(struct fsnotify_event *fsnotify_event, struct fsn
 	struct mem_cgroup *old_memcg;
 	int ret = 0;
 
-	if (unlikely(event->overflow_event))
+	if (unlikely(event->overflow_event)) {
+		if (!event->path_ready)
+			event->path_ready = true;
 		return 0;
+	}
 
 	mutex_lock(&group->notification_mutex);
 	synotify_full_path_buf = group->synotify_data.synotify_full_path_buf;
@@ -142,7 +145,7 @@ static int synotify_fetch_path(struct fsnotify_event *fsnotify_event, struct fsn
 	event->full_path = kstrdup(synotify_full_path_buf, GFP_KERNEL_ACCOUNT | __GFP_ZERO);
 	set_active_memcg(old_memcg);
 	if (unlikely(!event->full_path)) {
-		printk_ratelimited(KERN_WARNING "synotify encountered ENOMEM in fetch_path\n");
+		printk_ratelimited(KERN_WARNING "synotify encountered ENOMEM in handle_path\n");
 		ret = -ENOMEM;
 		goto ERR;
 	}
@@ -316,7 +319,7 @@ const struct fsnotify_ops synotify_fsnotify_ops = {
 	.free_group_priv = synotify_free_group_priv,
 	.free_event = synotify_free_event,
 	.free_mark = synotify_free_mark,
-	.fetch_path = synotify_fetch_path,
+	.handle_path = synotify_handle_path,
 };
 
 static int __init synotify_setup(void)

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * linux/fs/hfsplus/xattr.c
@@ -737,11 +734,11 @@ ssize_t hfsplus_listxattr(struct dentry *dentry, char *buffer, size_t size)
 			goto end_listxattr;
 
 		xattr_name_len = NLS_MAX_CHARSET_SIZE * HFSPLUS_ATTR_MAX_STRLEN;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_EA
 		if (hfsplus_attr_uni2asc(inode->i_sb,
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_HFSPLUS_EA */
 		if (hfsplus_uni2asc(inode->i_sb,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_EA */
 			(const struct hfsplus_unistr *)&fd.key->attr.key_name,
 					strbuf, &xattr_name_len)) {
 			pr_err("unicode conversion failed\n");

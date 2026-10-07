@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/ext4/inode.c
@@ -43,19 +40,19 @@
 #include <linux/bitops.h>
 #include <linux/iomap.h>
 #include <linux/iversion.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_VERSION
 #include <linux/xattr.h>
 #include <linux/fsnotify.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_VERSION */
 
 #include "ext4_jbd2.h"
 #include "xattr.h"
 #include "acl.h"
 #include "truncate.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_WINACL
 #include "syno_acl.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_WINACL */
 
 #include <trace/events/ext4.h>
 
@@ -1333,7 +1330,7 @@ static int ext4_write_end(struct file *file,
 	if (i_size_changed || inline_data)
 		ret = ext4_mark_inode_dirty(handle, inode);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_FIX_PADDING_ZERO
 	/*
 	 * Updating i_disksize when extending file without block
 	 * allocation, the newly written data where should be visible
@@ -1343,7 +1340,7 @@ static int ext4_write_end(struct file *file,
 	if (copied && (i_size_changed & 0x2) &&
 	    ext4_should_order_data(inode))
 		ext4_jbd2_inode_add_write(handle, inode, pos, len);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_FIX_PADDING_ZERO */
 
 	if (pos + len > inode->i_size && !verity && ext4_can_truncate(inode))
 		/* if we have allocated more blocks and copied
@@ -3123,7 +3120,7 @@ static int ext4_da_write_end(struct file *file,
 			 */
 			ret = ext4_mark_inode_dirty(handle, inode);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_FIX_PADDING_ZERO
 			/*
 			 * Updating i_disksize when extending file without
 			 * block allocation, the newly written data where
@@ -3132,7 +3129,7 @@ static int ext4_da_write_end(struct file *file,
 			 */
 			if (ext4_should_order_data(inode))
 				ext4_jbd2_inode_add_write(handle, inode, pos, len);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_FIX_PADDING_ZERO */
 		}
 	}
 
@@ -4785,11 +4782,11 @@ struct inode *__ext4_iget(struct super_block *sb, unsigned long ino,
 	 * we'd normally treat htree data as empty space. But with metadata
 	 * checksumming that corrupts checksums so forbid that.
 	 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CASELESS_STAT
 	if (!is_syno_ext(sb) && !ext4_has_feature_dir_index(sb) &&
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 	if (!ext4_has_feature_dir_index(sb) &&
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CASELESS_STAT */
 	    ext4_has_metadata_csum(sb) &&
 	    ext4_test_inode_flag(inode, EXT4_INODE_INDEX)) {
 		ext4_error_inode(inode, function, line, 0,
@@ -4856,34 +4853,34 @@ struct inode *__ext4_iget(struct super_block *sb, unsigned long ino,
 	EXT4_INODE_GET_XTIME(i_atime, inode, raw_inode);
 	EXT4_EINODE_GET_XTIME(i_crtime, ei, raw_inode);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT3_CREATE_TIME
 	if (ext4_is_ext3_sb(inode->i_sb) && is_syno_ext(inode->i_sb)) {
 		ei->i_crtime.tv_sec = (signed)le32_to_cpu(raw_inode->i_ext3_create_time);
 		ei->i_crtime.tv_nsec = 0;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT3_CREATE_TIME */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT3_ARCHIVE_BIT
 	if (ext4_is_ext3_sb(sb))
 		inode->i_archive_bit = ((u32)le16_to_cpu(raw_inode->ext3_archive_bit_high) << 16 |
 		                             le16_to_cpu(raw_inode->ext3_archive_bit_lo));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT3_ARCHIVE_BIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_BIT
 	if (!ext4_is_ext3_sb(sb))
 		EXT4_INODE_GET_SYNO_ARCHIVE_BIT(inode, raw_inode);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_BIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 	ei->i_is_swapfile = ext4_inode_is_swapfile(inode, raw_inode);
 
 	if (ei->i_is_swapfile)
 		inode->i_flags |= S_SWAPFILE;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT3_CREATE_TIME
 	if (!is_syno_ext(inode->i_sb))
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT3_CREATE_TIME */
 	if (likely(!test_opt2(inode->i_sb, HURD_COMPAT))) {
 		u64 ivers = le32_to_cpu(raw_inode->i_disk_version);
 
@@ -4947,9 +4944,9 @@ struct inode *__ext4_iget(struct super_block *sb, unsigned long ino,
 			ext4_set_aops(inode);
 		}
 		inode_nohighmem(inode);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_SYMLINK_IOCTL
 		inode->i_fop = &ext4_symlink_file_operations;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_SYMLINK_IOCTL */
 	} else if (S_ISCHR(inode->i_mode) || S_ISBLK(inode->i_mode) ||
 	      S_ISFIFO(inode->i_mode) || S_ISSOCK(inode->i_mode)) {
 		inode->i_op = &ext4_special_inode_operations;
@@ -5150,27 +5147,27 @@ static int ext4_do_update_inode(handle_t *handle,
 	EXT4_INODE_SET_XTIME(i_mtime, inode, raw_inode);
 	EXT4_INODE_SET_XTIME(i_atime, inode, raw_inode);
 	EXT4_EINODE_SET_XTIME(i_crtime, ei, raw_inode);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT3_CREATE_TIME
 	if (ext4_is_ext3_sb(inode->i_sb) && is_syno_ext(inode->i_sb)) {
 		raw_inode->i_ext3_create_time = cpu_to_le32(ei->i_crtime.tv_sec);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT3_CREATE_TIME */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT3_ARCHIVE_BIT
 	if (ext4_is_ext3_sb(inode->i_sb)) {
 		raw_inode->ext3_archive_bit_high = cpu_to_le16(inode->i_archive_bit >> 16);
 		raw_inode->ext3_archive_bit_lo = cpu_to_le16(inode->i_archive_bit);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT3_ARCHIVE_BIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_BIT
 	if (!ext4_is_ext3_sb(inode->i_sb))
 		EXT4_INODE_SET_SYNO_ARCHIVE_BIT(inode, raw_inode);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_BIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 	ext4_inode_set_swapfile(inode, raw_inode, ei->i_is_swapfile);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 
 	raw_inode->i_dtime = cpu_to_le32(ei->i_dtime);
 	raw_inode->i_flags = cpu_to_le32(ei->i_flags & 0xFFFFFFFF);
@@ -5208,9 +5205,9 @@ static int ext4_do_update_inode(handle_t *handle,
 	if (likely(!test_opt2(inode->i_sb, HURD_COMPAT))) {
 		u64 ivers = ext4_inode_peek_iversion(inode);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT3_CREATE_TIME
 		if (!is_syno_ext(inode->i_sb))
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT3_CREATE_TIME */
 		raw_inode->i_disk_version = cpu_to_le32(ivers);
 		if (ei->i_extra_isize) {
 			if (EXT4_FITS_IN_INODE(raw_inode, ei, i_version_hi))
@@ -5427,18 +5424,18 @@ int ext4_setattr(struct dentry *dentry, struct iattr *attr)
 				  ATTR_GID | ATTR_TIMES_SET))))
 		return -EPERM;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_WINACL
 	// just skip it. inode change check is done in notify_change()
 	if (!IS_EXT4_SYNOACL(inode)) {
 		error = setattr_prepare(dentry, attr);
 		if (error)
 			return error;
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_WINACL */
 	error = setattr_prepare(dentry, attr);
 	if (error)
 		return error;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_WINACL */
 
 	error = fscrypt_prepare_setattr(dentry, attr);
 	if (error)
@@ -5709,25 +5706,25 @@ int ext4_file_getattr(const struct path *path, struct kstat *stat,
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_STAT
 int ext4_syno_getattr(struct dentry *dentry, struct kstat *kst, unsigned int syno_flags)
 {
 	int err = 0;
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE) || \
-    defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_EXT4_ARCHIVE_BIT) || defined(CONFIG_SYNO_EXT4_ARCHIVE_VERSION) || \
+    defined(CONFIG_SYNO_EXT3_CREATE_TIME) || defined(CONFIG_SYNO_EXT4_CREATE_TIME)
 	struct inode *inode = dentry->d_inode;
-#endif /* MY_ABC_HERE || MY_ABC_HERE ||
-          MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_BIT || CONFIG_SYNO_EXT4_ARCHIVE_VERSION ||
+          CONFIG_SYNO_EXT3_CREATE_TIME || CONFIG_SYNO_EXT4_CREATE_TIME */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_BIT
 	if (syno_flags & SYNOST_ARCHIVE_BIT) {
 		mutex_lock(&inode->i_archive_bit_mutex);
 		kst->syno_archive_bit = inode->i_archive_bit;
 		mutex_unlock(&inode->i_archive_bit_mutex);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_BIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_VERSION
 	if (syno_flags & SYNOST_ARCHIVE_VER) {
 		mutex_lock(&inode->i_archive_version_mutex);
 		err = ext4_syno_get_inode_archive_version(dentry, &kst->syno_archive_version);
@@ -5735,20 +5732,20 @@ int ext4_syno_getattr(struct dentry *dentry, struct kstat *kst, unsigned int syn
 		if (err)
 			goto end;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_VERSION */
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_EXT3_CREATE_TIME) || defined(CONFIG_SYNO_EXT4_CREATE_TIME)
 	if (syno_flags & SYNOST_CREATE_TIME) {
 		kst->syno_create_time = EXT4_I(inode)->i_crtime;
 	}
-#endif /* MY_ABC_HERE  || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT3_CREATE_TIME  || CONFIG_SYNO_EXT4_CREATE_TIME */
 
 end:
 	return err;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_STAT */
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_EXT3_ARCHIVE_BIT) || defined(CONFIG_SYNO_EXT4_ARCHIVE_BIT)
 int ext4_syno_set_archive_bit(struct dentry *dentry, unsigned int archive_bit)
 {
 	int ret, ret2;
@@ -5769,9 +5766,9 @@ int ext4_syno_set_archive_bit(struct dentry *dentry, unsigned int archive_bit)
 
 	return ret;
 }
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT3_ARCHIVE_BIT || CONFIG_SYNO_EXT4_ARCHIVE_BIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_VERSION
 int ext4_syno_set_inode_archive_version(struct dentry *dentry, u32 version)
 {
 	struct inode *inode = dentry->d_inode;
@@ -5793,7 +5790,7 @@ int ext4_syno_set_inode_archive_version(struct dentry *dentry, u32 version)
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT3_ARCHIVE_VERSION
 static int ext3_syno_get_inode_archive_version(struct dentry *dentry, u32 *version)
 {
 	int ret;
@@ -5829,7 +5826,7 @@ static int ext3_syno_get_inode_archive_version(struct dentry *dentry, u32 *versi
 
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT3_ARCHIVE_VERSION */
 
 int ext4_syno_get_inode_archive_version(struct dentry *dentry, u32 *version)
 {
@@ -5842,10 +5839,10 @@ int ext4_syno_get_inode_archive_version(struct dentry *dentry, u32 *version)
 		return 0;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT3_ARCHIVE_VERSION
 	if (ext4_is_ext3_sb(inode->i_sb))
 		return ext3_syno_get_inode_archive_version(dentry, version);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT3_ARCHIVE_VERSION */
 
 	ret = ext4_xattr_get(inode, EXT4_XATTR_INDEX_SYNO,
 			XATTR_SYNO_ARCHIVE_VERSION_SUFFIX,
@@ -5863,7 +5860,7 @@ int ext4_syno_get_inode_archive_version(struct dentry *dentry, u32 *version)
 
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_VERSION */
 
 static int ext4_index_trans_blocks(struct inode *inode, int lblocks,
 				   int pextents)
@@ -6330,9 +6327,9 @@ vm_fault_t ext4_page_mkwrite(struct vm_fault *vmf)
 
 	sb_start_pagefault(inode->i_sb);
 	file_update_time(vma->vm_file);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_VERSION
 	fsnotify_modify(vma->vm_file);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_VERSION */
 
 	down_read(&EXT4_I(inode)->i_mmap_sem);
 
@@ -6468,7 +6465,7 @@ vm_fault_t ext4_filemap_fault(struct vm_fault *vmf)
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CREATE_TIME
 int ext4_syno_get_crtime(struct inode *inode, struct timespec64 *time)
 {
 	*time = EXT4_I(inode)->i_crtime;
@@ -6492,9 +6489,9 @@ int ext4_syno_set_crtime(struct inode *inode, struct timespec64 *time)
 out:
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CREATE_TIME */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_DEV
 int ext4_fsdev_mapping(struct inode *inode, u64 start, u64 end, u64 *dev_start, u64 *dev_end)
 {
 	int ret;
@@ -6571,9 +6568,9 @@ skip_map_block:
 out:
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_DEV */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 static int update_inode_swapfile_flag(struct inode *inode, bool is_swapfile)
 {
 	int ret;
@@ -6660,5 +6657,5 @@ out:
 	inode_unlock(inode);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 

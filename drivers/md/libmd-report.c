@@ -1,11 +1,8 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Copyright (C) 2000-2021 Synology Inc.
  */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_SECTOR_STATUS_REPORT
 #include <linux/bio.h>
 #include <linux/synobios.h>
 #include <linux/synolib.h>
@@ -118,7 +115,7 @@ void syno_report_correct_bad_sector(sector_t sector, int md_minor,
 EXPORT_SYMBOL(syno_report_correct_bad_sector);
 EXPORT_SYMBOL(funcSYNOSendRaidEvent);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_AUTO_REMAP_REPORT
 int (*funcSYNOSendAutoRemapRaidEvent)(unsigned int, unsigned long long, unsigned int) = NULL;
 EXPORT_SYMBOL(funcSYNOSendAutoRemapRaidEvent);
 
@@ -147,6 +144,6 @@ void syno_auto_remap_report(struct mddev *mddev, sector_t sector, struct block_d
 	}
 }
 EXPORT_SYMBOL(syno_auto_remap_report);
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_AUTO_REMAP_REPORT */
+#endif /* CONFIG_SYNO_MD_SECTOR_STATUS_REPORT */
 

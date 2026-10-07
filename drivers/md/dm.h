@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Internal header file for device mapper
  *
@@ -25,12 +22,25 @@
 #include <linux/refcount.h>
 
 #include "dm-stats.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_FAST_WAKEUP
 #include "syno-md-fast-wakeup.h"
 #ifdef CONFIG_BLK_DEV_MD
 #include "md.h"
 #endif /* CONFIG_BLK_DEV_MD */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FAST_WAKEUP */
+
+#ifdef CONFIG_SYNO_MULTIPATH_NEW_TARGET_DEVICE_UEVENT
+/*
+ * Target add uevent env for mulitpath device
+ */
+
+#define SZ_SYNO_MPATH_TARGET_ADD_TYPE "MPATH_TARGET_ADD_TYPE"
+
+#define SZ_SYNO_MPATH_TARGET_ADD_TYPE_INIT SZ_SYNO_MPATH_TARGET_ADD_TYPE"=init"
+#define SZ_SYNO_MPATH_TARGET_ADD_TYPE_APPE SZ_SYNO_MPATH_TARGET_ADD_TYPE"=append"
+
+#endif /* CONFIG_SYNO_MULTIPATH_NEW_TARGET_DEVICE_UEVENT */
+
 
 /*
  * Suspend feature flags
@@ -51,6 +61,17 @@ struct dm_dev_internal {
 	refcount_t count;
 	struct dm_dev *dm_dev;
 };
+
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+typedef enum {
+	SYNO_RENAME_DM_AS_NONE = 0,
+	SYNO_RENAME_DM_AS_SAS,
+} SYNO_RENAME_DM_AS_TPYE;
+
+// Refer to mutlitpath-tools before modification
+#define SYNO_DM_RENAME_SAS_PREFIX "sas_mpath"
+
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 
 struct dm_table;
 struct dm_md_mempools;
@@ -92,11 +113,14 @@ enum dm_queue_mode dm_get_md_type(struct mapped_device *md);
 struct target_type *dm_get_immutable_target_type(struct mapped_device *md);
 
 int dm_setup_md_queue(struct mapped_device *md, struct dm_table *t);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MULTIPATH_NEW_TARGET_DEVICE_UEVENT
+int syno_dm_table_first_target_data_devices_count(struct dm_table *table);
+#endif /* CONFIG_SYNO_MULTIPATH_NEW_TARGET_DEVICE_UEVENT */
+#ifdef CONFIG_SYNO_MD_FAST_WAKEUP
 int dm_active_get(struct mapped_device *md);
 void dm_active_set(struct mapped_device *md, unsigned long value);
 void syno_dm_fast_wakeup_dev(struct mapped_device *md, struct dm_table *map);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FAST_WAKEUP */
 
 /*
  * To check whether the target type is bio-based or not (request-based).
@@ -202,6 +226,14 @@ int dm_kobject_uevent(struct mapped_device *md, enum kobject_action action,
 
 void dm_internal_suspend(struct mapped_device *md);
 void dm_internal_resume(struct mapped_device *md);
+
+#ifdef CONFIG_SYNO_MULTIPATH_FEATURE
+int SynoDmCheckByGendisk(struct gendisk *disk);
+#endif /* CONFIG_SYNO_MULTIPATH_FEATURE */
+
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+bool SynoIsDmMultipathDevice(struct mapped_device *md);
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 
 int dm_io_init(void);
 void dm_io_exit(void);

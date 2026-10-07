@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
   FUSE: Filesystem in Userspace
   Copyright (C) 2001-2008  Miklos Szeredi <miklos@szeredi.hu>
@@ -20,10 +17,10 @@
 #include <linux/xattr.h>
 #include <linux/iversion.h>
 #include <linux/posix_acl.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_CREATE_TIME
 #include "../ntfs/time.h"
 #include "../ntfs/endian.h"
-#endif /* MY_ABC_HERE*/
+#endif /* CONFIG_SYNO_FUSE_CREATE_TIME*/
 
 static void fuse_advise_use_readdirplus(struct inode *dir)
 {
@@ -1850,17 +1847,17 @@ static int fuse_getattr(const struct path *path, struct kstat *stat,
 	return fuse_update_get_attr(inode, NULL, stat, request_mask, flags);
 }
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE) || \
-    defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_FUSE_STAT) || defined(CONFIG_SYNO_FUSE_ARCHIVE_BIT) || \
+    defined(CONFIG_SYNO_FUSE_CREATE_TIME)
 #define SZ_FS_NTFS "ntfs"
 #define IS_NTFS_FS(inode) (inode->i_sb->s_subtype && !strcmp(SZ_FS_NTFS, inode->i_sb->s_subtype))
-#endif /* MY_ABC_HERE || MY_ABC_HERE ||
-          MY_ABC_HERE*/
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FUSE_STAT || CONFIG_SYNO_FUSE_ARCHIVE_BIT ||
+          CONFIG_SYNO_FUSE_CREATE_TIME*/
+#ifdef CONFIG_SYNO_FUSE_CREATE_TIME
 #define XATTR_NTFS_CREATE_TIME "ntfs_crtime"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_CREATE_TIME */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_ARCHIVE_BIT
 static int __fuse_syno_get_archive_bit(struct dentry *dentry,
 		unsigned int *archive_bit)
 {
@@ -1958,9 +1955,9 @@ static int fuse_syno_set_archive_bit(struct dentry *dentry,
 
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_ARCHIVE_BIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_ARCHIVE_VERSION
 static int __fuse_syno_get_inode_archive_version(
 		struct dentry *dentry, u32 *archive_version)
 {
@@ -2023,9 +2020,9 @@ static int fuse_syno_set_inode_archive_version(struct dentry *dentry,
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_ARCHIVE_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_CREATE_TIME
 static int __fuse_syno_get_create_time(struct inode *inode,
 		struct timespec64 *create_time)
 {
@@ -2108,14 +2105,14 @@ static int fuse_syno_set_create_time(struct inode *inode,
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_CREATE_TIME */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_STAT
 static int fuse_syno_getattr(struct dentry *dentry, struct kstat *kst, unsigned int syno_flags)
 {
 	int ret = 0;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_ARCHIVE_BIT
 	if (syno_flags & SYNOST_ARCHIVE_BIT) {
 		unsigned int tmp_archive_bit;
 		struct inode *inode = dentry->d_inode;
@@ -2132,9 +2129,9 @@ static int fuse_syno_getattr(struct dentry *dentry, struct kstat *kst, unsigned 
 
 		kst->syno_archive_bit = tmp_archive_bit;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_ARCHIVE_BIT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_ARCHIVE_VERSION
 	if (syno_flags & SYNOST_ARCHIVE_VER) {
 		u32 tmp_archive_version;
 		struct inode *inode = dentry->d_inode;
@@ -2152,9 +2149,9 @@ static int fuse_syno_getattr(struct dentry *dentry, struct kstat *kst, unsigned 
 
 		kst->syno_archive_version = tmp_archive_version;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_ARCHIVE_VERSION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_CREATE_TIME
 	if (syno_flags & SYNOST_CREATE_TIME) {
 		struct timespec64 tmp_create_time;
 		struct inode *inode = dentry->d_inode;
@@ -2169,11 +2166,11 @@ static int fuse_syno_getattr(struct dentry *dentry, struct kstat *kst, unsigned 
 
 		kst->syno_create_time = tmp_create_time;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_CREATE_TIME */
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_STAT */
 
 static const struct inode_operations fuse_dir_inode_operations = {
 	.lookup		= fuse_lookup,
@@ -2192,21 +2189,21 @@ static const struct inode_operations fuse_dir_inode_operations = {
 	.listxattr	= fuse_listxattr,
 	.get_acl	= fuse_get_acl,
 	.set_acl	= fuse_set_acl,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_STAT
 	.syno_getattr	= fuse_syno_getattr,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FUSE_STAT */
+#ifdef CONFIG_SYNO_FUSE_ARCHIVE_BIT
 	.syno_get_archive_bit	= fuse_syno_get_archive_bit,
 	.syno_set_archive_bit	= fuse_syno_set_archive_bit,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FUSE_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_FUSE_ARCHIVE_VERSION
 	.syno_get_archive_version = fuse_syno_get_inode_archive_version,
 	.syno_set_archive_version = fuse_syno_set_inode_archive_version,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FUSE_ARCHIVE_VERSION */
+#ifdef CONFIG_SYNO_FUSE_CREATE_TIME
         .syno_get_crtime	= fuse_syno_get_create_time,
         .syno_set_crtime	= fuse_syno_set_create_time,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_CREATE_TIME */
 };
 
 static const struct file_operations fuse_dir_operations = {
@@ -2227,21 +2224,21 @@ static const struct inode_operations fuse_common_inode_operations = {
 	.listxattr	= fuse_listxattr,
 	.get_acl	= fuse_get_acl,
 	.set_acl	= fuse_set_acl,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_STAT
 	.syno_getattr	= fuse_syno_getattr,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FUSE_STAT */
+#ifdef CONFIG_SYNO_FUSE_ARCHIVE_BIT
 	.syno_get_archive_bit	= fuse_syno_get_archive_bit,
 	.syno_set_archive_bit	= fuse_syno_set_archive_bit,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FUSE_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_FUSE_ARCHIVE_VERSION
 	.syno_get_archive_version = fuse_syno_get_inode_archive_version,
 	.syno_set_archive_version = fuse_syno_set_inode_archive_version,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FUSE_ARCHIVE_VERSION */
+#ifdef CONFIG_SYNO_FUSE_CREATE_TIME
         .syno_get_crtime	= fuse_syno_get_create_time,
         .syno_set_crtime	= fuse_syno_set_create_time,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_CREATE_TIME */
 };
 
 static const struct inode_operations fuse_symlink_inode_operations = {
@@ -2249,21 +2246,21 @@ static const struct inode_operations fuse_symlink_inode_operations = {
 	.get_link	= fuse_get_link,
 	.getattr	= fuse_getattr,
 	.listxattr	= fuse_listxattr,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FUSE_STAT
 	.syno_getattr	= fuse_syno_getattr,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FUSE_STAT */
+#ifdef CONFIG_SYNO_FUSE_ARCHIVE_BIT
 	.syno_get_archive_bit	= fuse_syno_get_archive_bit,
 	.syno_set_archive_bit	= fuse_syno_set_archive_bit,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FUSE_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_FUSE_ARCHIVE_VERSION
 	.syno_get_archive_version = fuse_syno_get_inode_archive_version,
 	.syno_set_archive_version = fuse_syno_set_inode_archive_version,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FUSE_ARCHIVE_VERSION */
+#ifdef CONFIG_SYNO_FUSE_CREATE_TIME
         .syno_get_crtime	= fuse_syno_get_create_time,
         .syno_set_crtime	= fuse_syno_set_create_time,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FUSE_CREATE_TIME */
 };
 
 void fuse_init_common(struct inode *inode)

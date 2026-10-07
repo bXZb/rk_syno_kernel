@@ -347,6 +347,34 @@ static const struct pinctrl_pin_desc tgllp_pins[] = {
 	PINCTRL_PIN(276, "SPI0_CLK_LOOPBK"),
 };
 
+#ifdef CONFIG_SYNO_GPIO
+static const struct intel_padgroup tgllp_community0_gpps[] = {
+	TGL_GPP(0, 0, 25, INTEL_GPIO_BASE_MATCH),		/* GPP_B */
+	TGL_GPP(1, 26, 41, INTEL_GPIO_BASE_MATCH),		/* GPP_T */
+	TGL_GPP(2, 42, 66, INTEL_GPIO_BASE_MATCH),		/* GPP_A */
+};
+
+static const struct intel_padgroup tgllp_community1_gpps[] = {
+	TGL_GPP(0, 67, 74, INTEL_GPIO_BASE_MATCH),		/* GPP_S */
+	TGL_GPP(1, 75, 98, INTEL_GPIO_BASE_MATCH),		/* GPP_H */
+	TGL_GPP(2, 99, 119, INTEL_GPIO_BASE_MATCH),		/* GPP_D */
+	TGL_GPP(3, 120, 143, INTEL_GPIO_BASE_MATCH),		/* GPP_U */
+	TGL_GPP(4, 144, 170, INTEL_GPIO_BASE_MATCH),		/* vGPIO */
+};
+
+static const struct intel_padgroup tgllp_community4_gpps[] = {
+	TGL_GPP(0, 171, 194, INTEL_GPIO_BASE_MATCH),		/* GPP_C */
+	TGL_GPP(1, 195, 219, INTEL_GPIO_BASE_MATCH),		/* GPP_F */
+	TGL_GPP(2, 220, 225, INTEL_GPIO_BASE_NOMAP),		/* HVCMOS */
+	TGL_GPP(3, 226, 250, INTEL_GPIO_BASE_MATCH),		/* GPP_E */
+	TGL_GPP(4, 251, 259, INTEL_GPIO_BASE_NOMAP),		/* JTAG */
+};
+
+static const struct intel_padgroup tgllp_community5_gpps[] = {
+	TGL_GPP(0, 260, 267, INTEL_GPIO_BASE_MATCH),		/* GPP_R */
+	TGL_GPP(1, 268, 276, INTEL_GPIO_BASE_NOMAP),		/* SPI */
+};
+#else /* CONFIG_SYNO_GPIO */
 static const struct intel_padgroup tgllp_community0_gpps[] = {
 	TGL_GPP(0, 0, 25, 0),				/* GPP_B */
 	TGL_GPP(1, 26, 41, 32),				/* GPP_T */
@@ -373,6 +401,7 @@ static const struct intel_padgroup tgllp_community5_gpps[] = {
 	TGL_GPP(0, 260, 267, 352),			/* GPP_R */
 	TGL_GPP(1, 268, 276, INTEL_GPIO_BASE_NOMAP),	/* SPI */
 };
+#endif /* CONFIG_SYNO_GPIO */
 
 static const struct intel_community tgllp_communities[] = {
 	TGL_LP_COMMUNITY(0, 0, 66, tgllp_community0_gpps),
@@ -748,6 +777,7 @@ static const struct intel_pinctrl_soc_data tglh_soc_data = {
 static const struct acpi_device_id tgl_pinctrl_acpi_match[] = {
 	{ "INT34C5", (kernel_ulong_t)&tgllp_soc_data },
 	{ "INT34C6", (kernel_ulong_t)&tglh_soc_data },
+	{ "INTC1055", (kernel_ulong_t)&tgllp_soc_data },
 	{ }
 };
 MODULE_DEVICE_TABLE(acpi, tgl_pinctrl_acpi_match);

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 #define pr_fmt(fmt) "efi: " fmt
 
@@ -225,7 +222,7 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size,
 }
 EXPORT_SYMBOL_GPL(efi_query_variable_store);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PSTORE
 /*
  * Write a dummy variable to trigger a garbage collection
  *
@@ -278,7 +275,7 @@ efi_status_t efi_force_garbage_collection(void)
 	return status;
 }
 EXPORT_SYMBOL_GPL(efi_force_garbage_collection);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PSTORE */
 
 /*
  * The UEFI specification makes it clear that the operating system is

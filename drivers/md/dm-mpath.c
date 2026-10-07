@@ -1318,6 +1318,10 @@ static void multipath_dtr(struct dm_target *ti)
 	free_multipath(m);
 }
 
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+extern char* SynoDmGetDiskNameFromMd(struct mapped_device *md);
+extern struct mapped_device* SynoGetMdFromDmTarget(struct dm_target *ti);
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 /*
  * Take a path out of use.
  */
@@ -1331,9 +1335,20 @@ static int fail_path(struct pgpath *pgpath)
 	if (!pgpath->is_active)
 		goto out;
 
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+	if (pgpath->path.dev->bdev && pgpath->path.dev->bdev->bd_disk) {
+		DMWARN("[%s] Failing path %s %s.", SynoDmGetDiskNameFromMd(SynoGetMdFromDmTarget(m->ti)), pgpath->path.dev->name,
+			pgpath->path.dev->bdev->bd_disk->disk_name);
+	} else {
+		DMWARN("%s: Failing path %s.",
+		       dm_table_device_name(m->ti->table),
+		       pgpath->path.dev->name);
+	}
+#else /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 	DMWARN("%s: Failing path %s.",
 	       dm_table_device_name(m->ti->table),
 	       pgpath->path.dev->name);
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 
 	pgpath->pg->ps.type->fail_path(&pgpath->pg->ps, &pgpath->path);
 	pgpath->is_active = false;

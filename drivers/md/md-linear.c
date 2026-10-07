@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
    linear.c : Multiple Devices driver for Linux
@@ -24,25 +21,25 @@
 /*
  * find which device holds a particular offset
  */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_SECTOR_STATUS_REPORT
 static inline struct dev_info *which_dev(struct mddev *mddev, sector_t sector, bool take_rcu)
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MD_SECTOR_STATUS_REPORT */
 static inline struct dev_info *which_dev(struct mddev *mddev, sector_t sector)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_SECTOR_STATUS_REPORT */
 {
 	int lo, mid, hi;
 	struct linear_conf *conf;
 
 	lo = 0;
 	hi = mddev->raid_disks - 1;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_SECTOR_STATUS_REPORT
 	if (take_rcu)
 		conf = rcu_dereference(mddev->private);
 	else
 		conf = mddev->private;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MD_SECTOR_STATUS_REPORT */
 	conf = mddev->private;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_SECTOR_STATUS_REPORT */
 
 	/*
 	 * Binary Search
@@ -115,11 +112,11 @@ static struct linear_conf *linear_conf(struct mddev *mddev, int raid_disks)
 			discard_supported = true;
 	}
 	if (cnt != raid_disks) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_EIO_NODEV_HANDLER
 		if (mddev->syno_nodev_and_crashed != MD_CRASHED_ASSEMBLE)
 			mddev->syno_nodev_and_crashed = MD_CRASHED;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_EIO_NODEV_HANDLER */
+#ifdef CONFIG_SYNO_MD_STATUS_GET
 		/*
 		 * for Linear status consistense to other raid type
 		 * Let it can assemble.
@@ -128,11 +125,11 @@ static struct linear_conf *linear_conf(struct mddev *mddev, int raid_disks)
 		pr_warn("md/linear:%s: not enough drives present.\n",
 			mdname(mddev));
 		return conf;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MD_STATUS_GET */
 		pr_warn("md/linear:%s: not enough drives present. Aborting!\n",
 			mdname(mddev));
 		goto out;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_STATUS_GET */
 	}
 
 	if (!discard_supported)
@@ -177,9 +174,9 @@ static int linear_run (struct mddev *mddev)
 
 	if (md_check_no_bitmap(mddev))
 		return -EINVAL;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_STATUS_GET
 	mddev->degraded = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_STATUS_GET */
 	conf = linear_conf(mddev, mddev->raid_disks);
 
 	if (!conf)
@@ -246,7 +243,7 @@ static void linear_free(struct mddev *mddev, void *priv)
 	kfree(conf);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY
 /**
  * This is end_io callback function.
  * We can use this for bad sector report and device error
@@ -272,7 +269,7 @@ syno_linear_end_request(struct bio *bio)
 	orig_bio->bi_next = bio->bi_next;
 	orig_bio->bi_status = bio->bi_status;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_SECTOR_STATUS_REPORT
 	if (bio->bi_status) {
 		struct dev_info *tmp_dev;
 		sector_t report_sector;
@@ -293,10 +290,10 @@ syno_linear_end_request(struct bio *bio)
 								   rdev->bdev, __func__);
 		}
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MD_SECTOR_STATUS_REPORT */
 	if (bio->bi_status)
 		md_error(mddev, rdev);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_SECTOR_STATUS_REPORT */
 
 	atomic_dec(&rdev->nr_pending);
 	bio_put(bio);
@@ -306,7 +303,7 @@ syno_linear_end_request(struct bio *bio)
 	 */
 	bio_endio(orig_bio);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY */
 
 static bool linear_make_request(struct mddev *mddev, struct bio *bio)
 {
@@ -314,31 +311,31 @@ static bool linear_make_request(struct mddev *mddev, struct bio *bio)
 	struct dev_info *tmp_dev;
 	sector_t start_sector, end_sector, data_offset;
 	sector_t bio_sector = bio->bi_iter.bi_sector;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY
 	struct bio *cloned_bio, *orig_bio;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY */
 
 	if (unlikely(bio->bi_opf & REQ_PREFLUSH)
 	    && md_flush_request(mddev, bio))
 		return true;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_EIO_NODEV_HANDLER
 	if (mddev->syno_nodev_and_crashed) {
 		bio_io_error(bio);
 		return true;
 	}
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_EIO_NODEV_HANDLER */
+#ifdef CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY
 	if (mddev->degraded) {
 		bio_io_error(bio);
 		return true;
 	}
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY */
+#ifdef CONFIG_SYNO_MD_SECTOR_STATUS_REPORT
 	tmp_dev = which_dev(mddev, bio_sector, false);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MD_SECTOR_STATUS_REPORT */
 	tmp_dev = which_dev(mddev, bio_sector);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_SECTOR_STATUS_REPORT */
 	start_sector = tmp_dev->end_sector - tmp_dev->rdev->sectors;
 	end_sector = tmp_dev->end_sector;
 	data_offset = tmp_dev->rdev->data_offset;
@@ -357,14 +354,14 @@ static bool linear_make_request(struct mddev *mddev, struct bio *bio)
 		struct bio *split = bio_split(bio, end_sector - bio_sector,
 					      GFP_NOIO, &mddev->bio_set);
 		bio_chain(split, bio);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLOCK_FIX_BIO_SPLIT_ORDER
 		bio_set_flag(bio, BIO_SYNO_DELAYED);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLOCK_FIX_BIO_SPLIT_ORDER */
 		submit_bio_noacct(bio);
 		bio = split;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY
 	cloned_bio = bio_clone_fast(bio, GFP_NOIO, &mddev->bio_set);
 
 	if (cloned_bio) {
@@ -376,7 +373,7 @@ static bool linear_make_request(struct mddev *mddev, struct bio *bio)
 		orig_bio->bi_next = (void *)tmp_dev->rdev;
 		bio = cloned_bio;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY */
 
 	bio_set_dev(bio, tmp_dev->rdev->bdev);
 	bio->bi_iter.bi_sector = bio->bi_iter.bi_sector -
@@ -385,14 +382,14 @@ static bool linear_make_request(struct mddev *mddev, struct bio *bio)
 	if (unlikely((bio_op(bio) == REQ_OP_DISCARD) &&
 		     !blk_queue_discard(bio->bi_disk->queue))) {
 		/* Just ignore it */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY
 		if (cloned_bio) {
 			atomic_dec(&tmp_dev->rdev->nr_pending);
 			orig_bio->bi_next = bio->bi_next;
 			bio_put(bio);
 			bio = orig_bio;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY */
 		bio_endio(bio);
 	} else {
 		if (mddev->gendisk)
@@ -416,7 +413,7 @@ out_of_bounds:
 	return true;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_STATUS_GET
 static void
 syno_linear_status(struct seq_file *seq, struct mddev *mddev)
 {
@@ -429,29 +426,29 @@ syno_linear_status(struct seq_file *seq, struct mddev *mddev)
 	for (i = 0; i < mddev->raid_disks; i++)
 	{
 		struct md_rdev *rdev = rcu_dereference(conf->disks[i].rdev);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_STATUS_DISKERROR
 		seq_printf(seq, "%s", rdev && test_bit(In_sync, &rdev->flags)
 			   ? (test_bit(SynoDiskError, &rdev->flags) ? "E" : "U")
 			   : "_");
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MD_STATUS_DISKERROR */
 		seq_printf(seq, "%s", rdev && test_bit(In_sync, &rdev->flags) ? "U" : "_");
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_STATUS_DISKERROR */
 	}
 	rcu_read_unlock();
 	seq_printf(seq, "]");
 }
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MD_STATUS_GET */
 static void linear_status (struct seq_file *seq, struct mddev *mddev)
 {
 	seq_printf(seq, " %dk rounding", mddev->chunk_sectors / 2);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_STATUS_GET */
 
 static void linear_quiesce(struct mddev *mddev, int state)
 {
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY
 static int
 syno_linear_remove_disk(struct mddev *mddev, struct md_rdev *rdev)
 {
@@ -505,14 +502,14 @@ syno_linear_error_for_hotplug(struct mddev *mddev, struct md_rdev *rdev)
 			struct syno_update_sb_work *update_sb = NULL;
 
 			mddev->degraded++;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_EIO_NODEV_HANDLER
 			if (mddev->syno_nodev_and_crashed != MD_CRASHED_ASSEMBLE)
 				mddev->syno_nodev_and_crashed = MD_CRASHED;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_EIO_NODEV_HANDLER */
 			set_bit(Faulty, &rdev->flags);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_STATUS_DISKERROR
 			clear_bit(SynoDiskError, &rdev->flags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_STATUS_DISKERROR */
 
 			update_sb = kzalloc(sizeof(*update_sb), GFP_ATOMIC);
 			if (!update_sb) {
@@ -551,7 +548,7 @@ syno_linear_error_for_internal(struct mddev *mddev, struct md_rdev *rdev)
 
 	pr_crit("md/raid:%s: Disk failure on %s, disabling device.\n",
 		mdname(mddev), bdevname(rdev->bdev, b));
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_STATUS_DISKERROR
 	if (!test_bit(SynoDiskError, &rdev->flags)) {
 		struct syno_update_sb_work *update_sb = NULL;
 
@@ -566,9 +563,9 @@ syno_linear_error_for_internal(struct mddev *mddev, struct md_rdev *rdev)
 		update_sb->mddev = mddev;
 		schedule_work(&update_sb->work);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_STATUS_DISKERROR */
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY */
 
 static struct md_personality linear_personality =
 {
@@ -578,17 +575,17 @@ static struct md_personality linear_personality =
 	.make_request	= linear_make_request,
 	.run		= linear_run,
 	.free		= linear_free,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_STATUS_GET
 	.status		= syno_linear_status,
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MD_STATUS_GET */
 	.status		= linear_status,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_STATUS_GET */
 	.hot_add_disk	= linear_add,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY
 	.hot_remove_disk    = syno_linear_remove_disk,
 	.error_handler      = syno_linear_error_for_internal,
 	.syno_error_handler = syno_linear_error_for_hotplug,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DEVICE_HOTPLUG_NOTIFY */
 	.size		= linear_size,
 	.quiesce	= linear_quiesce,
 };

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef LINUX_IOMAP_H
 #define LINUX_IOMAP_H 1
@@ -23,9 +20,9 @@ struct kiocb;
 struct page;
 struct vm_area_struct;
 struct vm_fault;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 struct syno_rbd_meta_ioctl_args;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 
 /*
  * Types of block ranges for iomap mappings:
@@ -191,10 +188,10 @@ loff_t iomap_seek_data(struct inode *inode, loff_t offset,
 		const struct iomap_ops *ops);
 sector_t iomap_bmap(struct address_space *mapping, sector_t bno,
 		const struct iomap_ops *ops);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_RBD_META
 int iomap_rbd_meta_map(struct inode *inode, struct syno_rbd_meta_ioctl_args *rbd_meta,
 		       u64 start, u64 len, const struct iomap_ops *ops);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_RBD_META */
 
 /*
  * Structure for writeback I/O completions.

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Virtio SCSI HBA driver
@@ -33,10 +30,10 @@
 #include <linux/seqlock.h>
 #include <linux/blk-mq-virtio.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 #include <linux/synolib.h>
 #include <linux/pci.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
 #include "sd.h"
 
@@ -746,7 +743,7 @@ static enum blk_eh_timer_return virtscsi_eh_timed_out(struct scsi_cmnd *scmnd)
 	return BLK_EH_RESET_TIMER;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
 static void syno_virtio_info_enum(struct scsi_device *sdev) {
 	struct pci_dev *pdev = NULL;
@@ -767,7 +764,7 @@ static void syno_virtio_info_enum(struct scsi_device *sdev) {
 	snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%spciepath=%s\n", sdev->syno_block_info, sztemp);
 	snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%sdriver=%s\n", sdev->syno_block_info, DT_VIRTIO);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
 static struct scsi_host_template virtscsi_host_template = {
 	.module = THIS_MODULE,
@@ -786,9 +783,9 @@ static struct scsi_host_template virtscsi_host_template = {
 	.dma_boundary = UINT_MAX,
 	.map_queues = virtscsi_map_queues,
 	.track_queue_depth = 1,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 	.syno_sdev_info_enum = syno_virtio_info_enum,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 };
 
 #define virtscsi_config_get(vdev, fld) \

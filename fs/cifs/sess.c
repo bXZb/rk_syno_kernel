@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  *   fs/cifs/sess.c
  *
@@ -244,11 +241,11 @@ cifs_ses_add_channel(struct cifs_ses *ses, struct cifs_server_iface *iface)
 	 * stored. This might break when dealing with non-ascii
 	 * strings.
 	 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_TCON_RECONNECT_CODEPAGE_UTF8
 	vol.local_nls = load_nls("utf8");
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_CIFS_TCON_RECONNECT_CODEPAGE_UTF8 */
 	vol.local_nls = load_nls_default();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_TCON_RECONNECT_CODEPAGE_UTF8 */
 
 	/* Use RDMA if possible */
 	vol.rdma = iface->rdma_capable;
@@ -368,13 +365,13 @@ unicode_oslm_strings(char **pbcc_area, const struct nls_table *nls_cp)
 	int bytes_ret = 0;
 
 	/* Copy OS version */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_REPLACE_NATIVE_OS
 	bytes_ret = cifs_strtoUTF16((__le16 *)bcc_ptr, "Synology Linux version ", 32,
 				    nls_cp);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_CIFS_REPLACE_NATIVE_OS */
 	bytes_ret = cifs_strtoUTF16((__le16 *)bcc_ptr, "Linux version ", 32,
 				    nls_cp);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_REPLACE_NATIVE_OS */
 	bcc_ptr += 2 * bytes_ret;
 	bytes_ret = cifs_strtoUTF16((__le16 *) bcc_ptr, init_utsname()->release,
 				    32, nls_cp);
@@ -476,13 +473,13 @@ static void ascii_ssetup_strings(char **pbcc_area, struct cifs_ses *ses,
 
 	/* BB check for overflow here */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_CIFS_REPLACE_NATIVE_OS
 	strcpy(bcc_ptr, "Synology Linux version ");
 	bcc_ptr += strlen("Synology Linux version ");
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_CIFS_REPLACE_NATIVE_OS */
 	strcpy(bcc_ptr, "Linux version ");
 	bcc_ptr += strlen("Linux version ");
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_REPLACE_NATIVE_OS */
 	strcpy(bcc_ptr, init_utsname()->release);
 	bcc_ptr += strlen(init_utsname()->release) + 1;
 
@@ -845,13 +842,13 @@ cifs_select_sectype(struct TCP_Server_Info *server, enum securityEnum requested)
 		case LANMAN:
 			return requested;
 		case Unspecified:
-#if defined(MY_ABC_HERE) && !defined(CONFIG_CIFS_WEAK_PW_HASH)
+#if defined(CONFIG_SYNO_CIFS_COVERITY) && !defined(CONFIG_CIFS_WEAK_PW_HASH)
 			// CID 148534: Logically dead code.
 			// if !CONFIG_CIFS_WEAK_PW_HASH then CIFSSEC_MAY_LANMAN == 0;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_CIFS_COVERITY */
 			if (global_secflags & CIFSSEC_MAY_LANMAN)
 				return LANMAN;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_CIFS_COVERITY */
 			fallthrough;
 		default:
 			return Unspecified;

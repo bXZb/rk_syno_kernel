@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/read_write.c
@@ -27,10 +24,10 @@
 
 #include <linux/uaccess.h>
 #include <asm/unistd.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_RECVFILE
 #include <linux/net.h>
 #include <linux/backing-dev.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RECVFILE */
 
 const struct file_operations generic_ro_fops = {
 	.llseek		= generic_file_llseek,
@@ -510,9 +507,9 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 	inc_syscr(current);
 	return ret;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 EXPORT_SYMBOL_GPL(vfs_read);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 static ssize_t new_sync_write(struct file *filp, const char __user *buf, size_t len, loff_t *ppos)
 {
@@ -623,9 +620,9 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
 	file_end_write(file);
 	return ret;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 EXPORT_SYMBOL_GPL(vfs_write);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 /* file_ppos returns &file->f_pos or NULL if file is stream */
 static inline loff_t *file_ppos(struct file *file)
@@ -1371,8 +1368,8 @@ COMPAT_SYSCALL_DEFINE4(sendfile64, int, out_fd, int, in_fd,
 }
 #endif
 
-#ifdef MY_ABC_HERE
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SYSTEM_CALL
+#ifdef CONFIG_SYNO_FS_RECVFILE
 static ssize_t generic_write_init_and_checks(struct file* filp, loff_t pos, size_t count)
 {
 	struct iovec iov = { .iov_base = NULL, .iov_len = count};
@@ -1541,7 +1538,7 @@ COMPAT_SYSCALL_DEFINE5(syno_recv_file, int, fd, int, s, loff_t *, offset, compat
 }
 #endif /* CONFIG_COMPAT */
 
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_RECVFILE */
 
 SYSCALL_DEFINE5(syno_recv_file, int, fd, int, s, loff_t *, offset, size_t, count, size_t *, rwbytes)
 {
@@ -1559,8 +1556,8 @@ COMPAT_SYSCALL_DEFINE5(syno_recv_file, int, fd, int, s, loff_t *, offset, compat
 }
 #endif /* CONFIG_COMPAT */
 
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_RECVFILE */
+#endif /* CONFIG_SYNO_SYSTEM_CALL */
 
 /**
  * generic_copy_file_range - copy data between two files
@@ -1853,7 +1850,7 @@ ssize_t generic_write_checks(struct kiocb *iocb, struct iov_iter *from)
 	if (iocb->ki_flags & IOCB_APPEND)
 		iocb->ki_pos = i_size_read(inode);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_LOCKER
 	/*
 	 * for locker appendable, data is appended to the file in chunk. when data
 	 * is written to bytes n*CHUNK_SIZE+1 of the file, the previous chunk
@@ -1865,7 +1862,7 @@ ssize_t generic_write_checks(struct kiocb *iocb, struct iov_iter *from)
 				file, iocb->ki_pos, round_down(i_size_read(inode), LOCKER_CHUNK_SIZE));
 		return -EPERM;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_LOCKER */
 
 	if ((iocb->ki_flags & IOCB_NOWAIT) && !(iocb->ki_flags & IOCB_DIRECT))
 		return -EINVAL;

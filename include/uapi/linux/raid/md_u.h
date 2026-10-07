@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0+ WITH Linux-syscall-note */
 /*
    md_u.h : user <=> kernel API between Linux raidtools and RAID drivers
@@ -68,7 +65,7 @@
 #define RESTART_ARRAY_RW	_IO (MD_MAJOR, 0x34)
 #define CLUSTERED_DISK_NACK	_IO (MD_MAJOR, 0x35)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_STATUS_GET
 #define GET_SYNC_STATUS     _IOR(MD_MAJOR, 0x60, MD_SYNC_STATUS)
 #define GET_ARRAY_STATUS    _IOR(MD_MAJOR, 0x61, int)
 
@@ -77,7 +74,7 @@ typedef struct __tag_MD_SYNC_STATUS {
 	unsigned long long finishSectors;
 	unsigned long long totalSectors;
 } MD_SYNC_STATUS;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_STATUS_GET */
 /* 63 partitions with the alternate major number (mdp) */
 #define MdpMinorShift 6
 

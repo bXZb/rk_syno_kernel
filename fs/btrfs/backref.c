@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2011 STRATO.  All rights reserved.
@@ -20,21 +17,21 @@
 
 /* Just an arbitrary number so we can be sure this happened */
 #define BACKREF_FOUND_SHARED 6
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 #define BACKREF_NEXT_ITEM 253
 #define BACKREF_FOUND_SHARED_ROOT 254
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 #define BACKREF_FOUND_ROOT_INO 255
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 struct extent_inode_elem {
 	u64 inum;
 	u64 offset;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SEARCH_BY_EXTENT_TYPE
 	int extent_type;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SEARCH_BY_EXTENT_TYPE */
 	struct extent_inode_elem *next;
 };
 
@@ -71,9 +68,9 @@ static int check_extent_in_eb(const struct btrfs_key *key,
 	e->next = *eie;
 	e->inum = key->objectid;
 	e->offset = key->offset + offset;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SEARCH_BY_EXTENT_TYPE
 	e->extent_type = btrfs_file_extent_type(eb, fi);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SEARCH_BY_EXTENT_TYPE */
 	*eie = e;
 
 	return 0;
@@ -129,7 +126,7 @@ static int find_extent_in_eb(const struct extent_buffer *eb,
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 // Copied from find_extent_in_eb().
 static int find_ino_extent_in_eb(struct extent_buffer *eb,
 				u64 wanted_disk_byte, u64 ino, u64 offset)
@@ -175,7 +172,7 @@ static int find_ino_extent_in_eb(struct extent_buffer *eb,
 
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 struct preftree {
 	struct rb_root_cached root;
@@ -190,7 +187,7 @@ struct preftrees {
 	struct preftree indirect_missing_keys;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 enum share_check_mode {
 	SC_FIND_SHARED,
 	SC_FIND_SHARED_ROOT,
@@ -200,7 +197,7 @@ enum found_state_bits {
 	DIRECT,
 	INDIRECT,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 
 /*
  * Checks for a shared extent during backref search.
@@ -214,7 +211,7 @@ struct share_check {
 	u64 root_objectid;
 	u64 inum;
 	int share_count;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 	enum share_check_mode mode;
 	unsigned long found_state;
 	struct ulist *shared_roots;
@@ -225,10 +222,10 @@ struct share_check {
 	u64 parent_bytenr;
 	u64 offset;
 	u64 datao;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 static inline void
 share_check_update_direct_if_need(struct share_check *sc, u64 offset)
 {
@@ -278,13 +275,13 @@ static inline bool backref_check_shared_not_in_sc(struct share_check *sc)
 
 	return false;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 
 static inline int extent_is_shared(struct share_check *sc)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 	WARN_ON_ONCE(sc && sc->mode != SC_FIND_SHARED);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 	return (sc && sc->share_count > 1) ? BACKREF_FOUND_SHARED : 0;
 }
 
@@ -503,13 +500,13 @@ static int add_prelim_ref(const struct btrfs_fs_info *fs_info,
 	ref->parent = parent;
 	ref->wanted_disk_byte = wanted_disk_byte;
 	prelim_ref_insert(fs_info, preftree, ref, sc);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 	if (sc && sc->mode == SC_FIND_SHARED)
 		return extent_is_shared(sc);
 	return 0;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 	return extent_is_shared(sc);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 }
 
 /* direct refs use root == 0, key == NULL */
@@ -567,12 +564,12 @@ static int add_all_parents(struct btrfs_root *root, struct btrfs_path *path,
 			   struct preftrees *preftrees, struct prelim_ref *ref,
 			   int level, u64 time_seq, const u64 *extent_item_pos,
 			   bool ignore_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 			   , struct share_check *sc
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			   , struct quota_check *qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 			   )
 
 {
@@ -587,10 +584,10 @@ static int add_all_parents(struct btrfs_root *root, struct btrfs_path *path,
 	u64 wanted_disk_byte = ref->wanted_disk_byte;
 	u64 count = 0;
 	u64 data_offset;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	u64 datao;
 	u64 ram_bytes = SZ_256M;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	if (level != 0) {
 		eb = path->nodes[level];
@@ -648,11 +645,11 @@ static int add_all_parents(struct btrfs_root *root, struct btrfs_path *path,
 		disk_byte = btrfs_file_extent_disk_bytenr(eb, fi);
 		data_offset = btrfs_file_extent_offset(eb, fi);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 		if (key_for_search->type == BTRFS_EXTENT_DATA_KEY &&
 		    key.offset >= key_for_search->offset + ram_bytes)
 			break;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 		if (disk_byte == wanted_disk_byte) {
 			eie = NULL;
@@ -661,7 +658,7 @@ static int add_all_parents(struct btrfs_root *root, struct btrfs_path *path,
 				count++;
 			else
 				goto next;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 			if (sc && sc->mode == SC_FIND_SHARED_ROOT &&
 			    ref->level == 0 &&
 			    ref->root_id == sc->root_objectid &&
@@ -675,9 +672,9 @@ static int add_all_parents(struct btrfs_root *root, struct btrfs_path *path,
 				 */
 				return BACKREF_NEXT_ITEM;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			ram_bytes = btrfs_file_extent_ram_bytes(eb, fi);
 			if (qc) {
 				datao = key.offset - btrfs_file_extent_offset(eb, fi);
@@ -686,7 +683,7 @@ static int add_all_parents(struct btrfs_root *root, struct btrfs_path *path,
 				if (key.offset >= qc->offset)
 					break;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 			if (extent_item_pos) {
 				ret = check_extent_in_eb(&key, eb, fi,
@@ -731,12 +728,12 @@ static int resolve_indirect_ref(struct btrfs_fs_info *fs_info,
 				struct preftrees *preftrees,
 				struct prelim_ref *ref, struct ulist *parents,
 				const u64 *extent_item_pos, bool ignore_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 				, struct share_check *sc
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 				, struct quota_check *qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				)
 {
 	struct btrfs_root *root;
@@ -832,12 +829,12 @@ static int resolve_indirect_ref(struct btrfs_fs_info *fs_info,
 
 	ret = add_all_parents(root, path, parents, preftrees, ref, level,
 			      time_seq, extent_item_pos, ignore_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 			      , sc
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			      , qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 			      );
 out:
 	btrfs_put_root(root);
@@ -876,9 +873,9 @@ static int resolve_indirect_refs(struct btrfs_fs_info *fs_info,
 				 struct preftrees *preftrees,
 				 const u64 *extent_item_pos,
 				 struct share_check *sc, bool ignore_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 				 , struct quota_check *qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				)
 {
 	int err;
@@ -917,9 +914,9 @@ static int resolve_indirect_refs(struct btrfs_fs_info *fs_info,
 		}
 
 		if (sc && sc->root_objectid &&
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 		    sc->mode == SC_FIND_SHARED &&
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 		    ref->root_id != sc->root_objectid) {
 			free_pref(ref);
 			ret = BACKREF_FOUND_SHARED;
@@ -928,12 +925,12 @@ static int resolve_indirect_refs(struct btrfs_fs_info *fs_info,
 		err = resolve_indirect_ref(fs_info, path, time_seq, preftrees,
 					   ref, parents, extent_item_pos,
 					   ignore_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 					   , sc
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 					   , qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 					   );
 		/*
 		 * we can only tolerate ENOENT,otherwise,we should catch error
@@ -1038,9 +1035,9 @@ static int add_missing_keys(struct btrfs_fs_info *fs_info,
 static int add_delayed_refs(const struct btrfs_fs_info *fs_info,
 			    struct btrfs_delayed_ref_head *head, u64 seq,
 			    struct preftrees *preftrees, struct share_check *sc
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			    , struct quota_check *qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 			   )
 {
 	struct btrfs_delayed_ref_node *node;
@@ -1107,7 +1104,7 @@ static int add_delayed_refs(const struct btrfs_fs_info *fs_info,
 			key.type = BTRFS_EXTENT_DATA_KEY;
 			key.offset = ref->offset;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			if (qc) {
 				WARN_ON(!qc->ino || !qc->root_objectid);
 				if (key.objectid != qc->ino)
@@ -1126,24 +1123,24 @@ static int add_delayed_refs(const struct btrfs_fs_info *fs_info,
 				}
 				goto add_ref;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 			/*
 			 * Found a inum that doesn't match our known inum, we
 			 * know it's shared.
 			 */
 			if (sc && sc->inum && ref->objectid != sc->inum
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 			    && sc->mode == SC_FIND_SHARED
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 			    ) {
 				ret = BACKREF_FOUND_SHARED;
 				goto out;
 			}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 add_ref:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 			ret = add_indirect_ref(fs_info, preftrees, ref->root,
 					       &key, 0, node->bytenr, count, sc,
 					       GFP_ATOMIC);
@@ -1171,9 +1168,9 @@ add_ref:
 			break;
 	}
 	if (!ret
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 	    && sc && sc->mode == SC_FIND_SHARED
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 	    )
 		ret = extent_is_shared(sc);
 out:
@@ -1190,9 +1187,9 @@ static int add_inline_refs(const struct btrfs_fs_info *fs_info,
 			   struct btrfs_path *path, u64 bytenr,
 			   int *info_level, struct preftrees *preftrees,
 			   struct share_check *sc
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			   , struct quota_check *qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 			  )
 {
 	int ret = 0;
@@ -1259,10 +1256,10 @@ static int add_inline_refs(const struct btrfs_fs_info *fs_info,
 			struct btrfs_shared_data_ref *sdref;
 			int count;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 			if (sc && sc->mode == SC_FIND_SHARED_ROOT)
 				share_check_update_direct_if_need(sc, offset);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 			sdref = (struct btrfs_shared_data_ref *)(iref + 1);
 			count = btrfs_shared_data_ref_count(leaf, sdref);
 
@@ -1271,13 +1268,13 @@ static int add_inline_refs(const struct btrfs_fs_info *fs_info,
 			break;
 		}
 		case BTRFS_TREE_BLOCK_REF_KEY:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 			if (sc && sc->mode == SC_FIND_SHARED_ROOT &&
 			    !ulist_search(sc->shared_roots, offset)) {
 				ret = BACKREF_FOUND_SHARED_ROOT;
 				break;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 			ret = add_indirect_ref(fs_info, preftrees, offset,
 					       NULL, *info_level + 1,
 					       bytenr, 1, NULL, GFP_NOFS);
@@ -1295,9 +1292,9 @@ static int add_inline_refs(const struct btrfs_fs_info *fs_info,
 			key.offset = btrfs_extent_data_ref_offset(leaf, dref);
 
 			if (sc && sc->inum && key.objectid != sc->inum
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 			    && sc->mode == SC_FIND_SHARED
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 			    ) {
 				ret = BACKREF_FOUND_SHARED;
 				break;
@@ -1305,7 +1302,7 @@ static int add_inline_refs(const struct btrfs_fs_info *fs_info,
 
 			root = btrfs_extent_data_ref_root(leaf, dref);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 			if (sc && sc->mode == SC_FIND_SHARED_ROOT) {
 				if (!ulist_search(sc->shared_roots, root)) {
 					ret = BACKREF_FOUND_SHARED_ROOT;
@@ -1314,9 +1311,9 @@ static int add_inline_refs(const struct btrfs_fs_info *fs_info,
 				share_check_update_indirect_if_need(sc, root,
 								    &key);
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			if (qc) {
 				WARN_ON(!qc->ino || !qc->root_objectid);
 				if (key.objectid != qc->ino)
@@ -1333,7 +1330,7 @@ static int add_inline_refs(const struct btrfs_fs_info *fs_info,
 					break;
 				}
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 			ret = add_indirect_ref(fs_info, preftrees, root,
 					       &key, 0, bytenr, count,
@@ -1360,9 +1357,9 @@ static int add_keyed_refs(struct btrfs_fs_info *fs_info,
 			  struct btrfs_path *path, u64 bytenr,
 			  int info_level, struct preftrees *preftrees,
 			  struct share_check *sc
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			  , struct quota_check *qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 			  )
 {
 	struct btrfs_root *extent_root = fs_info->extent_root;
@@ -1403,11 +1400,11 @@ static int add_keyed_refs(struct btrfs_fs_info *fs_info,
 			struct btrfs_shared_data_ref *sdref;
 			int count;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 			if (sc && sc->mode == SC_FIND_SHARED_ROOT)
 				share_check_update_direct_if_need(sc,
 								  key.offset);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 			sdref = btrfs_item_ptr(leaf, slot,
 					      struct btrfs_shared_data_ref);
 			count = btrfs_shared_data_ref_count(leaf, sdref);
@@ -1417,13 +1414,13 @@ static int add_keyed_refs(struct btrfs_fs_info *fs_info,
 			break;
 		}
 		case BTRFS_TREE_BLOCK_REF_KEY:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 			if (sc && sc->mode == SC_FIND_SHARED_ROOT &&
 			    !ulist_search(sc->shared_roots, key.offset)) {
 				ret = BACKREF_FOUND_SHARED_ROOT;
 				break;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 			/* NORMAL INDIRECT METADATA backref */
 			ret = add_indirect_ref(fs_info, preftrees, key.offset,
 					       NULL, info_level + 1, bytenr,
@@ -1444,9 +1441,9 @@ static int add_keyed_refs(struct btrfs_fs_info *fs_info,
 			key.offset = btrfs_extent_data_ref_offset(leaf, dref);
 
 			if (sc && sc->inum && key.objectid != sc->inum
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 			    && sc->mode == SC_FIND_SHARED
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 			    ) {
 				ret = BACKREF_FOUND_SHARED;
 				break;
@@ -1454,7 +1451,7 @@ static int add_keyed_refs(struct btrfs_fs_info *fs_info,
 
 			root = btrfs_extent_data_ref_root(leaf, dref);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 			if (sc && sc->mode == SC_FIND_SHARED_ROOT) {
 				if (!ulist_search(sc->shared_roots, root)) {
 					ret = BACKREF_FOUND_SHARED_ROOT;
@@ -1463,9 +1460,9 @@ static int add_keyed_refs(struct btrfs_fs_info *fs_info,
 				share_check_update_indirect_if_need(sc, root,
 								    &key);
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			if (qc) {
 				WARN_ON(!qc->ino || !qc->root_objectid);
 				if (key.objectid != qc->ino)
@@ -1482,7 +1479,7 @@ static int add_keyed_refs(struct btrfs_fs_info *fs_info,
 					break;
 				}
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 			ret = add_indirect_ref(fs_info, preftrees, root,
 					       &key, 0, bytenr, count,
@@ -1527,9 +1524,9 @@ static int find_parent_nodes(struct btrfs_trans_handle *trans,
 			     u64 time_seq, struct ulist *refs,
 			     struct ulist *roots, const u64 *extent_item_pos,
 			     struct share_check *sc, bool ignore_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			     , struct quota_check *qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 			    )
 {
 	struct btrfs_key key;
@@ -1546,9 +1543,9 @@ static int find_parent_nodes(struct btrfs_trans_handle *trans,
 		.indirect = PREFTREE_INIT,
 		.indirect_missing_keys = PREFTREE_INIT
 	};
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	bool in_run_delayed = (qc)? qc->in_run_delayed : false;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	key.objectid = bytenr;
 	key.offset = (u64)-1;
@@ -1595,11 +1592,11 @@ again:
 		spin_lock(&delayed_refs->lock);
 		head = btrfs_find_delayed_ref_head(delayed_refs, bytenr);
 		if (head) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			if (!in_run_delayed && !mutex_trylock(&head->mutex)) {
 #else
 			if (!mutex_trylock(&head->mutex)) {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				refcount_inc(&head->refs);
 				spin_unlock(&delayed_refs->lock);
 
@@ -1617,13 +1614,13 @@ again:
 			spin_unlock(&delayed_refs->lock);
 			ret = add_delayed_refs(fs_info, head, time_seq,
 					       &preftrees, sc
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 					      , qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 					      );
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			if (!in_run_delayed)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				mutex_unlock(&head->mutex);
 			if (ret)
 				goto out;
@@ -1645,17 +1642,17 @@ again:
 		     key.type == BTRFS_METADATA_ITEM_KEY)) {
 			ret = add_inline_refs(fs_info, path, bytenr,
 					      &info_level, &preftrees, sc
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 					      , qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 					     );
 			if (ret)
 				goto out;
 			ret = add_keyed_refs(fs_info, path, bytenr, info_level,
 					     &preftrees, sc
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 					     , qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 					    );
 			if (ret)
 				goto out;
@@ -1672,9 +1669,9 @@ again:
 
 	ret = resolve_indirect_refs(fs_info, path, time_seq, &preftrees,
 				    extent_item_pos, sc, ignore_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 				    , qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				   );
 	if (ret)
 		goto out;
@@ -1703,7 +1700,7 @@ again:
 		 * and would retain their original ref->count < 0.
 		 */
 		if (roots && ref->count && ref->root_id && ref->parent == 0) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			if (qc) {
 				WARN_ON(!qc->root_objectid);
 				if (ref->root_id == qc->root_objectid) {
@@ -1712,12 +1709,12 @@ again:
 				}
 				goto shortcut;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 			if (sc && sc->root_objectid &&
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 			    sc->mode == SC_FIND_SHARED &&
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 			    ref->root_id != sc->root_objectid) {
 				ret = BACKREF_FOUND_SHARED;
 				goto out;
@@ -1728,9 +1725,9 @@ again:
 			if (ret < 0)
 				goto out;
 		}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 shortcut:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 		if (ref->count && ref->parent) {
 			if (extent_item_pos && !ref->inode_list &&
@@ -1761,7 +1758,7 @@ shortcut:
 					goto out;
 				ref->inode_list = eie;
 			}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			if (qc && ref->level == 0 && ref->key_for_search.type == 0) {
 				struct extent_buffer *eb;
 				eb = read_tree_block(fs_info, ref->parent, 0,
@@ -1787,7 +1784,7 @@ shortcut:
 				if (!ret)
 					goto next;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 			ret = ulist_add_merge_ptr(refs, ref->parent,
 						  ref->inode_list,
 						  (void **)&eie, GFP_NOFS);
@@ -1805,9 +1802,9 @@ shortcut:
 			}
 			eie = NULL;
 		}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 next:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 		cond_resched();
 	}
 
@@ -1823,7 +1820,7 @@ out:
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 static int check_first_ref(struct extent_buffer *eb, u64 bytenr,
 		  u64 inum, u64 file_offset)
 {
@@ -1944,17 +1941,17 @@ static int find_parent_nodes_shared_root(struct btrfs_fs_info *fs_info,
 		     key.type == BTRFS_METADATA_ITEM_KEY)) {
 			ret = add_inline_refs(fs_info, path, bytenr,
 						&info_level, &preftrees, &sc
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 					      , NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 					     );
 			if (ret)
 				goto out;
 			ret = add_keyed_refs(fs_info, path, bytenr,
 						info_level, &preftrees, &sc
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 					     , NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 					    );
 			if (ret)
 				goto out;
@@ -1975,9 +1972,9 @@ static int find_parent_nodes_shared_root(struct btrfs_fs_info *fs_info,
 
 	ret = resolve_indirect_refs(fs_info, path, 0, &preftrees, NULL, &sc,
 				    false
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 				    , NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				   );
 	if (ret)
 		goto out;
@@ -2070,7 +2067,7 @@ out:
 	prelim_release(&preftrees.indirect_missing_keys);
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 
 static void free_leaf_list(struct ulist *blocks)
 {
@@ -2111,9 +2108,9 @@ int btrfs_find_all_leafs(struct btrfs_trans_handle *trans,
 
 	ret = find_parent_nodes(trans, fs_info, bytenr, time_seq,
 				*leafs, NULL, extent_item_pos, NULL, ignore_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 			       , NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 			       );
 	if (ret < 0 && ret != -ENOENT) {
 		free_leaf_list(*leafs);
@@ -2140,9 +2137,9 @@ static int btrfs_find_all_roots_safe(struct btrfs_trans_handle *trans,
 				     struct btrfs_fs_info *fs_info, u64 bytenr,
 				     u64 time_seq, struct ulist **roots,
 				     bool ignore_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 				     , struct quota_check *qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				    )
 {
 	struct ulist *tmp;
@@ -2163,18 +2160,18 @@ static int btrfs_find_all_roots_safe(struct btrfs_trans_handle *trans,
 	while (1) {
 		ret = find_parent_nodes(trans, fs_info, bytenr, time_seq,
 					tmp, *roots, NULL, NULL, ignore_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 				       , qc
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				       );
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 		if (qc && ret == BACKREF_FOUND_ROOT_INO) {
 			ulist_free(tmp);
 			ulist_free(*roots);
 			*roots = NULL;
 			return ret;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 		if (ret < 0 && ret != -ENOENT) {
 			ulist_free(tmp);
@@ -2204,16 +2201,16 @@ int btrfs_find_all_roots(struct btrfs_trans_handle *trans,
 		down_read(&fs_info->commit_root_sem);
 	ret = btrfs_find_all_roots_safe(trans, fs_info, bytenr,
 					time_seq, roots, ignore_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 					, NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				       );
 	if (!trans)
 		up_read(&fs_info->commit_root_sem);
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 static int btrfs_find_root_inode(struct btrfs_trans_handle *trans,
 			u64 time_seq, struct quota_check *qc)
 {
@@ -2273,7 +2270,7 @@ int check_root_inode_ref(struct btrfs_trans_handle *trans,
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 /**
  * btrfs_check_shared - tell us whether an extent is shared
@@ -2299,9 +2296,9 @@ int btrfs_check_shared(struct btrfs_root *root, u64 inum, u64 bytenr,
 	struct seq_list elem = SEQ_LIST_INIT(elem);
 	int ret = 0;
 	struct share_check shared = {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 		.mode = SC_FIND_SHARED,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 		.root_objectid = root->root_key.objectid,
 		.inum = inum,
 		.share_count = 0,
@@ -2326,9 +2323,9 @@ int btrfs_check_shared(struct btrfs_root *root, u64 inum, u64 bytenr,
 	while (1) {
 		ret = find_parent_nodes(trans, fs_info, bytenr, elem.seq, tmp,
 					roots, NULL, &shared, false
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 				       , NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 				       );
 		if (ret == BACKREF_FOUND_SHARED) {
 			/* this is the only condition under which we return 1 */
@@ -2358,7 +2355,7 @@ out:
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 static int __btrfs_check_shared_inlist(struct btrfs_fs_info *fs_info,
 				       u64 root_objectid, u64 inum,
 				       u64 file_offset, u64 datao, u64 bytenr,
@@ -2422,7 +2419,7 @@ int btrfs_check_shared_inlist(struct btrfs_fs_info *fs_info,
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 
 int btrfs_find_one_extref(struct btrfs_root *root, u64 inode_objectid,
 			  u64 start_off, struct btrfs_path *path,
@@ -2772,9 +2769,9 @@ static int iterate_leaf_refs(struct btrfs_fs_info *fs_info,
 			    extent_item_objectid, eie->inum,
 			    eie->offset, root);
 		ret = iterate(eie->inum, eie->offset, root, ctx
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SEARCH_BY_EXTENT_TYPE
 			      , eie->extent_type
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SEARCH_BY_EXTENT_TYPE */
 			      );
 		if (ret) {
 			btrfs_debug(fs_info,
@@ -2837,9 +2834,9 @@ int iterate_extent_inodes(struct btrfs_fs_info *fs_info,
 		ret = btrfs_find_all_roots_safe(trans, fs_info, ref_node->val,
 						tree_mod_seq_elem.seq, &roots,
 						ignore_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 						, NULL
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 					       );
 		if (ret)
 			break;

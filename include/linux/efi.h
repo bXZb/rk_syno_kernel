@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_EFI_H
 #define _LINUX_EFI_H
@@ -624,9 +621,9 @@ extern efi_status_t efi_query_variable_store(u32 attributes,
 					     unsigned long size,
 					     bool nonblocking);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PSTORE
 extern efi_status_t efi_force_garbage_collection(void);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PSTORE */
 
 #else
 
@@ -637,12 +634,12 @@ static inline efi_status_t efi_query_variable_store(u32 attributes,
 	return EFI_SUCCESS;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PSTORE
 static inline efi_status_t efi_force_garbage_collection(void)
 {
 	return EFI_SUCCESS;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PSTORE */
 
 #endif
 extern void __iomem *efi_lookup_mapped_addr(u64 phys_addr);

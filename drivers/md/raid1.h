@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _RAID1_H
 #define _RAID1_H
@@ -121,14 +118,14 @@ struct r1conf {
 	 * mempools - it changes when the array grows or shrinks
 	 */
 	struct pool_info	*poolinfo;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_FIX_RAID1_BIOPOOL_CHANGE
 	short			syno_generation;	/* increments with every
 						 * reshape */
 	mempool_t		*r1bio_pool;
 	mempool_t		_r1bio_pool[2];
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MD_FIX_RAID1_BIOPOOL_CHANGE */
 	mempool_t		r1bio_pool;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FIX_RAID1_BIOPOOL_CHANGE */
 	mempool_t		r1buf_pool;
 
 	struct bio_set		bio_split;
@@ -149,13 +146,13 @@ struct r1conf {
 	sector_t		cluster_sync_low;
 	sector_t		cluster_sync_high;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_RAID1_ASSIGN_READ_TARGET
 	int                     syno_read_target;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_MD_RAID1_ASSIGN_READ_TARGET */
+#ifdef CONFIG_SYNO_MD_DATA_CORRECTION
 	spinlock_t       syno_heal_retry_list_lock;
 	struct list_head syno_heal_retry_list;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DATA_CORRECTION */
 };
 
 /*
@@ -173,10 +170,10 @@ struct r1bio {
 						 * in this BehindIO request
 						 */
 	sector_t		sector;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_FIX_RAID1_BIOPOOL_CHANGE
 	short			syno_generation;	/* increments with every
 						 * reshape */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_FIX_RAID1_BIOPOOL_CHANGE */
 	int			sectors;
 	unsigned long		state;
 	struct mddev		*mddev;

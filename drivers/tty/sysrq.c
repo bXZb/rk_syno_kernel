@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *	Linux Magic System Request Key Hacks
@@ -178,7 +175,7 @@ static const struct sysrq_key_op sysrq_reboot_op = {
 
 const struct sysrq_key_op *__sysrq_reboot_op = &sysrq_reboot_op;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_FORCE_CF9_REBOOT
 static void sysrq_handle_cf9_reboot(int key)
 {
 	lockdep_off();
@@ -193,7 +190,7 @@ static struct sysrq_key_op sysrq_cf9_reboot_op = {
 	.action_msg	= "CF9 Resetting",
 	.enable_mask	= SYSRQ_ENABLE_BOOT,
 };
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_FORCE_CF9_REBOOT */
 
 static void sysrq_handle_sync(int key)
 {
@@ -484,11 +481,11 @@ static const struct sysrq_key_op *sysrq_key_table[62] = {
 	&sysrq_term_op,			/* e */
 	&sysrq_moom_op,			/* f */
 	/* g: May be registered for the kernel debugger */
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_FORCE_CF9_REBOOT
 	&sysrq_cf9_reboot_op, 		/* g */
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_FORCE_CF9_REBOOT */
 	NULL,				/* g */
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_FORCE_CF9_REBOOT */
 	NULL,				/* h - reserved for help */
 	&sysrq_kill_op,			/* i */
 #ifdef CONFIG_BLOCK

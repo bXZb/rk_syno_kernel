@@ -9,3 +9,7 @@ fi
 if [ -e "tools/power/x86/turbostat/turbostat" ]; then
 	install -Dm755 tools/power/x86/turbostat/turbostat "${TmpInstDir}"/turbostat
 fi
+
+if [ -e "${KernelDir}/lib/synolib/syno_i2c_recovery_check.ko" ]; then
+install -Dm644 "${KernelDir}"/lib/synolib/syno_i2c_recovery_check.ko  "${TmpInstDir}"/lib/modules/syno_i2c_recovery_check.ko
+fi

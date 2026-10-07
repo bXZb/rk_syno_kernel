@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/hfsplus/catalog.c
@@ -43,24 +40,24 @@ int hfsplus_cat_bin_cmp_key(const hfsplus_btree_key *k1,
 }
 
 /* Generates key for catalog file/folders record. */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 int hfsplus_cat_build_key(struct super_block *sb,
 		hfsplus_btree_key *key, u32 parent, const struct qstr *str, bool nfc)
 #else
 int hfsplus_cat_build_key(struct super_block *sb,
 		hfsplus_btree_key *key, u32 parent, const struct qstr *str)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 {
 	int len, err;
 
 	key->cat.parent = cpu_to_be32(parent);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 	err = hfsplus_nfc_asc2uni(sb, &key->cat.name, HFSPLUS_MAX_STRLEN,
 				  str->name, str->len, nfc);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 	err = hfsplus_asc2uni(sb, &key->cat.name, HFSPLUS_MAX_STRLEN,
 			str->name, str->len);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 	if (unlikely(err < 0))
 		return err;
 
@@ -195,14 +192,14 @@ static int hfsplus_fill_cat_thread(struct super_block *sb,
 	entry->type = cpu_to_be16(type);
 	entry->thread.reserved = 0;
 	entry->thread.parentID = cpu_to_be32(parentid);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 	err = hfsplus_nfc_asc2uni(sb, &entry->thread.nodeName,
 				  HFSPLUS_MAX_STRLEN, str->name, str->len,
 				  false);
 #else
 	err = hfsplus_asc2uni(sb, &entry->thread.nodeName, HFSPLUS_MAX_STRLEN,
 				str->name, str->len);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 	if (unlikely(err < 0))
 		return err;
 
@@ -312,11 +309,11 @@ int hfsplus_create_cat(u32 cnid, struct inode *dir,
 	if (err)
 		goto err2;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 	err = hfsplus_cat_build_key(sb, fd.search_key, dir->i_ino, str, false);
 #else
 	err = hfsplus_cat_build_key(sb, fd.search_key, dir->i_ino, str);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 	if (unlikely(err))
 		goto err1;
 
@@ -358,9 +355,9 @@ int hfsplus_delete_cat(u32 cnid, struct inode *dir, const struct qstr *str)
 	struct list_head *pos;
 	int err, off;
 	u16 type;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 	bool nfc = false;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 
 	hfs_dbg(CAT_MOD, "delete_cat: %s,%u\n", str ? str->name : NULL, cnid);
 	err = hfs_find_init(HFSPLUS_SB(sb)->cat_tree, &fd);
@@ -394,18 +391,18 @@ int hfsplus_delete_cat(u32 cnid, struct inode *dir, const struct qstr *str)
 			off + 2, len);
 		fd.search_key->key_len = cpu_to_be16(6 + len);
 	} else {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 NFC:
 		err = hfsplus_cat_build_key(sb, fd.search_key, dir->i_ino, str, nfc);
 #else
 		err = hfsplus_cat_build_key(sb, fd.search_key, dir->i_ino, str);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 		if (unlikely(err))
 			goto out;
 	}
 
 	err = hfs_brec_find(&fd, hfs_find_rec_by_key);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 	if (err) {
 		if (err == -ENOENT && !nfc) {
 			nfc = true;
@@ -416,7 +413,7 @@ NFC:
 #else
 	if (err)
 		goto out;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 
 	type = hfs_bnode_read_u16(fd.bnode, fd.entryoffset);
 	if (type == HFSPLUS_FILE) {
@@ -481,9 +478,9 @@ int hfsplus_rename_cat(u32 cnid,
 	hfsplus_cat_entry entry;
 	int entry_size, type;
 	int err;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 	bool nfc;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 
 	hfs_dbg(CAT_MOD, "rename_cat: %u - %lu,%s - %lu,%s\n",
 		cnid, src_dir->i_ino, src_name->name,
@@ -502,7 +499,7 @@ int hfsplus_rename_cat(u32 cnid,
 		goto out;
 
 	/* find the old dir entry and read the data */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 	nfc = false;
 NFC1:
 	err = hfsplus_cat_build_key(sb, src_fd.search_key,
@@ -510,12 +507,12 @@ NFC1:
 #else
 	err = hfsplus_cat_build_key(sb, src_fd.search_key,
 			src_dir->i_ino, src_name);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 	if (unlikely(err))
 		goto out;
 
 	err = hfs_brec_find(&src_fd, hfs_find_rec_by_key);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 	if (err) {
 		if (err == -ENOENT && !nfc) {
 			nfc = true;
@@ -526,7 +523,7 @@ NFC1:
 #else
 	if (err)
 		goto out;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 	if (src_fd.entrylength > sizeof(entry) || src_fd.entrylength < 0) {
 		err = -EIO;
 		goto out;
@@ -537,13 +534,13 @@ NFC1:
 	type = be16_to_cpu(entry.type);
 
 	/* create new dir entry with the data from the old entry */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 	err = hfsplus_cat_build_key(sb, dst_fd.search_key,
 			dst_dir->i_ino, dst_name, false);
 #else
 	err = hfsplus_cat_build_key(sb, dst_fd.search_key,
 			dst_dir->i_ino, dst_name);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 	if (unlikely(err))
 		goto out;
 
@@ -563,7 +560,7 @@ NFC1:
 	dst_dir->i_mtime = dst_dir->i_ctime = current_time(dst_dir);
 
 	/* finally remove the old entry */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 	nfc = false;
 NFC2:
 	err = hfsplus_cat_build_key(sb, src_fd.search_key,
@@ -571,12 +568,12 @@ NFC2:
 #else
 	err = hfsplus_cat_build_key(sb, src_fd.search_key,
 			src_dir->i_ino, src_name);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 	if (unlikely(err))
 		goto out;
 
 	err = hfs_brec_find(&src_fd, hfs_find_rec_by_key);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND
 	if (err) {
 		if (err == -ENOENT && !nfc)  {
 			nfc = true;
@@ -587,7 +584,7 @@ NFC2:
 #else
 	if (err)
 		goto out;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HFSPLUS_NFC_WORKAROUND */
 	err = hfs_brec_remove(&src_fd);
 	if (err)
 		goto out;

@@ -1,9 +1,6 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* Copyright (c) 2000-2020 Synology Inc. All rights reserved. */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_KEXEC_TEST
 
 #include <linux/efi.h>
 #include <linux/printk.h>
@@ -210,4 +207,4 @@ void __init syno_kexec_test_init(void)
 	remove_decompression_setup_data();
 }
 
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_KEXEC_TEST */

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 1995-1997 Olaf Kirch <okir@monad.swb.de>
@@ -12,9 +9,9 @@
 #include "nfsfh.h"
 #include "nfsd.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_WINACL
 #include <linux/syno_acl.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_WINACL */
 
 /*
  * Flags for nfsd_permission
@@ -41,9 +38,9 @@
 #define NFSD_MAY_CREATE		(NFSD_MAY_EXEC|NFSD_MAY_WRITE)
 #define NFSD_MAY_REMOVE		(NFSD_MAY_EXEC|NFSD_MAY_WRITE|NFSD_MAY_TRUNC)
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFS_VAAI_SUPPORT
 #define NFSD_COPYBUFFERSIZE                     (1<<17)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFS_VAAI_SUPPORT */
 
 struct nfsd_file;
 
@@ -117,15 +114,15 @@ __be32 		nfsd_read(struct svc_rqst *, struct svc_fh *,
 __be32 		nfsd_write(struct svc_rqst *, struct svc_fh *, loff_t,
 				struct kvec *, int, unsigned long *,
 				int stable, __be32 *verf);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFS_VAAI_SUPPORT
 __be32		nfsd_fallocate(struct svc_rqst *, struct svc_fh *,
                                 loff_t, unsigned long *);
 __be32		nfsd_synocopy(const char *, struct svc_rqst *, struct svc_fh *,
                                 loff_t, unsigned long *, bool);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFS_VAAI_LAZY_CLONE
 __be32		nfsd_synoclone(const char *, struct svc_rqst *, struct svc_fh *);
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFS_VAAI_LAZY_CLONE */
+#endif /* CONFIG_SYNO_NFS_VAAI_SUPPORT */
 __be32		nfsd_vfs_write(struct svc_rqst *rqstp, struct svc_fh *fhp,
 				struct nfsd_file *nf, loff_t offset,
 				struct kvec *vec, int vlen, unsigned long *cnt,
@@ -151,11 +148,11 @@ __be32		nfsd_statfs(struct svc_rqst *, struct svc_fh *,
 
 __be32		nfsd_permission(struct svc_rqst *, struct svc_export *,
 				struct dentry *, int);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_SHARE_QUOTA
 void		nfsd_quota_query(struct path *, struct kstatfs *);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_SHARE_QUOTA */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_WINACL
 /*
  * There's no ACL entry of root for all files in DSM, thus POSIX permissions
  * will be reported as empty. It does not matter in most cases, but some
@@ -170,7 +167,7 @@ static inline void nfsd_update_root_attr(struct dentry *dentry, struct kstat *st
 	if (IS_SYNOACL(dentry) && uid_eq(current_fsuid(), GLOBAL_ROOT_UID))
 		stat->mode |= (S_IRWXU|S_IRWXG|S_IRWXO);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_WINACL */
 
 static inline int fh_want_write(struct svc_fh *fh)
 {
@@ -197,17 +194,17 @@ static inline __be32 fh_getattr(struct svc_fh *fh, struct kstat *stat)
 	struct path p = {.mnt = fh->fh_export->ex_path.mnt,
 			 .dentry = fh->fh_dentry};
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_WINACL
 	int err;
 
 	err = vfs_getattr(&p, stat, STATX_BASIC_STATS, AT_STATX_SYNC_AS_STAT);
 	if (!err)
 		nfsd_update_root_attr(fh->fh_dentry, stat);
 	return nfserrno(err);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFSD_WINACL */
 	return nfserrno(vfs_getattr(&p, stat, STATX_BASIC_STATS,
 				    AT_STATX_SYNC_AS_STAT));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_WINACL */
 }
 
 static inline int nfsd_create_is_exclusive(int createmode)

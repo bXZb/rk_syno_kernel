@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * linux/include/linux/sunrpc/svc.h
@@ -22,9 +19,9 @@
 #include <linux/sunrpc/svcauth.h>
 #include <linux/wait.h>
 #include <linux/mm.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 #include <linux/atomic.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 /* statistics for svc_pool structures */
 struct svc_pool_stats {
@@ -33,9 +30,9 @@ struct svc_pool_stats {
 	atomic_long_t	threads_woken;
 	atomic_long_t	threads_timedout;
 	unsigned long	congested;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 	atomic_long_t	loading;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 };
 
 /*
@@ -80,7 +77,7 @@ struct svc_serv_ops {
 	struct module	*svo_module;
 };
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 #define NFSD_POOL_HINT_MAX	4
 #define NFSD_POOL_MASK_MAX	4
 
@@ -88,7 +85,7 @@ struct svc_pool_hint {
 	char name[16];				/* volume name, including terminating null char */
 	unsigned int pool[NFSD_POOL_MASK_MAX];	/* pool bitmask */
 };
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 
 /*
  * RPC service.
@@ -131,10 +128,10 @@ struct svc_serv {
 						 * entries in the svc_cb_list */
 	bool			sv_bc_enabled;	/* service uses backchannel */
 #endif /* CONFIG_SUNRPC_BACKCHANNEL */
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_NFSD_POOL_HINT
 	bool has_pool_hint;
 	struct svc_pool_hint pool_hint[NFSD_POOL_HINT_MAX];
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_NFSD_POOL_HINT */
 };
 
 /*
@@ -246,7 +243,7 @@ static inline void svc_putu32(struct kvec *iov, __be32 val)
 	iov->iov_len += sizeof(__be32);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 struct svc_lat {
 	atomic64_t accu;	// accumulated latency (us)
 	atomic_t max;		// max latency (us)
@@ -267,7 +264,7 @@ static inline bool svc_update_lat(struct svc_lat *lat, s64 latency)
 	}
 	return false;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 /*
  * The context of a single thread, including the request currently being
@@ -348,12 +345,12 @@ struct svc_rqst {
 						 * net namespace
 						 */
 	void **			rq_lease_breaker; /* The v4 client breaking a lease */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	ktime_t			rq_xprt_rdtime;	/* time of data being ready to transport on the socket */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 	u64			vfs_latency_us;
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 };
 
 #define SVC_NET(rqst) (rqst->rq_xprt ? rqst->rq_xprt->xpt_net : rqst->rq_bc_net)
@@ -480,9 +477,9 @@ struct svc_version {
 	u32			vs_nproc;	/* number of procedures */
 	const struct svc_procedure *vs_proc;	/* per-procedure info */
 	unsigned int		*vs_count;	/* call counts */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	struct svc_lat		*vs_latency;	/* latency record */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	u32			vs_xdrsize;	/* xdrsize needed for this version */
 
 	/* Don't register with rpcbind */
@@ -499,10 +496,10 @@ struct svc_version {
 	 * vs_dispatch == NULL means use default dispatcher.
 	 */
 	int			(*vs_dispatch)(struct svc_rqst *, __be32 *);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 	void 			(*vs_store_latency_to_histogram)(u64, u64, u32);
 	void 			(*vs_store_resp_error)(struct svc_rqst *);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 };
 
 /*

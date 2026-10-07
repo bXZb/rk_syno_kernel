@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2015-2016, Linaro Limited
@@ -45,9 +42,9 @@ static DEFINE_SPINLOCK(driver_lock);
 
 static struct class *tee_class;
 static dev_t tee_devt;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 static u64 dma_mask;//for DMA operation
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 
 static struct tee_context *teedev_open(struct tee_device *teedev)
 {
@@ -358,7 +355,7 @@ tee_ioctl_shm_register(struct tee_context *ctx,
 	return ret;
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 static int tee_ioctl_shm_register_fd(struct tee_context *ctx,
 			struct tee_ioctl_shm_register_fd_data __user *udata)
 {
@@ -395,7 +392,7 @@ static int tee_ioctl_shm_register_fd(struct tee_context *ctx,
 	return ret;
 }
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 static int params_from_user(struct tee_context *ctx, struct tee_param *params,
 			    size_t num_params,
 			    struct tee_ioctl_param __user *uparams)
@@ -869,10 +866,10 @@ static long tee_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		return tee_ioctl_shm_alloc(ctx, uarg);
 	case TEE_IOC_SHM_REGISTER:
 		return tee_ioctl_shm_register(ctx, uarg);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 	case TEE_IOC_SHM_REGISTER_FD:
 		return tee_ioctl_shm_register_fd(ctx, uarg);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	case TEE_IOC_OPEN_SESSION:
 		return tee_ioctl_open_session(ctx, uarg);
 	case TEE_IOC_INVOKE:
@@ -968,11 +965,11 @@ struct tee_device *tee_device_alloc(const struct tee_desc *teedesc,
 	teedev->dev.class = tee_class;
 	teedev->dev.release = tee_release_device;
 	teedev->dev.parent = dev;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 	//for DMA operation
 	dma_mask = 0xffffffff;
 	teedev->dev.dma_mask = &dma_mask;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 
 	teedev->dev.devt = MKDEV(MAJOR(tee_devt), teedev->id);
 

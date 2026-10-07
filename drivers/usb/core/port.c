@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * usb port device code
@@ -12,9 +9,9 @@
 
 #include <linux/slab.h>
 #include <linux/pm_qos.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_VBUS_GPIO_CONTROL
 #include <linux/syno_gpio.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_VBUS_GPIO_CONTROL */
 
 #include "hub.h"
 
@@ -534,7 +531,7 @@ static void find_and_link_peer(struct usb_hub *hub, int port1)
 		link_peers_report(port_dev, peer);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_VBUS_GPIO_CONTROL
 /**
  * syno_usb_hub_node_get - return usb or hub slot index by usb 2 or 3 bus and port
  * @hdev [IN]: usb device
@@ -587,7 +584,7 @@ END:
 	return pUsbSlotNode;
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_USB_EXTERNAL_HUB)
 /**
  * syno_hub_node_get - return hub slot index by usb 2 or 3 bus and port
  * @hdev [IN]: usb device
@@ -607,7 +604,7 @@ END:
 	return pDeviceNode;
 }
 EXPORT_SYMBOL(syno_hub_node_get);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_EXTERNAL_HUB */
 
 /**
  * syno_usb_hub_node_get - return usb or hub slot index by usb 2 or 3 bus and port
@@ -657,23 +654,23 @@ void syno_vbus_gpio_set(const char *vbus_host_addr, const unsigned vbus_gpio_pin
 	}
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_VBUS_GPIO_CONTROL */
 
 int usb_hub_create_port_device(struct usb_hub *hub, int port1)
 {
 	struct usb_port *port_dev;
 	struct usb_device *hdev = hub->hdev;
 	int retval;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_CASTRATED_XHC
 	extern char gSynoCastratedXhcAddr[CONFIG_SYNO_USB_NUM_CASTRATED_XHC][32];
 	extern unsigned gSynoCastratedXhcPortBitmap[CONFIG_SYNO_USB_NUM_CASTRATED_XHC];
 	int i = 0;
-#endif /* MY_DEF_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_USB_CASTRATED_XHC */
+#ifdef CONFIG_SYNO_USB_VBUS_GPIO_CONTROL
 	u32 vbusGpioPin = U32_MAX, vbusGpioPolarity = 0;
 	char *szGpioShared = NULL;
 	struct device_node *pVbusNode = NULL, *pUSBNode = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_VBUS_GPIO_CONTROL */
 
 	port_dev = kzalloc(sizeof(*port_dev), GFP_KERNEL);
 	if (!port_dev)
@@ -702,11 +699,11 @@ int usb_hub_create_port_device(struct usb_hub *hub, int port1)
 	dev_set_name(&port_dev->dev, "%s-port%d", dev_name(&hub->hdev->dev),
 			port1);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_POWER_RESET
 	port_dev->power_cycle_counter = SYNO_POWER_CYCLE_TRIES;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_POWER_RESET */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_CASTRATED_XHC
 	if (hdev && hdev->serial) {
 		for (i = 0; i < CONFIG_SYNO_USB_NUM_CASTRATED_XHC; i++) {
 			if (0 == strcmp(gSynoCastratedXhcAddr[i], hdev->serial) &&
@@ -721,9 +718,9 @@ int usb_hub_create_port_device(struct usb_hub *hub, int port1)
 			}
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_CASTRATED_XHC */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_VBUS_GPIO_CONTROL
 	port_dev->syno_vbus_gpp = -1;
 	port_dev->syno_vbus_gpp_pol = -1;
 	if (hdev && hdev->serial) {
@@ -768,7 +765,7 @@ PUT_NODE:
 			of_node_put(pVbusNode);
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_VBUS_GPIO_CONTROL */
 
 	mutex_init(&port_dev->status_lock);
 	retval = device_register(&port_dev->dev);

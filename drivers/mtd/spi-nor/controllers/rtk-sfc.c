@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Realtek SPI Nor Flash Controller Driver
@@ -591,19 +588,19 @@ static void rtk_spi_nor_unregister_all(struct rtksfc_host *host)
 
 static int rtk_spi_nor_register_all(struct rtksfc_host *host)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_RTD1619B
 	struct device *dev = host->dev;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_RTD1619B */
 	struct device_node *np = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 	int ret;
 
 	//for_each_available_child_of_node(dev->of_node, np) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_RTD1619B
 		ret = rtk_spi_nor_register(dev->of_node, host);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_RTD1619B */
 		ret = rtk_spi_nor_register(np, host);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 		if (ret)
 			goto fail;
 	//}

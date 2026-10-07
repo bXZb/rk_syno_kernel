@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 #include <linux/synolib.h>
 #include <linux/of.h>
 #include <linux/syno_fdt.h>
@@ -9,9 +6,13 @@
 #include <linux/pci.h>
 #include <linux/synobios.h>
 
+#ifdef CONFIG_ACPI
+#include <linux/platform_device.h>
+#endif /* CONFIG_ACPI */
+
 extern int syno_compare_dts_pciepath(const struct pci_dev *pdev, const struct device_node *pDeviceNode);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_HWMON_PMBUS
 int syno_pmbus_property_get(unsigned int *pmbus_property, const char *property_name, int index)
 {
     int iRet = -1;
@@ -29,7 +30,81 @@ END:
 	return iRet;
 }
 EXPORT_SYMBOL(syno_pmbus_property_get);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_HWMON_PMBUS */
+
+int syno_of_i2c_mux_bus_match(int parent_bus, int parent_addr, int channel, int* index)
+{
+	struct device_node *pI2CNode = NULL;
+	struct device_node *pI2CMuxNode = NULL;
+	int iRet = -1;
+	bool iMatch = false;
+	int iBus = 0;
+	u32 iParentBus = 0;
+	char *pParentAddr = NULL;
+	u32 iParentAddr = 0;
+	u32 iChannel = 0;
+
+	if(NULL == of_root || 0 > parent_bus || 0 > parent_addr || 0 > channel || NULL == index) {
+		goto END;
+	}
+
+	for_each_child_of_node(of_root, pI2CNode) {
+		if (!pI2CNode->full_name || 1 != sscanf(pI2CNode->full_name, DT_I2C_BUS"@%d", &iBus)) {
+			continue;
+		}
+
+		for_each_child_of_node(pI2CNode, pI2CMuxNode) {
+			if (!pI2CMuxNode->name || strcmp(DT_I2C_MUX, pI2CMuxNode->name)) {
+				continue;
+			}
+			if (0 != of_property_read_u32_index(pI2CMuxNode, DT_PARENT_BUS, 0, &iParentBus)) {
+				continue;
+			}
+			if (0 != of_property_read_u32_index(pI2CMuxNode, DT_CHANNEL_ID, 0, &iChannel)) {
+				continue;
+			}
+
+			pParentAddr = (char *)of_get_property(pI2CMuxNode, DT_PARENT_ADDR, NULL);
+			if (NULL == pParentAddr || 0 != kstrtou32(pParentAddr, 16, &iParentAddr)) {
+				continue;
+			}
+
+			if (parent_bus == iParentBus && parent_addr == iParentAddr && channel == iChannel) {
+				*index = iBus;
+				iMatch = true;
+				goto END;
+			}
+		}
+	}
+
+END:
+	if (iMatch) {
+		iRet = 0;
+	}
+
+	return iRet;
+}
+EXPORT_SYMBOL_GPL(syno_of_i2c_mux_bus_match);
+
+
+bool is_syno_i2c_bus_bind(void)
+{
+	bool bRet = false;
+
+	if(NULL == of_root) {
+		goto END;
+	}
+
+	if (of_property_read_bool(of_root, DT_SYNO_I2C_BUS_BIND)) {
+		bRet = true;
+		goto END;
+	}
+
+END:
+	return bRet;
+}
+EXPORT_SYMBOL_GPL(is_syno_i2c_bus_bind);
+
 
 struct device_node* syno_of_i2c_bus_match(struct device *dev, int* index)
 {
@@ -47,13 +122,14 @@ struct device_node* syno_of_i2c_bus_match(struct device *dev, int* index)
 
 	for_each_child_of_node(of_root, pI2CNode) {
 		if (pI2CNode->full_name && 1 == sscanf(pI2CNode->full_name, DT_I2C_BUS"@%d", index)) {
-			if (dev_is_pci(dev->parent)) {
+			if (dev_is_pci(dev->parent) && (NULL != of_get_property(pI2CNode, DT_PCIE_ROOT, NULL))) {
 				pdev = to_pci_dev(dev->parent);
 				if (0 == syno_compare_dts_pciepath(pdev, pI2CNode)) {
 					return pI2CNode;
 				}
+			}
 #ifdef CONFIG_ACPI
-			} else if (is_acpi_device_node(dev->parent->fwnode)) {
+			if (is_acpi_device_node(dev->parent->fwnode)) {
 				acpi_dev = ACPI_COMPANION(dev->parent);
 				i2c_hid = (char *)of_get_property(pI2CNode, DT_ACPI_HID, NULL);
 				i2c_uid = (char *)of_get_property(pI2CNode, DT_ACPI_UID, NULL);
@@ -66,8 +142,8 @@ struct device_node* syno_of_i2c_bus_match(struct device *dev, int* index)
 						0 == strncmp(i2c_uid, acpi_dev->pnp.unique_id, SYNO_DTS_PROPERTY_CONTENT_LENGTH)) {
 					return pI2CNode;
 				}
-#endif
 			}
+#endif /* CONFIG_ACPI */
 		}
 	}
 END:
@@ -241,8 +317,35 @@ END:
 
 EXPORT_SYMBOL(syno_pmp_i2c_addr_get);
 
+/**
+ * Get index after the name of a node for kernel with an @
+ * @param puiIndex: destination for saving the index
+ * @param szNodeName: the name of a node
+ *
+ * return 0: reading index success
+ * return -1: reading index failed
+ */
+int syno_fdt_get_index(int *puiIndex, const char *szNodeName)
+{
+	int iRet = -1;
+	int index = 0;
+	char *pAtSign = NULL;
+	pAtSign = strchr(szNodeName, '@');
+	if (!pAtSign) {
+		printk("Failed to find '@' in '%s'.\n", szNodeName);
+		goto Err;
+	}
+	if (kstrtoint(pAtSign + 1, 10, &index)) {
+		printk("Failed to read index number of '%s'.\n", szNodeName);
+		goto Err;
+    }
+	*puiIndex = index;
+	iRet = 0;
+Err:
+	return iRet;
+}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_SPINDOWN_DISK_BEFORE_POWERLOSS
 int syno_is_disk_power_loss_when_reboot(const char *unique)
 {
 	char *property_value = NULL;
@@ -277,4 +380,148 @@ int syno_is_disk_power_loss_when_reboot(const char *unique)
 	return 0;
 }
 EXPORT_SYMBOL(syno_is_disk_power_loss_when_reboot);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_SPINDOWN_DISK_BEFORE_POWERLOSS */
+
+int syno_of_get_int_property_recursive(struct device_node *pNode, const char *prop, u32 *out_val)
+{
+	struct device_node *child;
+	int ret = -1;;
+
+	if (!pNode || !prop || !out_val) {
+		pr_err("%s: invalid parameter\n", __func__);
+		goto END;
+	}
+
+	ret = of_property_read_u32(pNode, prop, out_val);
+	if (!ret) {
+		// Property found and return
+		goto END;
+	}
+
+	// Property not found, search subnode
+	for_each_child_of_node(pNode, child) {
+		ret = syno_of_get_int_property_recursive(child, prop, out_val);
+		if (!ret) {
+			of_node_put(child);
+			// Property found and return
+			goto END;
+		}
+	}
+END:
+	return ret;
+}
+EXPORT_SYMBOL(syno_of_get_int_property_recursive);
+
+#ifdef CONFIG_ACPI
+struct device_node *syno_of_node_by_acpi_device(const struct platform_device *pdev)
+{
+	struct device_node *node = NULL;
+	struct device_node *ret_node = NULL;
+	acpi_handle handle;
+	struct acpi_device *adev = NULL;
+	const char *pdev_hid = NULL;
+	const char *pdev_uid = NULL;
+	const char *dts_hid = NULL;
+	const char *dts_uid = NULL;
+
+	handle = ACPI_HANDLE(&pdev->dev);
+	if (!handle) {
+		goto END;
+	}
+
+	if (acpi_bus_get_device(handle, &adev))
+	{
+		goto END;
+	}
+
+	pdev_hid = acpi_device_hid(adev);
+	pdev_uid = acpi_device_uid(adev);
+
+	if (!pdev_hid) {
+		dev_warn(&pdev->dev, "%s: ACPI device missing _HID\n", __func__);
+		goto END;
+	}
+
+	// Go through SYNO DTS
+	for_each_node_with_property(node, DT_ACPI_HID) {
+
+		// Find match hid
+		if (of_property_read_string(node, DT_ACPI_HID, &dts_hid))
+			continue;
+		if (strcmp(pdev_hid, dts_hid))
+			continue;
+
+		// Find match uid
+		if (!pdev_uid) {
+			// pdev_uid == NULL means no other matched hid in ACPI table, therefore return node directly
+			ret_node = node;
+			break;
+		}
+
+		if (of_property_read_string(node, DT_ACPI_UID, &dts_uid))
+			continue;
+
+		if (strcmp(pdev_uid, dts_uid))
+			continue;
+
+		ret_node = node;
+		break;
+	}
+
+END:
+	return ret_node;
+}
+EXPORT_SYMBOL(syno_of_node_by_acpi_device);
+#endif /* CONFIG_ACPI */
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+void __iomem *syno_of_iomux_base_by_node(const struct device_node *node)
+{
+	const char *hid = NULL;
+	const char *uid = NULL;
+	u32 base = 0;
+	u32 size = 0;
+	void __iomem *iomux_base = NULL;
+
+	if (!node) {
+		pr_err("%s: null device_node\n", __func__);
+		goto END;
+	}
+
+	if (of_property_read_string(node, DT_ACPI_HID, &hid)) {
+		goto END;
+	}
+	(void)of_property_read_string(node, DT_ACPI_UID, &uid); // uid is optional
+
+	if (of_property_read_u32(node, DT_I2C_RCVY_IOMUX_BASE, &base)) {
+		goto END;
+	}
+
+	if (of_property_read_u32(node, DT_I2C_RCVY_IOMUX_BASE_LENG, &size)) {
+		goto END;
+	}
+
+	iomux_base = ioremap(base, size);
+	if (!iomux_base) {
+		pr_err("%s ioremap failed\n", __func__);
+		goto END;
+	}
+
+END:
+	return iomux_base;
+}
+EXPORT_SYMBOL(syno_of_iomux_base_by_node);
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+extern int gSynoMicropSeries;
+void syno_microp_series_get(void)
+{
+	if (of_find_property(of_root, DT_SYNO_MICROP_SERIES, NULL)) {
+		of_property_read_u32_index(of_root, DT_SYNO_MICROP_SERIES, 0, &gSynoMicropSeries);
+	} else {
+		gSynoMicropSeries = 1;
+	}
+}
+EXPORT_SYMBOL(syno_microp_series_get);
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */

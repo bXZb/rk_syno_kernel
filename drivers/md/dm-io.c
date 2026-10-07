@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Copyright (C) 2003 Sistina Software
  * Copyright (C) 2006 Red Hat GmbH
@@ -29,7 +26,7 @@ struct dm_io_client {
 	struct bio_set bios;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 // Internal debug macro
 // #define DM_CORRECTION_DEBUG
 #ifdef DM_CORRECTION_DEBUG
@@ -45,7 +42,7 @@ struct dm_io_client {
 #define dc_dbg(fmt, args...)
 #define dc_check_dbg(bi_flags, fmt, args...)
 #endif /* DM_CORRECTION_DEBUG */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DATA_CORRECTION */
 
 /*
  * Aligning 'struct io' reduces the number of bits required to store
@@ -59,9 +56,9 @@ struct io {
 	void *context;
 	void *vma_invalidate_address;
 	unsigned long vma_invalidate_size;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 	unsigned long bi_flags;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DATA_CORRECTION */
 } __attribute__((aligned(DM_IO_MAX_REGIONS)));
 
 static struct kmem_cache *_dm_io_cache;
@@ -135,7 +132,7 @@ static void retrieve_io_and_region_from_bio(struct bio *bio, struct io **io,
  * We need an io object to keep track of the number of bios that
  * have been dispatched for a particular io.
  *---------------------------------------------------------------*/
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 static void complete_io(struct io *io, int error, unsigned long bi_flags)
 #else
 static void complete_io(struct io *io)
@@ -150,7 +147,7 @@ static void complete_io(struct io *io)
 					     io->vma_invalidate_size);
 
 	mempool_free(io, &io->client->pool);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 	if (bi_flags & (1 << BIO_CORRECTION_ERR)) {
 		dc_dbg("detect BIO_CORRECTION_ERR start");
 
@@ -170,11 +167,11 @@ static void complete_io(struct io *io)
 
 		dc_dbg("detect BIO_CORRECTION_ERR end");
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DATA_CORRECTION */
 	fn(error_bits, context);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 static void dec_count_common(struct io *io, unsigned int region, blk_status_t error,
 		unsigned long bi_flags)
 #else
@@ -185,14 +182,14 @@ static void dec_count(struct io *io, unsigned int region, blk_status_t error)
 		set_bit(region, &io->error_bits);
 
 	if (atomic_dec_and_test(&io->count))
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 		complete_io(io, error, bi_flags);
 #else
 		complete_io(io);
 #endif
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 static void dec_count_syno(struct io *io, unsigned int region, blk_status_t error,
 		unsigned long bi_flags)
 {
@@ -200,7 +197,7 @@ static void dec_count_syno(struct io *io, unsigned int region, blk_status_t erro
 }
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 static void dec_count(struct io *io, unsigned int region, blk_status_t error)
 {
 	dec_count_common(io, region, error, 0);
@@ -214,14 +211,14 @@ static void endio(struct bio *bio)
 	unsigned region;
 	blk_status_t error;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 	unsigned long bi_flags = 0;
 	if (!bio) {
 		dc_dbg("get a null bio");
 	} else {
 		bi_flags = bio->bi_flags;
 	}
-#endif  /* MY_ABC_HERE */
+#endif  /* CONFIG_SYNO_DATA_CORRECTION */
 
 	if (bio->bi_status && bio_data_dir(bio) == READ)
 		zero_fill_bio(bio);
@@ -234,11 +231,11 @@ static void endio(struct bio *bio)
 	error = bio->bi_status;
 	bio_put(bio);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 	dec_count_syno(io, region, error, bi_flags);
 #else
 	dec_count(io, region, error);
-#endif  /* MY_ABC_HERE */
+#endif  /* CONFIG_SYNO_DATA_CORRECTION */
 }
 
 /*-----------------------------------------------------------------
@@ -470,10 +467,10 @@ static void do_region(int op, int op_flags, unsigned region,
 		}
 
 		atomic_inc(&io->count);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 		bio->bi_flags |= io->bi_flags;
 		dc_check_dbg(io->bi_flags, "bio start=%llu size=%llu", (u64)bio->bi_iter.bi_sector, (u64)to_sector(bio->bi_iter.bi_size));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DATA_CORRECTION */
 		submit_bio(bio);
 	} while (remaining);
 }
@@ -520,7 +517,7 @@ static void sync_io_complete(unsigned long error, void *context)
 	complete(&sio->wait);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 static int sync_io(struct dm_io_client *client, unsigned int num_regions,
 		   struct dm_io_region *where, int op, int op_flags,
 		   struct dpages *dp, unsigned long *error_bits, unsigned long bi_flags)
@@ -528,7 +525,7 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
 static int sync_io(struct dm_io_client *client, unsigned int num_regions,
 		   struct dm_io_region *where, int op, int op_flags,
 		   struct dpages *dp, unsigned long *error_bits)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DATA_CORRECTION */
 {
 	struct io *io;
 	struct sync_io sio;
@@ -549,10 +546,10 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
 
 	io->vma_invalidate_address = dp->vma_invalidate_address;
 	io->vma_invalidate_size = dp->vma_invalidate_size;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 	dc_check_dbg(bi_flags, "add io flags");
 	io->bi_flags = bi_flags;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DATA_CORRECTION */
 
 	dispatch_io(op, op_flags, num_regions, where, dp, io, 1);
 
@@ -564,7 +561,7 @@ static int sync_io(struct dm_io_client *client, unsigned int num_regions,
 	return sio.error_bits ? -EIO : 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 static int async_io(struct dm_io_client *client, unsigned int num_regions,
 		    struct dm_io_region *where, int op, int op_flags,
 		    struct dpages *dp, io_notify_fn fn, void *context, unsigned long bi_flags)
@@ -572,7 +569,7 @@ static int async_io(struct dm_io_client *client, unsigned int num_regions,
 static int async_io(struct dm_io_client *client, unsigned int num_regions,
 		    struct dm_io_region *where, int op, int op_flags,
 		    struct dpages *dp, io_notify_fn fn, void *context)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DATA_CORRECTION */
 {
 	struct io *io;
 
@@ -588,10 +585,10 @@ static int async_io(struct dm_io_client *client, unsigned int num_regions,
 	io->client = client;
 	io->callback = fn;
 	io->context = context;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 	io->bi_flags = bi_flags;
 	dc_check_dbg(bi_flags, "set bi_flags=%lx", bi_flags);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DATA_CORRECTION */
 
 	io->vma_invalidate_address = dp->vma_invalidate_address;
 	io->vma_invalidate_size = dp->vma_invalidate_size;
@@ -636,7 +633,7 @@ static int dp_init(struct dm_io_request *io_req, struct dpages *dp,
 
 	return 0;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 /*
  * Make dm_io() able to pass extra data correction bio flags to underlayers
  */
@@ -662,7 +659,7 @@ int syno_dm_io(struct dm_io_request *io_req, unsigned num_regions,
 			io_req->notify.context, bi_flags);
 }
 EXPORT_SYMBOL(syno_dm_io);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DATA_CORRECTION */
 
 /*
  * New collapsed (a)synchronous interface.
@@ -682,7 +679,7 @@ int dm_io(struct dm_io_request *io_req, unsigned num_regions,
 	if (r)
 		return r;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 	if (!io_req->notify.fn)
 		return sync_io(io_req->client, num_regions, where,
 			       io_req->bi_op, io_req->bi_op_flags, &dp,
@@ -700,7 +697,7 @@ int dm_io(struct dm_io_request *io_req, unsigned num_regions,
 	return async_io(io_req->client, num_regions, where, io_req->bi_op,
 			io_req->bi_op_flags, &dp, io_req->notify.fn,
 			io_req->notify.context);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DATA_CORRECTION */
 }
 EXPORT_SYMBOL(dm_io);
 

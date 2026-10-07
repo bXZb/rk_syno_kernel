@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* CPU control.
  * (C) 2001, 2002, 2003, 2004 Rusty Russell
  *
@@ -2576,13 +2573,13 @@ enum cpu_mitigations {
 	CPU_MITIGATIONS_AUTO_NOSMT,
 };
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SPECULATION_DEFAULT_OFF
 static enum cpu_mitigations cpu_mitigations __ro_after_init =
 	CPU_MITIGATIONS_OFF;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_SPECULATION_DEFAULT_OFF */
 static enum cpu_mitigations cpu_mitigations __ro_after_init =
 	CPU_MITIGATIONS_AUTO;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SPECULATION_DEFAULT_OFF */
 
 static int __init mitigations_parse_cmdline(char *arg)
 {
@@ -2607,14 +2604,14 @@ bool cpu_mitigations_off(void)
 }
 EXPORT_SYMBOL_GPL(cpu_mitigations_off);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SPECULATION_DEFAULT_OFF
 /* mitigations=auto */
 void cpu_mitigations_auto_set(void)
 {
 	cpu_mitigations = CPU_MITIGATIONS_AUTO;
 }
 EXPORT_SYMBOL(cpu_mitigations_auto_set);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SPECULATION_DEFAULT_OFF */
 
 /* mitigations=auto,nosmt */
 bool cpu_mitigations_auto_nosmt(void)

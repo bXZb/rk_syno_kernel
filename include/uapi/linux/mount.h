@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 #ifndef _UAPI_LINUX_MOUNT_H
 #define _UAPI_LINUX_MOUNT_H
 
@@ -20,9 +17,9 @@
 #define MS_MANDLOCK	64	/* Allow mandatory locks on an FS */
 #define MS_DIRSYNC	128	/* Directory modifications are synchronous */
 #define MS_NOSYMFOLLOW	256	/* Do not follow symlinks */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ROOT_PRJQUOTA
 #define MS_ROOTPRJQUOTA 512
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ROOT_PRJQUOTA */
 #define MS_NOATIME	1024	/* Do not update access times. */
 #define MS_NODIRATIME	2048	/* Do not update directory access times */
 #define MS_BIND		4096

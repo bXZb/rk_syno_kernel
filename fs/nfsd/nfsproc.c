@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Process version 2 NFS requests.
@@ -14,13 +11,13 @@
 #include "xdr.h"
 #include "vfs.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_WINACL
 #include <linux/syno_acl.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_WINACL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 #include "syno_io_stat.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 
 #define NFSDDBG_FACILITY		NFSDDBG_PROC
 
@@ -100,7 +97,7 @@ nfsd_proc_setattr(struct svc_rqst *rqstp)
 
 		if (delta < 0)
 			delta = -delta;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_WINACL
 		if (delta < MAX_TOUCH_TIME_ERROR) {
 			if (IS_SYNOACL(fhp->fh_dentry) &&
 			    synoacl_op_setattr_prepare(fhp->fh_dentry, iap) != 0) {
@@ -109,7 +106,7 @@ nfsd_proc_setattr(struct svc_rqst *rqstp)
 				iap->ia_valid &= ~BOTH_TIME_SET;
 			}
 		}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFSD_WINACL */
 		if (delta < MAX_TOUCH_TIME_ERROR &&
 		    setattr_prepare(fhp->fh_dentry, iap) != 0) {
 			/*
@@ -119,7 +116,7 @@ nfsd_proc_setattr(struct svc_rqst *rqstp)
 			 */
 			iap->ia_valid &= ~BOTH_TIME_SET;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_WINACL */
 	}
 
 	resp->status = nfsd_setattr(rqstp, fhp, iap, 0, (time64_t)0);
@@ -627,7 +624,7 @@ nfsd_proc_statfs(struct svc_rqst *rqstp)
 	return rpc_success;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFS_VAAI_SUPPORT
 /*
  * Enable NFS VAAI plugin to reserve space.
  * Only support pre-allocate blocks for now.
@@ -808,7 +805,7 @@ nfsd_proc_synosupport(struct svc_rqst *rqstp)
 	return rpc_success;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFS_VAAI_LAZY_CLONE
 static __be32
 nfsd_proc_synoclone(struct svc_rqst *rqstp)
 {
@@ -838,8 +835,8 @@ nfsd_proc_synoclone(struct svc_rqst *rqstp)
 out:
 	return rpc_success;
 }
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFS_VAAI_LAZY_CLONE */
+#endif /* CONFIG_SYNO_NFS_VAAI_SUPPORT */
 
 /*
  * NFSv2 Server procedures.
@@ -851,15 +848,15 @@ struct nfsd_void { int dummy; };
 #define FH 8		/* filehandle */
 #define	AT 18		/* attributes */
 
-#ifdef MY_ABC_HERE
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFS_VAAI_SUPPORT
+#ifdef CONFIG_SYNO_NFS_VAAI_LAZY_CLONE
 static const struct svc_procedure nfsd_procedures2[33] = {
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFS_VAAI_LAZY_CLONE */
 static const struct svc_procedure nfsd_procedures2[32] = {
-#endif /* MY_ABC_HERE */
-#else /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFS_VAAI_LAZY_CLONE */
+#else /* CONFIG_SYNO_NFS_VAAI_SUPPORT */
 static const struct svc_procedure nfsd_procedures2[18] = {
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFS_VAAI_SUPPORT */
 	[NFSPROC_NULL] = {
 		.pc_func = nfsd_proc_null,
 		.pc_decode = nfssvc_decode_void,
@@ -1028,7 +1025,7 @@ static const struct svc_procedure nfsd_procedures2[18] = {
 		.pc_cachetype = RC_NOCACHE,
 		.pc_xdrressize = ST+5,
 	},
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFS_VAAI_SUPPORT
 		{}, /* for future extension */
 		{},
 		{},
@@ -1078,7 +1075,7 @@ static const struct svc_procedure nfsd_procedures2[18] = {
 		.pc_cachetype = RC_NOCACHE,
 		.pc_xdrressize = ST,
 		},
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFS_VAAI_LAZY_CLONE
 		[NFSPROC_SYNO_CLONE] = {
 		.pc_func = nfsd_proc_synoclone,
 		.pc_decode = nfssvc_decode_writeargs,
@@ -1089,11 +1086,11 @@ static const struct svc_procedure nfsd_procedures2[18] = {
 		.pc_cachetype = RC_REPLBUFF,
 		.pc_xdrressize = ST+AT,
 		},
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFS_VAAI_LAZY_CLONE */
+#endif /* CONFIG_SYNO_NFS_VAAI_SUPPORT */
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 static void nfsd_store_latency(u64 rpc_lat, u64 vfs_lat, u32 op)
 {
 	enum syno_nfsd_io_stat_type type;
@@ -1115,34 +1112,34 @@ static void nfsd_store_error(struct svc_rqst *rqstp)
 	st = (const struct syno_nfsd_dummy_status *) rqstp->rq_resp;
 	syno_nfsd_store_error(be32_to_cpu(st->status), SYNO_NFSD_VERSION_2);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 
 static unsigned int nfsd_count2[ARRAY_SIZE(nfsd_procedures2)];
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 static struct svc_lat nfsd_latency2[ARRAY_SIZE(nfsd_procedures2)];
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 const struct svc_version nfsd_version2 = {
 	.vs_vers	= 2,
-#ifdef MY_ABC_HERE
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFS_VAAI_SUPPORT
+#ifdef CONFIG_SYNO_NFS_VAAI_LAZY_CLONE
 	.vs_nproc   = 33,
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NFS_VAAI_LAZY_CLONE */
 	.vs_nproc   = 32,
-#endif /* MY_ABC_HERE */
-#else /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFS_VAAI_LAZY_CLONE */
+#else /* CONFIG_SYNO_NFS_VAAI_SUPPORT */
 	.vs_nproc	= 18,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFS_VAAI_SUPPORT */
 	.vs_proc	= nfsd_procedures2,
 	.vs_count	= nfsd_count2,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	.vs_latency	= nfsd_latency2,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	.vs_dispatch	= nfsd_dispatch,
 	.vs_xdrsize	= NFS2_SVC_XDRSIZE,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_UDC_COLLECTOR
 	.vs_store_latency_to_histogram 	= nfsd_store_latency,
 	.vs_store_resp_error 		= nfsd_store_error,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_UDC_COLLECTOR */
 };
 
 /*

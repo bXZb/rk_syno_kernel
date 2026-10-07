@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  *  ahci.c - AHCI SATA support
@@ -37,26 +34,30 @@
 #include <linux/io-64-nonatomic-lo-hi.h>
 #include "ahci.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 #include <linux/of.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
-#if defined(MY_ABC_HERE) || defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_PORT_MAPPING_V2) || defined(CONFIG_SYNO_PCI_M2DXX_SIGNAL_SETTING)
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE || MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 || CONFIG_SYNO_PCI_M2DXX_SIGNAL_SETTING */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_HW_VERSION
 #include <linux/synobios.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_HW_VERSION */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_JMB585_GPIO_LED_CTRL
 #include <linux/syno_gpio.h>
 extern struct ata_port *syno_ata_port_get_by_port(const unsigned short diskPort);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_JMB585_GPIO_LED_CTRL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AHCI_SWITCH
 extern char g_ahci_switch;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AHCI_SWITCH */
+
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
+extern bool g_support_syno_dpm;
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
 
 #define DRV_NAME	"ahci"
 #define DRV_VERSION	"3.0"
@@ -83,9 +84,9 @@ enum board_ids {
 	/* board IDs for specific chipsets in alphabetical order */
 	board_ahci_al,
 	board_ahci_avn,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_JMB585_FIX
 	board_ahci_jmb585,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_JMB585_FIX */
 	board_ahci_mcp65,
 	board_ahci_mcp77,
 	board_ahci_mcp89,
@@ -107,10 +108,10 @@ enum board_ids {
 	board_ahci_mcp79	= board_ahci_mcp77,
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_JMB585_FIX
 static int syno_ahci_hardreset_jmb(struct ata_link *link, unsigned int *class, unsigned long deadline);
 static int syno_ahci_softreset_jmb(struct ata_link *link, unsigned int *class, unsigned long deadline);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_JMB585_FIX */
 
 static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
 static void ahci_remove_one(struct pci_dev *dev);
@@ -151,14 +152,14 @@ static struct ata_port_operations ahci_avn_ops = {
 	.hardreset		= ahci_avn_hardreset,
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_JMB585_FIX
 static struct ata_port_operations ahci_jmb585_ops = {
 	.inherits		= &ahci_ops,
 	.hardreset		= syno_ahci_hardreset_jmb,
 	.softreset		= syno_ahci_softreset_jmb,
 	.pmp_softreset		= syno_ahci_softreset_jmb,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_JMB585_FIX */
 
 static const struct ata_port_info ahci_port_info[] = {
 	/* by features */
@@ -283,14 +284,14 @@ static const struct ata_port_info ahci_port_info[] = {
 		.udma_mask	= ATA_UDMA6,
 		.port_ops	= &ahci_ops,
 	},
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_JMB585_FIX
 	[board_ahci_jmb585] = {
 		.flags		= AHCI_FLAG_COMMON,
 		.pio_mask	= ATA_PIO4,
 		.udma_mask	= ATA_UDMA6,
 		.port_ops	= &ahci_jmb585_ops,
 	},
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_JMB585_FIX */
 };
 
 static const struct pci_device_id ahci_pci_tbl[] = {
@@ -465,11 +466,11 @@ static const struct pci_device_id ahci_pci_tbl[] = {
 	{ PCI_VDEVICE(INTEL, 0x34d3), board_ahci_mobile }, /* Ice Lake LP AHCI */
 	{ PCI_VDEVICE(INTEL, 0x02d3), board_ahci_mobile }, /* Comet Lake PCH-U AHCI */
 	{ PCI_VDEVICE(INTEL, 0x02d7), board_ahci_mobile }, /* Comet Lake PCH RAID */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_JMB585_FIX
 	// restore JMB585 IFS error handler
 	{ PCI_VDEVICE(JMICRON, 0x0585), board_ahci_jmb585 },
 	{ PCI_VDEVICE(JMICRON, 0x0582), board_ahci_jmb585 },
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_JMB585_FIX */
 
 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
@@ -630,12 +631,12 @@ static const struct pci_device_id ahci_pci_tbl[] = {
 	  .driver_data = board_ahci_yes_fbs },
 	{ PCI_DEVICE(PCI_VENDOR_ID_TTI, 0x0645), /* highpoint rocketraid 644L */
 	  .driver_data = board_ahci_yes_fbs },
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_MV92XX_PORTING
 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9235),
 	  .driver_data = board_ahci_yes_fbs },			/* 88se9235 */
 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9215),
 	  .driver_data = board_ahci_yes_fbs },			/* 88se9215 */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_MV92XX_PORTING */
 
 	/* Promise */
 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
@@ -669,7 +670,7 @@ static const struct pci_device_id ahci_pci_tbl[] = {
 	{ }	/* terminate list */
 };
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_M2DXX_SIGNAL_SETTING
 #define SYNO_SATA_MAX_PORTS_CNT 32
 
 static struct {
@@ -830,7 +831,7 @@ static int mobile_lpm_policy = -1;
 module_param(mobile_lpm_policy, int, 0644);
 MODULE_PARM_DESC(mobile_lpm_policy, "Default LPM policy for mobile chipsets");
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_MV9170_GPIO_CTRL
 /*
  * 9170 gpio mmio address, to control 9170 GPIO, please read register manual(AN-ML-10-051513_GPIO)
  */
@@ -885,9 +886,9 @@ void syno_mv_9170_gpio_reg_set(struct ata_host *host, const unsigned int gpioadd
 END:
 	return;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_MV9170_GPIO_CTRL */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_MV92XX_GPIO_CTRL
 /*
  * 9235 gpio mmio address, to control 9235/9215 GPIO, please read register manual section 1.6
  */
@@ -941,9 +942,9 @@ void syno_mv_9235_gpio_reg_set(struct ata_host *host, const unsigned int gpioadd
 END:
 	return;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_MV92XX_GPIO_CTRL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_MV9XXX_SIGNAL_SETTING
 /*
  *	Check vender and device for Marvell 88se9235, 88se9215, 88se9170
  */
@@ -1022,7 +1023,7 @@ void syno_mv_9xxx_amp_adjust_by_port(struct ata_host *host, u32 val, unsigned in
 void syno_mv_9xxx_amp_adjust(struct ata_host *host, struct pci_dev *pdev)
 {
 	int port = 0;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_M2DXX_SIGNAL_SETTING
 	int idx = 0;
 
 	if (0 <= (idx = syno_m2d_model_get(pdev))) {
@@ -1040,7 +1041,7 @@ void syno_mv_9xxx_amp_adjust(struct ata_host *host, struct pci_dev *pdev)
 			}
 		}
 	} else {
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_M2DXX_SIGNAL_SETTING */
 	if (syno_is_hw_version(HW_DS720p)) {
 		// ESATA port
 		/* MV9170 */
@@ -1068,13 +1069,13 @@ void syno_mv_9xxx_amp_adjust(struct ata_host *host, struct pci_dev *pdev)
 			syno_mv_9xxx_amp_adjust_by_port(host, 0xE75, mv_port_addr[port], mv_port_data[port], mv_sata_gen[2]);
 		}
 	}
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_M2DXX_SIGNAL_SETTING
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_M2DXX_SIGNAL_SETTING */
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_MV9XXX_SIGNAL_SETTING */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_JMB585_AMP_ADJUST
 
 #define SYNO_JMB585_PORT_NUM 5
 #define SYNO_JMB582_PORT_NUM 2
@@ -1627,9 +1628,9 @@ void syno_jmb58x_init(struct ata_host *host)
 		}
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_JMB585_AMP_ADJUST */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_JMB585_GPIO_LED_CTRL
 //Access Offset 0xAC to set GPIO[15:11] for pull up[15:11] and output enable [15:11], pull up is used to control resister status, set 0 in this case
 //Register description:
 //   Memory Write (BAR5 + 0xAC ) = { pull_up[15:11] , 3'h0 , 8'h00, output_enable [15:11] , 3'h0,  8'h00  }
@@ -1738,9 +1739,9 @@ void syno_jmb585_led_wait(void)
 	}
 }
 EXPORT_SYMBOL(syno_jmb585_led_wait);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_JMB585_GPIO_LED_CTRL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_ASM1061_AMP_ADJUST
 #define SYNO_ASM1061_MAX_PORT_NUM 2
 #define SYNO_ASM1061_GEN 3
 /*
@@ -1856,7 +1857,7 @@ void syno_asmedia_1061_init(struct ata_host *host)
 		syno_asmedia_1061_reg_set(pdev, devfn, 0xDAE, 0x92);
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_ASM1061_AMP_ADJUST */
 
 #ifdef CONFIG_SYNO_SATA_ASM116X_CONTROL
 #define SYNO_ASM116X_MAX_PORT_NUM    6
@@ -1945,7 +1946,7 @@ END:
 	return;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_ASM116X_AMP_ADJUST
 static void syno_asmedia_116x_amp_adjust(struct pci_dev *pdev, const unsigned addr[][SYNO_ASM116X_MAX_PORT_NUM], unsigned int *data, unsigned int len, unsigned int gen)
 {
 	void __iomem *bar0 = NULL;
@@ -1998,9 +1999,9 @@ static void syno_asmedia_116x_ssc_set(struct pci_dev* pdev, unsigned ssc_enable)
 END:
 	return;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_ASM116X_AMP_ADJUST */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_ASM116X_GPIO_LED_CTRL
 #define SYNO_ASM116X_LED_UNIT_REG    0x1D20
 #define SYNO_ASM116X_GPIO_MODE_REG   0x1D6E
 #define SYNO_ASM116X_GPIO_CTL_REG    0x1D6A
@@ -2133,7 +2134,7 @@ static void syno_asmedia_116x_disk_led_gpio_init(struct ata_host *host, unsigned
 END:
 	return;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_ASM116X_GPIO_LED_CTRL */
 
 static u32 syno_asmedia_116x_fw_version_get(struct pci_dev *pdev, unsigned int devfn, unsigned int reg_addr)
 {
@@ -2174,28 +2175,28 @@ END:
 	return;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_ASM116X_AMP_ADJUST
 const unsigned asm116x_port_addr[SYNO_ASM116X_GEN][SYNO_ASM116X_MAX_PORT_NUM] = {{0x122, 0x322, 0x522, 0x722, 0x922, 0xB22},
                                                                                {0x123, 0x323, 0x523, 0x723, 0x923, 0xB23},
                                                                                {0x124, 0x324, 0x524, 0x724, 0x924, 0xB24}};
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_ASM116X_AMP_ADJUST */
 
 void syno_asmedia_116x_init(struct ata_host *host)
 {
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_ASM116X_AMP_ADJUST
 	struct pci_dev *pdev = to_pci_dev(host->dev);
 	unsigned int uiLinkSpeed = 0;
 	unsigned int asm116x_data[SYNO_ASM116X_MAX_PORT_NUM] = {0};
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_ASM116X_AMP_ADJUST */
 
 	syno_asmedia_116x_fw_version_show(host);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_ASM116X_GPIO_LED_CTRL
 	// Initialize GPIO Mode for led control
 	syno_asmedia_116x_disk_led_gpio_init(host, host->n_ports);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_ASM116X_GPIO_LED_CTRL */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_SATA_ASM116X_AMP_ADJUST
 	if (syno_is_hw_version(HW_RS2421p) || syno_is_hw_version(HW_RS2421rpp)) {
 		// Set SSC off
 		syno_asmedia_116x_ssc_set(pdev, 0);
@@ -2223,7 +2224,7 @@ void syno_asmedia_116x_init(struct ata_host *host)
 			syno_asmedia_116x_amp_adjust(pdev, asm116x_port_addr, asm116x_data, host->n_ports, uiLinkSpeed);
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_ASM116X_AMP_ADJUST */
 }
 #endif /* CONFIG_SYNO_SATA_ASM116X_CONTROL */
 
@@ -2420,7 +2421,7 @@ static int ahci_avn_hardreset(struct ata_link *link, unsigned int *class,
 	return rc;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_JMB585_FIX
 static int syno_ahci_hardreset_jmb(struct ata_link *link, unsigned int *class,
 			  unsigned long deadline)
 {
@@ -2473,7 +2474,7 @@ static int syno_ahci_softreset_jmb(struct ata_link *link, unsigned int *class,
 	writel(uIRQStatus, port_mmio + PORT_IRQ_MASK);
 	return iRet;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_JMB585_FIX */
 
 
 #ifdef CONFIG_PM
@@ -3304,7 +3305,7 @@ static ssize_t remapped_nvme_show(struct device *dev,
 
 static DEVICE_ATTR_RO(remapped_nvme);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 
 #define SYNO_SATA_MAX_GEN 3
 #define SYNO_SATA_MAX_PORTS 32
@@ -3342,17 +3343,17 @@ END:
 	}
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SIGNAL_ADJUST_BY_DTS
 static void syno_set_signal(struct ata_host *host, unsigned int sigData[SYNO_SATA_MAX_GEN][SYNO_SATA_MAX_PORTS], unsigned int sscOffTable[SYNO_SATA_MAX_PORTS])
 {
 	int port, gen;
 	struct pci_dev *pdev = NULL;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_JMB585_AMP_ADJUST
 	int max_port = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_JMB585_AMP_ADJUST */
 	
 	if (NULL == host || NULL == sigData) {
 		goto END;
@@ -3360,7 +3361,7 @@ static void syno_set_signal(struct ata_host *host, unsigned int sigData[SYNO_SAT
 
 	pdev = to_pci_dev(host->dev);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_MV9XXX_SIGNAL_SETTING
 	if (syno_mv_9xxx_check(pdev)) {
 		printk("mv9xxx\n");
 		for (gen = 0; gen < MV_GEN; gen++) {
@@ -3371,8 +3372,8 @@ static void syno_set_signal(struct ata_host *host, unsigned int sigData[SYNO_SAT
 			}
 		}
 	}
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SATA_MV9XXX_SIGNAL_SETTING */
+#ifdef CONFIG_SYNO_SATA_JMB585_AMP_ADJUST
 	if (0 == syno_jmb58x_check(pdev->vendor, pdev->device)) {
 		if (0x0585 == pdev->device) {
 			max_port = SYNO_JMB585_PORT_NUM;
@@ -3397,8 +3398,8 @@ static void syno_set_signal(struct ata_host *host, unsigned int sigData[SYNO_SAT
 			}
 		}
 	}
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_SATA_JMB585_AMP_ADJUST */
+#ifdef CONFIG_SYNO_SATA_ASM1061_AMP_ADJUST
 	if (0 == syno_asmedia_1061_check(pdev)) {
 		for (gen = 0; gen < SYNO_ASM1061_GEN; gen++) {
 			for (port = 0; port < SYNO_ASM1061_MAX_PORT_NUM; ++port) {
@@ -3409,8 +3410,8 @@ static void syno_set_signal(struct ata_host *host, unsigned int sigData[SYNO_SAT
 			}
 		}
 	}
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_SATA_ASM1061_AMP_ADJUST */
+#ifdef CONFIG_SYNO_SATA_ASM116X_AMP_ADJUST
 	if (0 == syno_asmedia_116x_check(pdev)) {
 		for (gen = 0; gen < SYNO_ASM116X_GEN; ++gen) {
 			for (port = 0; port < SYNO_ASM116X_MAX_PORT_NUM; ++port) {
@@ -3427,16 +3428,16 @@ static void syno_set_signal(struct ata_host *host, unsigned int sigData[SYNO_SAT
 			}
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_SATA_ASM116X_AMP_ADJUST */
 
 END:
 	return;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 extern void syno_pci_eunit_unique_fill(struct ata_port *ap);
-#endif /* MY_DEF_HERE */
-#ifdef CONFIG_SYNO_SATA_ASM116X_CONTROL
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
+#if defined(CONFIG_SYNO_SATA_ASM116X_CONTROL) && defined(CONFIG_SYNO_PCI_EUNIT_I2C)
 static bool syno_asmedia_116x_eunit_init_and_signal_adjust_by_dts(struct ata_host *host)
 {
 	bool blRet = false;
@@ -3512,7 +3513,7 @@ END:
 	return blRet;
 
 }
-#endif /* CONFIG_SYNO_SATA_ASM116X_CONTROL */
+#endif /* CONFIG_SYNO_SATA_ASM116X_CONTROL && CONFIG_SYNO_PCI_EUNIT_I2C */
 
 static void syno_init_and_signal_adjust_by_dts(struct ata_host *host)
 {
@@ -3533,18 +3534,20 @@ static void syno_init_and_signal_adjust_by_dts(struct ata_host *host)
 	}
 
 /* Show contorller fw version */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_JMB585_AMP_ADJUST
 	if (0 == syno_jmb58x_check(pdev->vendor, pdev->device)) {
 		syno_jmb58x_version_show(host);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_JMB585_AMP_ADJUST */
 #ifdef CONFIG_SYNO_SATA_ASM116X_CONTROL
 	if (0 == syno_asmedia_116x_check(pdev)) {
 		syno_asmedia_116x_fw_version_show(host);
 	}
+#ifdef CONFIG_SYNO_PCI_EUNIT_I2C
 	if (syno_asmedia_116x_eunit_init_and_signal_adjust_by_dts(host)) {
 		goto END;
 	}
+#endif /* CONFIG_SYNO_PCI_EUNIT_I2C */
 #endif /* CONFIG_SYNO_SATA_ASM116X_CONTROL */
 
 	/* Enum slot */
@@ -3594,19 +3597,19 @@ static void syno_init_and_signal_adjust_by_dts(struct ata_host *host)
 	syno_set_signal(host, sigData, sscOffTable);
 
 /* General adjust */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_ASM1061_AMP_ADJUST
 	if (0 == syno_asmedia_1061_check(pdev)) {
 		syno_asmedia_1061_reg_set(pdev, pdev->devfn, 0xCAE, 0x92);
 		mdelay(100);
 		syno_asmedia_1061_reg_set(pdev, pdev->devfn, 0xDAE, 0x92);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_ASM1061_AMP_ADJUST */
 
 END:
 	return;
 
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SIGNAL_ADJUST_BY_DTS */
 
 static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
@@ -3621,12 +3624,12 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	VPRINTK("ENTER\n");
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AHCI_SWITCH
 	if ('0' == g_ahci_switch) {
 		printk("AHCI is disabled.\n");
 		return 0;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AHCI_SWITCH */
 
 	WARN_ON((int)ATA_MAX_QUEUE > AHCI_MAX_CMDS);
 
@@ -3817,6 +3820,20 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	}
 	hpriv->irq = pci_irq_vector(pdev, 0);
 
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
+	if (!g_support_syno_dpm) {
+		/* If DPM is supported, we don't need to disable the SSS */
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
+#ifdef CONFIG_SYNO_SATA_SPINUP_GROUP
+	if (hpriv->cap & HOST_CAP_SSS) {
+		dev_info(&pdev->dev, "Disalbe HOST_CAP_SSS due to CONFIG_SYNO_SPINUP_DELAY\n");
+		hpriv->cap &= ~HOST_CAP_SSS;
+	}
+#endif /* CONFIG_SYNO_SATA_SPINUP_GROUP */
+#ifdef CONFIG_SYNO_DISK_POWER_MANAGER
+	}
+#endif /* CONFIG_SYNO_DISK_POWER_MANAGER */
+
 	if (!(hpriv->cap & HOST_CAP_SSS) || ahci_ignore_sss)
 		host->flags |= ATA_HOST_PARALLEL_SCAN;
 	else
@@ -3842,26 +3859,26 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 		if (!(hpriv->port_map & (1 << i)))
 			ap->ops = &ata_dummy_port_ops;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 		ap->ops->syno_compare_node_info = syno_ahci_compare_ata_devicetree_info;
 		/* Fill internal slot index. 0 base, < 0 means error or not internal slot */
 		ap->syno_internal_slot_index = lookup_internal_slot(ap) - 1;
-#endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 		syno_pci_eunit_unique_fill(ap);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_RECOVER_MECHANISM
 		/* Have default syno_recover method, set max tries */
 		ap->syno_recover_max_tries = 1;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_RECOVER_MECHANISM */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_DEEP_RETRY
 		/* Support deep sleep, change recover method to deep retry */
 		if (iIsSynoDeepSleepSupport(ap)) {
 			ap->ops->syno_recover = syno_sata_deep_retry;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_DEEP_RETRY */
 	}
 
 	/* apply workaround for ASUS P5W DH Deluxe mainboard */
@@ -3885,23 +3902,23 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	pci_set_master(pdev);
 
 #ifdef CONFIG_SYNO_SATA_SIGNAL_ADJUST
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_MV9XXX_SIGNAL_SETTING
 	if (syno_mv_9xxx_check(pdev)) {
 		syno_mv_9xxx_amp_adjust(host, pdev);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_MV9XXX_SIGNAL_SETTING */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_JMB585_AMP_ADJUST
 	if (0 == syno_jmb58x_check(pdev->vendor, pdev->device)) {
 		syno_jmb58x_init(host);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_JMB585_AMP_ADJUST */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_ASM1061_AMP_ADJUST
 	if (0 == syno_asmedia_1061_check(pdev)) {
 		syno_asmedia_1061_init(host);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_ASM1061_AMP_ADJUST */
 
 #ifdef CONFIG_SYNO_SATA_ASM116X_CONTROL
 	if (0 == syno_asmedia_116x_check(pdev)) {
@@ -3910,9 +3927,9 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 #endif /* CONFIG_SYNO_SATA_ASM116X_CONTROL */
 #endif /* CONFIG_SYNO_SATA_SIGNAL_ADJUST */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SIGNAL_ADJUST_BY_DTS
 	syno_init_and_signal_adjust_by_dts(host);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SIGNAL_ADJUST_BY_DTS */
 
 	rc = ahci_host_activate(host, &ahci_sht);
 	if (rc)

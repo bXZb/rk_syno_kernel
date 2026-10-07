@@ -14,7 +14,7 @@ class Platform
         end
 
         def numa?
-            @target == :PURLEY || @target == :EPYC7002 || @target == :EPYC7002SOFS || @target == :EPYC7003NTB
+            @target == :PURLEY || @target == :EPYC7002 || @target == :EPYC7002SOFS || @target == :EPYC7003 || @target == :EPYC7003NTB
         end
     end
 end

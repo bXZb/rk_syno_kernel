@@ -28,6 +28,9 @@ static struct work_struct interrupt_rescan_work;
 static struct workqueue_struct *dpm_quota_wq = NULL;
 static struct workqueue_struct *dpm_interrupt_rescan_wq = NULL;
 static struct task_struct *monitor_thread = NULL;
+// static struct task_struct *watch_dog_thread = NULL;
+// extern int SYNO_CHECK_HDD_DETECT(int index);
+// extern int SYNO_CHECK_HDD_TEST(int index);
 
 extern bool g_support_syno_dpm;
 extern int g_syno_dpm_debug_level;
@@ -720,9 +723,7 @@ int syno_dpm_req_pwr_with_fixed_delayed_by_uuid(
 		found = true;
 		target_mpi->mon_expired_time_jiffy = jiffies;
 		for (i = 0; i < target_mpi->pm_conf.slot_size; i++) {
-			if (target_mpi->slot_info_list[i].status == SYNO_DPM_SLOT_STATUS_DEEP_SLEEP_RETRY) {
-				target_mpi->slot_info_list[i].status = SYNO_DPM_SLOT_STATUS_WAIT_FOR_WAKE;
-			}
+			target_mpi->slot_info_list[i].status = SYNO_DPM_SLOT_STATUS_WAIT_FOR_WAKE;
 		}
 	}
 	spin_unlock_irqrestore(&g_machine_pm_list_lock, flags);
@@ -954,11 +955,9 @@ int syno_dpm_req_deep_sleep_by_uuid(const char *uuid, const int timeout, const c
 	spin_unlock_irqrestore(&g_machine_pm_list_lock, flags);
 
 	for (i = 1; i <= slot_size; i++) {
-		if (plan->slot_info_list[i - 1].status == SYNO_DPM_SLOT_STATUS_DETECTED) {
-			if (0 != syno_dpm_req_deep_sleep_by_slot(uuid, i, false, 0, __func__)) {
-				printk(ERR_LOG_FMT "unable set deep sleep on slot %d on [%s]\n", i, uuid);
-				goto END;
-			}
+		if (0 != syno_dpm_req_deep_sleep_by_slot(uuid, i, false, 0, __func__)) {
+			printk(ERR_LOG_FMT "unable set deep sleep on slot %d on [%s]\n", i, uuid);
+			goto END;
 		}
 	}
 
@@ -1002,6 +1001,41 @@ static inline void free_hotplug_check_plan_list(
 		list_del(&plan->list);
 		free_hotplug_check_plan(plan);
 	}
+}
+
+static int update_mpi_slot_status(
+	const char *uuid, int slot, enum SYNO_DPM_SLOT_STATUS status)
+{
+	int ret = -1;
+	bool locked = false;
+	unsigned long flags;
+	struct machine_pm_info *target_mpi = NULL;
+
+	if (uuid == NULL) {
+		printk(ERR_LOG_FMT "invalid parameter\n");
+		goto END;
+	}
+
+	spin_lock_irqsave(&g_machine_pm_list_lock, flags);
+	locked = true;
+	target_mpi = get_mpi_by_uuid(uuid);
+	if (!target_mpi) {
+		printk(ERR_LOG_FMT "unable to found [%s] in machine list\n", uuid);
+		goto END;
+	}
+
+	if (slot == 0 || slot > target_mpi->pm_conf.slot_size) {
+		printk(ERR_LOG_FMT "slot[%d] isn't valid for [%s]\n", slot, uuid);
+		goto END;
+	}
+
+	target_mpi->slot_info_list[slot - 1].status = status;
+	ret = 0;
+END:
+	if (locked) {
+		spin_unlock_irqrestore(&g_machine_pm_list_lock, flags);
+	}
+	return ret;
 }
 
 static int update_mpi_slot_changing_status(
@@ -1155,7 +1189,7 @@ static bool handle_hotplug_check_plan(
 
 			enable_result = dpm_disk_power_enable_check(&plan->pm_ctr, slot);
 			present_result = dpm_disk_power_present_check(&plan->pm_ctr, slot);
-			if (present_result == -1 || enable_result == -1) {
+			if (present_result < 0 || enable_result < 0) {
 				if (g_syno_dpm_debug_level > 3) {
 					/* This log may flood when eunit is plugin out */
 					printk(ERR_LOG_FMT "failed to check slot %d on [%s]\n", slot, plan->uuid);
@@ -1168,6 +1202,22 @@ static bool handle_hotplug_check_plan(
 					SYNO_DPM_SLOT_CHANGING_STATUS_NONE, 0) != 0) {
 					printk(ERR_LOG_FMT "failed to update slot %d changing status on [%s]\n",
 						slot, plan->uuid);
+				}
+				
+				if (present_result == 1 && enable_result == 1 &&
+					plan->slot_info_list[slot - 1].status != SYNO_DPM_SLOT_STATUS_DETECTED) {
+					if (update_mpi_slot_status(plan->uuid, slot,
+						SYNO_DPM_SLOT_STATUS_DETECTED) != 0) {
+						printk(ERR_LOG_FMT "failed to update slot %d status on [%s]\n",
+							slot, plan->uuid);
+					}
+				} else if (present_result == 0 && enable_result == 0 &&
+					plan->slot_info_list[slot - 1].status != SYNO_DPM_SLOT_STATUS_UNDETECTED) {
+					if (update_mpi_slot_status(plan->uuid, slot,
+						SYNO_DPM_SLOT_STATUS_UNDETECTED) != 0) {
+						printk(ERR_LOG_FMT "failed to update slot %d status on [%s]\n",
+							slot, plan->uuid);
+					}
 				}
 				continue;
 			}

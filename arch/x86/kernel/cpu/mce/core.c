@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Machine check handler.
@@ -104,10 +101,10 @@ static DEFINE_PER_CPU(struct mce, mces_seen);
 static unsigned long mce_need_notify;
 static int cpu_missing;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ECC_NOTIFICATION
 int (*funcSYNOECCNotification)(unsigned int type, unsigned int syndrome, u64 memAddr) = NULL;
 EXPORT_SYMBOL(funcSYNOECCNotification);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ECC_NOTIFICATION */
 
 /*
  * MCA banks polled by the period polling timer for corrected events.
@@ -749,9 +746,9 @@ bool machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
 	bool error_seen = false;
 	struct mce m;
 	int i;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ECC_NOTIFICATION
 	u64 mstatus, eccsyndrome;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ECC_NOTIFICATION */
 
 	this_cpu_inc(mce_poll_count);
 
@@ -820,7 +817,7 @@ log_it:
 
 		mce_read_aux(&m, i);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_ECC_NOTIFICATION
 		mstatus = ((m.status & SYNO_MCI_STATUS_ECC) >> SYNO_MCI_STATUS_UECC_SHIFT);
 		eccsyndrome = ((m.status & SYNO_MCI_STATUS_ECC_SYNDROME) >> SYNO_MCI_STATUS_ECC_SYNDROME_SHIFT);
 		if (funcSYNOECCNotification &&
@@ -828,7 +825,7 @@ log_it:
 			funcSYNOECCNotification(((unsigned int *)(void *)&mstatus)[0],
 					((unsigned int *)(void *)&eccsyndrome)[0], m.addr);
 		}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_ECC_NOTIFICATION */
 
 		m.severity = mce_severity(&m, NULL, mca_cfg.tolerant, NULL, false);
 		/*

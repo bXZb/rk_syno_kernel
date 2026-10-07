@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 #include <linux/capability.h>
 #include <linux/compat.h>
@@ -154,7 +151,7 @@ static int blk_ioctl_discard(struct block_device *bdev, fmode_t mode,
 				    GFP_KERNEL, flags);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 static int blk_ioctl_hint_unused(struct block_device *bdev, fmode_t mode,
 		unsigned long arg)
 {
@@ -191,7 +188,7 @@ static int blk_ioctl_hint_unused(struct block_device *bdev, fmode_t mode,
 	return blkdev_hint_unused(bdev, start >> 9, len >> 9,
 				    GFP_KERNEL);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 
 static int blk_ioctl_zeroout(struct block_device *bdev, fmode_t mode,
 		unsigned long arg)
@@ -560,10 +557,10 @@ static int blkdev_common_ioctl(struct block_device *bdev, fmode_t mode,
 	case BLKSECDISCARD:
 		return blk_ioctl_discard(bdev, mode, arg,
 				BLKDEV_DISCARD_SECURE);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 	case BLKHINTUNUSED:
 		return blk_ioctl_hint_unused(bdev, mode, arg);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 	case BLKZEROOUT:
 		return blk_ioctl_zeroout(bdev, mode, arg);
 	case BLKREPORTZONE:
@@ -604,7 +601,17 @@ static int blkdev_common_ioctl(struct block_device *bdev, fmode_t mode,
 		bdev->bd_bdi->ra_pages = (arg * 512) / PAGE_SIZE;
 		return 0;
 	case BLKRRPART:
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+		{
+			int ret = blkdev_reread_part(bdev, mode);
+			if ((0 == ret) && bdev->bd_disk->syno_ops && bdev->bd_disk->syno_ops->multipath_dm_target_blkdev_ioctl) {
+				bdev->bd_disk->syno_ops->multipath_dm_target_blkdev_ioctl(bdev, mode, cmd, arg);
+			}
+			return ret;
+		}
+#else /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 		return blkdev_reread_part(bdev, mode);
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 	case BLKTRACESTART:
 	case BLKTRACESTOP:
 	case BLKTRACETEARDOWN:
@@ -644,7 +651,17 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
 	case HDIO_GETGEO:
 		return blkdev_getgeo(bdev, argp);
 	case BLKPG:
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+		{
+			int ret = blkpg_ioctl(bdev, argp);
+			if ((0 == ret) && bdev->bd_disk->syno_ops && bdev->bd_disk->syno_ops->multipath_dm_target_blkdev_ioctl) {
+				bdev->bd_disk->syno_ops->multipath_dm_target_blkdev_ioctl(bdev, mode, cmd, arg);
+			}
+			return ret;
+		}
+#else /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 		return blkpg_ioctl(bdev, argp);
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 
 	/* Compat mode returns 32-bit data instead of 'long' */
 	case BLKRAGET:

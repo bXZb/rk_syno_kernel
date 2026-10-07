@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * This header declares the utility functions used by "Gadget Zero", plus
@@ -39,11 +36,11 @@ struct f_ss_opts {
 	unsigned bulk_buflen;
 	unsigned bulk_qlen;
 	unsigned iso_qlen;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	unsigned bulk_maxburst;
 #endif /* CONFIG_USB_PATCH_ON_RTK */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 
 	/*
 	 * Read/write access to configfs attributes is handled by configfs.

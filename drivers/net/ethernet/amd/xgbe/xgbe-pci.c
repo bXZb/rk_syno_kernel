@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * AMD 10Gb Ethernet driver
  *
@@ -121,9 +118,9 @@
 #include <linux/device.h>
 #include <linux/pci.h>
 #include <linux/log2.h>
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 #include <linux/mdio.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 #include "xgbe.h"
 #include "xgbe-common.h"
@@ -525,7 +522,7 @@ static const struct pci_device_id xgbe_pci_table[] = {
 };
 MODULE_DEVICE_TABLE(pci, xgbe_pci_table);
 
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 static void syno_xgbe_pci_shutdown(struct pci_dev *pdev)
 {
 	struct xgbe_prv_data *pdata = pci_get_drvdata(pdev);
@@ -539,7 +536,7 @@ static void syno_xgbe_pci_shutdown(struct pci_dev *pdev)
 		}
 	}
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 static SIMPLE_DEV_PM_OPS(xgbe_pci_pm_ops, xgbe_pci_suspend, xgbe_pci_resume);
 
@@ -548,9 +545,9 @@ static struct pci_driver xgbe_driver = {
 	.id_table = xgbe_pci_table,
 	.probe = xgbe_pci_probe,
 	.remove = xgbe_pci_remove,
-#if defined(MY_DEF_HERE)
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
 	.shutdown = syno_xgbe_pci_shutdown,
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	.driver = {
 		.pm = &xgbe_pci_pm_ops,
 	}

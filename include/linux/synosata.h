@@ -1,19 +1,16 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // Copyright (c) 2003-2015 Synology Inc. All rights reserved.
 #ifndef __SYNO_SATA_H_
 #define __SYNO_SATA_H_
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 #include <linux/synobios.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_INTERNAL_HD_NUM
 extern int gSynoInternalHddNumber;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_INTERNAL_HD_NUM */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SPINUP_GROUP
 extern int gSynoHddPowerupSeq;
 extern long g_syno_hdd_powerup_seq;
 extern long syno_boot_hd_count;
@@ -27,9 +24,9 @@ extern int giSynoDSleepCurrentPoweronDisks;
 extern void DBG_SpinupGroupListGpio(void);
 extern int SynoHaveRPDetectPin(void);
 extern int SynoAllRedundantPowerDetected(void);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SPINUP_GROUP */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SPINUP_GROUP
 #include <linux/mutex.h>
 static struct mutex mutex_spin;
 static DEFINE_MUTEX(mutex_spin);
@@ -121,9 +118,9 @@ static inline unsigned long SynoWakeInterval(void)
 	}
 	return uiSynoWakeInterval;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SPINUP_GROUP */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_SUPPORT
 static inline unsigned char
 syno_pm_is_jmb575(unsigned short vendor, unsigned short devid)
 {
@@ -452,9 +449,9 @@ syno_pm_hddled_status_pkg_init(unsigned short vendor, unsigned short devid, SYNO
 
 	/* add other port multiplier here */
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_SUPPORT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SSD_DETECT
 
 /*
  *back porting from linux 2.6.28. add SYNO prefix in order to not mixed with libata
@@ -537,12 +534,12 @@ syno_ata_id_is_ssd(const unsigned short *id)
 END:
 	return res;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SSD_DETECT */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_EUNIT_HOTPLUG_TASK
 #define SZK_PMP_UEVENT "SYNO_PMP_EVENT"
 #define SZV_PMP_CONNECT "CABLE_CONNECT"
 #define SZV_PMP_DISCONNECT "CABLE_DISCONNECT"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_EUNIT_HOTPLUG_TASK */
 
 #endif /* __SYNO_SATA_H_ */

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2007-2012 Nicira, Inc.
@@ -177,7 +174,7 @@ static struct vport *internal_dev_create(const struct vport_parms *parms)
 	if (err)
 		goto error_unlock;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OVS_MODE_REFINEMENT
 	if (syno_is_ovs_bond_name(vport->dev->name)) {
 		/* Always set carrier off, because it don't have any slaves at this time
 		 */
@@ -202,7 +199,7 @@ static struct vport *internal_dev_create(const struct vport_parms *parms)
 			netif_carrier_off(vport->dev);
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OVS_MODE_REFINEMENT */
 	vport->dev->priv_destructor = internal_dev_destructor;
 
 	dev_set_promiscuity(vport->dev, 1);

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 /*
  * sysctl.h: General linux system control interface
@@ -82,13 +79,13 @@ enum
 	INOTIFY_MAX_QUEUED_EVENTS=3	/* max queued events per instance */
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 /* /proc/sys/fs/synotify/ */
 enum
 {
 	SYNOTIFY_MAX_QUEUED_EVENTS=1	/* max queued events per instance */
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 /* CTL_KERN names: */
 enum
@@ -817,9 +814,9 @@ enum
 	FS_AIO_NR=18,	/* current system-wide number of aio requests */
 	FS_AIO_MAX_NR=19,	/* system-wide maximum number of aio requests */
 	FS_INOTIFY=20,	/* inotify submenu */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	FS_SYNOTIFY=900,	/* synotify submenu */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 	FS_OCFS2=988,	/* ocfs2 */
 };
 

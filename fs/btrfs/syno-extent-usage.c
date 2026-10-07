@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Copyright (C) 2019 Synology Inc.  All rights reserved.
  *
@@ -1426,8 +1423,7 @@ int btrfs_syno_clear_subvol_usage_item_doing(struct btrfs_root *root)
 	struct btrfs_fs_info *fs_info = root->fs_info;
 	struct btrfs_trans_handle *trans = NULL;
 	struct btrfs_path *path;
-	struct btrfs_key key;
-	struct btrfs_key found_key;
+	struct btrfs_key key, found_key;
 	struct extent_buffer *leaf;
 	struct btrfs_syno_subvol_usage_item *ei;
 	u64 bytenr, num_bytes;
@@ -1477,27 +1473,30 @@ int btrfs_syno_clear_subvol_usage_item_doing(struct btrfs_root *root)
 		}
 
 		ret = btrfs_search_slot(NULL, root, &key, path, 0, 0);
-		if (ret < 0) {
+		if (ret < 0)
 			goto out;
-		} else if (ret > 0) {
-			if (path->slots[0] >= btrfs_header_nritems(path->nodes[0])) {
-				ret = btrfs_next_leaf(root, path);
-				if (ret < 0)
-					goto out;
-				else if (ret > 0)
-					break;
+		if (path->slots[0] >= btrfs_header_nritems(path->nodes[0])) {
+			ret = btrfs_next_leaf(root, path);
+			if (ret < 0)
+				goto out;
+			else if (ret > 0)
+				break;
+			btrfs_item_key_to_cpu(path->nodes[0], &found_key, path->slots[0]);
+			if (btrfs_comp_cpu_keys(&found_key, &key) < 0) {
+				btrfs_release_path(path);
+				goto next;
 			}
 		}
 		btrfs_item_key_to_cpu(path->nodes[0], &found_key, path->slots[0]);
+		if (found_key.objectid != BTRFS_SYNO_SUBVOL_USAGE_OBJECTID ||
+			found_key.type != SYNO_BTRFS_SUBVOL_USAGE_KEY)
+			break;
 
 		spin_lock(&root->syno_usage_lock);
 		root->syno_usage_root_status.drop_progress = found_key;
 		root->syno_usage_root_status.drop_progress.offset = found_key.offset + 1;
 		key.offset = root->syno_usage_root_status.drop_progress.offset;
 		spin_unlock(&root->syno_usage_lock);
-
-		if (found_key.objectid != BTRFS_SYNO_SUBVOL_USAGE_OBJECTID || found_key.type != SYNO_BTRFS_SUBVOL_USAGE_KEY)
-			break;
 
 		/* if new_type is NONE , old type always is NONE, so we can skip it */
 		if (root->syno_usage_root_status.new_type == SYNO_USAGE_TYPE_NONE)
@@ -1525,14 +1524,15 @@ int btrfs_syno_clear_subvol_usage_item_doing(struct btrfs_root *root)
 		if (ret)
 			goto out;
 
+next:
 		btrfs_end_transaction_throttle(trans);
 		trans = NULL;
 
 		if (syno_usage_need_stop(fs_info) ||
 		    !test_bit(BTRFS_FS_SYNO_SPACE_USAGE_ENABLED, &fs_info->flags)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP
 			|| !fs_info->snapshot_cleaner
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOW_SNAPSHOT_DELETE_STOP */
 			) {
 			btrfs_debug(fs_info, "drop subvol usage early exit");
 			ret = -EAGAIN;
@@ -1598,7 +1598,7 @@ static int syno_usage_full_rescan_root_clear_unused_item(struct btrfs_root *root
 	struct btrfs_fs_info *fs_info = root->fs_info;
 	struct btrfs_trans_handle *trans = NULL;
 	struct btrfs_path *path;
-	struct btrfs_key key;
+	struct btrfs_key key, found_key;
 	int del_nr = 0;
 	int del_slot = 0;
 	int ret;
@@ -1641,13 +1641,18 @@ next_slot:
 				ret = 0;
 				break;
 			}
+			btrfs_item_key_to_cpu(path->nodes[0], &found_key, path->slots[0]);
+			if (btrfs_comp_cpu_keys(&found_key, &key) < 0) {
+				btrfs_release_path(path);
+				goto next;
+			}
 			recow = 1;
 		}
-		btrfs_item_key_to_cpu(path->nodes[0], &key, path->slots[0]);
-
-		if (key.objectid != BTRFS_SYNO_SUBVOL_USAGE_OBJECTID ||
-		    key.type != SYNO_BTRFS_SUBVOL_USAGE_KEY)
+		btrfs_item_key_to_cpu(path->nodes[0], &found_key, path->slots[0]);
+		if (found_key.objectid != BTRFS_SYNO_SUBVOL_USAGE_OBJECTID ||
+			found_key.type != SYNO_BTRFS_SUBVOL_USAGE_KEY)
 			break;
+		key.offset = found_key.offset;
 
 		if (recow) {
 			btrfs_release_path(path);
@@ -1721,7 +1726,7 @@ static int syno_usage_fast_rescan_root(struct btrfs_root *root)
 	struct btrfs_fs_info *fs_info = root->fs_info;
 	struct btrfs_trans_handle *trans = NULL;
 	struct btrfs_path *path = NULL;
-	struct btrfs_key key;
+	struct btrfs_key key, found_key;
 	struct extent_buffer *leaf;
 	struct btrfs_syno_subvol_usage_item *ei;
 	u64 bytenr, num_bytes;
@@ -1765,22 +1770,25 @@ static int syno_usage_fast_rescan_root(struct btrfs_root *root)
 		}
 
 		ret = btrfs_search_slot(NULL, root, &key, path, 0, 0);
-		if (ret < 0) {
+		if (ret < 0)
 			goto out;
-		} else if (ret > 0) {
-			if (path->slots[0] >= btrfs_header_nritems(path->nodes[0])) {
-				ret = btrfs_next_leaf(root, path);
-				if (ret < 0)
-					goto out;
-				else if (ret > 0)
-					break;
+		if (path->slots[0] >= btrfs_header_nritems(path->nodes[0])) {
+			ret = btrfs_next_leaf(root, path);
+			if (ret < 0)
+				goto out;
+			else if (ret > 0)
+				break;
+			btrfs_item_key_to_cpu(path->nodes[0], &found_key, path->slots[0]);
+			if (btrfs_comp_cpu_keys(&found_key, &key) < 0) {
+				btrfs_release_path(path);
+				goto next;
 			}
 		}
-		btrfs_item_key_to_cpu(path->nodes[0], &key, path->slots[0]);
-
-		if (key.objectid != BTRFS_SYNO_SUBVOL_USAGE_OBJECTID ||
-		    key.type != SYNO_BTRFS_SUBVOL_USAGE_KEY)
+		btrfs_item_key_to_cpu(path->nodes[0], &found_key, path->slots[0]);
+		if (found_key.objectid != BTRFS_SYNO_SUBVOL_USAGE_OBJECTID ||
+			found_key.type != SYNO_BTRFS_SUBVOL_USAGE_KEY)
 			break;
+		key.offset = found_key.offset;
 
 		leaf = path->nodes[0];
 		ei = btrfs_item_ptr(leaf, path->slots[0], struct btrfs_syno_subvol_usage_item);
@@ -1800,6 +1808,8 @@ static int syno_usage_fast_rescan_root(struct btrfs_root *root)
 			goto inconsistent;
 
 		btrfs_release_path(path);
+
+next:
 		btrfs_end_transaction_throttle(trans);
 		trans = NULL;
 
@@ -2138,8 +2148,6 @@ next_slot:
 				spin_unlock(&fs_info->syno_usage_lock);
 			} else {
 				btrfs_release_path(path);
-				btrfs_end_transaction_throttle(trans);
-				trans = NULL;
 				goto next;
 			}
 		}
@@ -2162,9 +2170,9 @@ next_slot:
 			goto inconsistent;
 
 		btrfs_release_path(path);
+next:
 		btrfs_end_transaction_throttle(trans);
 		trans = NULL;
-next:
 		if (syno_usage_need_stop(fs_info) ||
 		    !test_bit(BTRFS_FS_SYNO_SPACE_USAGE_ENABLED, &fs_info->flags) ||
 		    fs_info->syno_usage_status.state == SYNO_USAGE_STATE_RESCAN_PAUSE) {
@@ -2545,7 +2553,7 @@ int syno_usage_clear_subvol_usage_item(struct btrfs_root *root)
 	struct btrfs_fs_info *fs_info = root->fs_info;
 	struct btrfs_trans_handle *trans = NULL;
 	struct btrfs_path *path;
-	struct btrfs_key key;
+	struct btrfs_key key, found_key;
 	int del_nr = 0;
 	int del_slot = 0;
 	int ret;
@@ -2608,13 +2616,18 @@ next_slot:
 				ret = 0;
 				break;
 			}
+			btrfs_item_key_to_cpu(path->nodes[0], &found_key, path->slots[0]);
+			if (btrfs_comp_cpu_keys(&found_key, &key) < 0) {
+				btrfs_release_path(path);
+				goto next;
+			}
 			recow = 1;
 		}
-		btrfs_item_key_to_cpu(path->nodes[0], &key, path->slots[0]);
-
-		if (key.objectid != BTRFS_SYNO_SUBVOL_USAGE_OBJECTID ||
-		    key.type != SYNO_BTRFS_SUBVOL_USAGE_KEY)
+		btrfs_item_key_to_cpu(path->nodes[0], &found_key, path->slots[0]);
+		if (found_key.objectid != BTRFS_SYNO_SUBVOL_USAGE_OBJECTID ||
+			found_key.type != SYNO_BTRFS_SUBVOL_USAGE_KEY)
 			break;
+		key.offset = found_key.offset;
 
 		if (recow) {
 			btrfs_release_path(path);

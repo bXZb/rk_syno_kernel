@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Block multiqueue core code
@@ -304,9 +301,9 @@ static struct request *blk_mq_rq_ctx_init(struct blk_mq_alloc_data *data,
 	RB_CLEAR_NODE(&rq->rb_node);
 	rq->rq_disk = NULL;
 	rq->part = NULL;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLOCK_SEQIO_MONITOR_TOOL
 	rq->syno_seq = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLOCK_SEQIO_MONITOR_TOOL */
 
 #ifdef CONFIG_BLK_RQ_ALLOC_TIME
 	rq->alloc_time_ns = alloc_time_ns;
@@ -703,6 +700,16 @@ void blk_mq_complete_request(struct request *rq)
 {
 	if (!blk_mq_complete_request_remote(rq))
 		rq->q->mq_ops->complete(rq);
+
+#ifdef CONFIG_SYNO_FIX_TASK_ABORT_AND_SCSI_DONE_RACE_CONDITION
+	/*
+	 * Mark that I/O completion has been initiated. This allows task abort
+	 * handler to detect the request is completing (even if st->cb_idx is
+	 * already cleared to 0xFF). Both local and remote completion paths
+	 * need this flag set.
+	 */
+	rq->cmd_flags |= REQ_SYNO_COMPELETED_HARDIRQ_DONE;
+#endif /* CONFIG_SYNO_FIX_TASK_ABORT_AND_SCSI_DONE_RACE_CONDITION */
 }
 EXPORT_SYMBOL(blk_mq_complete_request);
 
@@ -737,17 +744,17 @@ static void hctx_lock(struct blk_mq_hw_ctx *hctx, int *srcu_idx)
 void blk_mq_start_request(struct request *rq)
 {
 	struct request_queue *q = rq->q;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLOCK_SEQIO_MONITOR_TOOL
 	sector_t rq_pos = 0;
 	sector_t end_sector = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLOCK_SEQIO_MONITOR_TOOL */
 
 	trace_block_rq_issue(q, rq);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLOCK_LATENCY_MONITOR_TOOL
 	if  (rq->rq_disk) {
 		rq->u64IssueTime = cpu_clock(0);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLOCK_LATENCY_MONITOR_TOOL */
 
 	if (test_bit(QUEUE_FLAG_STATS, &q->queue_flags)) {
 		rq->io_start_time_ns = ktime_get_ns();
@@ -766,7 +773,7 @@ void blk_mq_start_request(struct request *rq)
 		q->integrity.profile->prepare_fn(rq);
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BLOCK_SEQIO_MONITOR_TOOL
 	if (blk_do_io_stat(rq)) {
 		rq_pos = blk_rq_pos(rq);
 		end_sector = rq->rq_disk->end_sector;
@@ -780,7 +787,7 @@ void blk_mq_start_request(struct request *rq)
 		}
 		rq->rq_disk->end_sector = rq_end_sector(rq);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BLOCK_SEQIO_MONITOR_TOOL */
 
 }
 EXPORT_SYMBOL(blk_mq_start_request);

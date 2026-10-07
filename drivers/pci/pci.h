@@ -26,9 +26,17 @@ static inline void pci_create_firmware_label_files(struct pci_dev *pdev)
 { return; }
 static inline void pci_remove_firmware_label_files(struct pci_dev *pdev)
 { return; }
+#ifdef CONFIG_SYNO_PCI_DTS_LABEL
+static inline int pci_get_syno_label(struct pci_dev *pdev, char *buf,
+				     size_t size)
+{ return -1; }
+#endif /* CONFIG_SYNO_PCI_DTS_LABEL */
 #else
 void pci_create_firmware_label_files(struct pci_dev *pdev);
 void pci_remove_firmware_label_files(struct pci_dev *pdev);
+#ifdef CONFIG_SYNO_PCI_DTS_LABEL
+int pci_get_syno_label(struct pci_dev *pdev, char *buf, size_t size);
+#endif /* CONFIG_SYNO_PCI_DTS_LABEL */
 #endif
 void pci_cleanup_rom(struct pci_dev *dev);
 

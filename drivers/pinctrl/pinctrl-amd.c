@@ -36,6 +36,10 @@
 #include "pinctrl-utils.h"
 #include "pinctrl-amd.h"
 
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+#include <linux/syno_fdt.h>
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 static int amd_gpio_get_direction(struct gpio_chip *gc, unsigned offset)
 {
 	unsigned long flags;
@@ -115,6 +119,27 @@ static void amd_gpio_set_value(struct gpio_chip *gc, unsigned offset, int value)
 	writel(pin_reg, gpio_dev->base + offset * 4);
 	raw_spin_unlock_irqrestore(&gpio_dev->lock, flags);
 }
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+static void syno_amd_gpio_set_mux(struct gpio_chip *gc, unsigned offset, int value)
+{
+	u32 mux_reg;
+	unsigned long flags;
+	struct amd_gpio *gpio_dev = gpiochip_get_data(gc);
+
+	if (value & ~IOMUX) {
+		printk(KERN_ERR "WARN : %s: attemt to write invalid iomux value 0x%x\n", __FUNCTION__, value);
+		goto END;
+	}
+	raw_spin_lock_irqsave(&gpio_dev->lock, flags);
+	mux_reg = readl(gpio_dev->iomux_base + offset);
+	mux_reg &= ~IOMUX;
+	mux_reg |= (value & IOMUX);
+	writel(mux_reg, gpio_dev->iomux_base + offset);
+	raw_spin_unlock_irqrestore(&gpio_dev->lock, flags);
+	END:
+}
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
 
 static int amd_gpio_set_debounce(struct gpio_chip *gc, unsigned offset,
 		unsigned debounce)
@@ -841,6 +866,10 @@ static int amd_gpio_probe(struct platform_device *pdev)
 	struct amd_gpio *gpio_dev;
 	struct gpio_irq_chip *girq;
 
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+	struct device_node *node = NULL;
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 	gpio_dev = devm_kzalloc(&pdev->dev,
 				sizeof(struct amd_gpio), GFP_KERNEL);
 	if (!gpio_dev)
@@ -888,6 +917,15 @@ static int amd_gpio_probe(struct platform_device *pdev)
 #if defined(CONFIG_OF_GPIO)
 	gpio_dev->gc.of_node			= pdev->dev.of_node;
 #endif
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+	if (NULL != (node = syno_of_node_by_acpi_device(pdev))) {
+		gpio_dev->iomux_base = syno_of_iomux_base_by_node(node);
+		if (gpio_dev->iomux_base) {
+				gpio_dev->gc.syno_set_mux = syno_amd_gpio_set_mux;
+		}
+	}
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
 
 	gpio_dev->hwbank_num = gpio_dev->gc.ngpio / 64;
 	gpio_dev->groups = kerncz_groups;

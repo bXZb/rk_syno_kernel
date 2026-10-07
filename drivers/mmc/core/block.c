@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Block driver for media (i.e., flash cards)
  *
@@ -60,12 +57,12 @@
 #include "quirks.h"
 #include "sd_ops.h"
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_ARCH_REALTEK
 #include "../../base/base.h"
 #endif /* CONFIG_ARCH_REALTEK */
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 MODULE_ALIAS("mmc:block");
 #ifdef MODULE_PARAM_PREFIX
 #undef MODULE_PARAM_PREFIX
@@ -749,7 +746,7 @@ static int mmc_blk_check_blkdev(struct block_device *bdev)
 	return 0;
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #if defined(CONFIG_MMC_REALTEK_RTD13XX)
 static int check_eod(struct block_device *bdev, unsigned int from, unsigned int nr)
 {
@@ -796,17 +793,17 @@ static int mmc_blk_erase(struct mmc_blk_data *md, unsigned int from, unsigned in
 
 void euda_gpp_setting(unsigned long size[], char type[], int gpp_num, unsigned long euda_start_addr, unsigned long euda_size);
 #endif
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 static int mmc_blk_ioctl(struct block_device *bdev, fmode_t mode,
 	unsigned int cmd, unsigned long arg)
 {
 	struct mmc_blk_data *md;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #if defined(CONFIG_MMC_REALTEK_RTD13XX)
 	struct mmc_blk_erase_args args;
 	struct mmc_euda_gpp_args paras;
 #endif
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	int ret;
 
 	switch (cmd) {
@@ -832,7 +829,7 @@ static int mmc_blk_ioctl(struct block_device *bdev, fmode_t mode,
 		ret = mmc_blk_ioctl_multi_cmd(md,
 					(struct mmc_ioc_multi_cmd __user *)arg,
 					NULL);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 
 		mmc_blk_put(md);
 		return ret;
@@ -869,10 +866,12 @@ static int mmc_blk_ioctl(struct block_device *bdev, fmode_t mode,
 
 		euda_gpp_setting(paras.size, paras.type, paras.gpp_num, paras.euda_start_addr, paras.euda_size);
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 		mmc_blk_put(md);
 		return ret;
-#endif /* MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
+#endif
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	default:
 		return -EINVAL;
 	}
@@ -908,9 +907,13 @@ static int mmc_blk_part_switch_pre(struct mmc_card *card,
 			if (ret)
 				return ret;
 		}
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
+#ifndef CONFIG_ARCH_REALTEK
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 		mmc_retune_pause(card->host);
-#endif /* MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
+#endif
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	}
 
 	return ret;
@@ -922,9 +925,13 @@ static int mmc_blk_part_switch_post(struct mmc_card *card,
 	int ret = 0;
 
 	if (part_type == EXT_CSD_PART_CONFIG_ACC_RPMB) {
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
+#ifndef CONFIG_ARCH_REALTEK
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 		mmc_retune_unpause(card->host);
-#endif /* MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
+#endif
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 		if (card->reenable_cmdq && !card->ext_csd.cmdq_en)
 			ret = mmc_cmdq_enable(card);
 	}
@@ -2379,7 +2386,7 @@ static inline int mmc_blk_readonly(struct mmc_card *card)
 	       !(card->csd.cmdclass & CCC_BLOCK_WRITE);
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_ARCH_REALTEK
 void mmc_blk_set_ro(struct mmc_card *card)
 {
@@ -2395,7 +2402,7 @@ void mmc_blk_set_ro(struct mmc_card *card)
 EXPORT_SYMBOL(mmc_blk_set_ro);
 #endif /* CONFIG_ARCH_REALTEK */
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 					      struct device *parent,
 					      sector_t size,

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Copyright (C) 2001 Sistina Software (UK) Limited.
  * Copyright (C) 2004-2008 Red Hat, Inc. All rights reserved.
@@ -99,10 +96,10 @@ typedef int (*dm_prepare_ioctl_fn) (struct dm_target *ti, struct block_device **
 typedef int (*dm_report_zones_fn) (struct dm_target *ti,
 				   struct dm_report_zones_args *args,
 				   unsigned int nr_zones);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_EXTRA_IOCTL
 typedef int (*dm_extra_ioctl_fn) (struct dm_target *ti,
 		unsigned int cmd, unsigned long arg);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_EXTRA_IOCTL */
 
 /*
  * These iteration functions are typically used to check (and combine)
@@ -149,9 +146,9 @@ typedef size_t (*dm_dax_copy_iter_fn)(struct dm_target *ti, pgoff_t pgoff,
 		void *addr, size_t bytes, struct iov_iter *i);
 typedef int (*dm_dax_zero_page_range_fn)(struct dm_target *ti, pgoff_t pgoff,
 		size_t nr_pages);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 typedef int (*dm_support_noclone_fn) (struct dm_target *ti);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 #define PAGE_SECTORS (PAGE_SIZE / 512)
 
 void dm_error(const char *message);
@@ -196,9 +193,9 @@ struct target_type {
 	dm_resume_fn resume;
 	dm_status_fn status;
 	dm_message_fn message;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_EXTRA_IOCTL
 	dm_extra_ioctl_fn extra_ioctl;
-#endif /* MY_ABC_HERE*/
+#endif /* CONFIG_SYNO_MD_DM_EXTRA_IOCTL*/
 	dm_prepare_ioctl_fn prepare_ioctl;
 #ifdef CONFIG_BLK_DEV_ZONED
 	dm_report_zones_fn report_zones;
@@ -210,10 +207,10 @@ struct target_type {
 	dm_dax_copy_iter_fn dax_copy_from_iter;
 	dm_dax_copy_iter_fn dax_copy_to_iter;
 	dm_dax_zero_page_range_fn dax_zero_page_range;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO
 	dm_support_noclone_fn support_noclone;
 	dm_map_fn noclone_map;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_DM_DUMMY_CACHE_NOCLONE_BIO */
 
 	/* For internal device-mapper use. */
 	struct list_head list;
@@ -320,13 +317,13 @@ struct dm_target {
 	 */
 	unsigned num_secure_erase_bios;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 	/*
 	 * The number of unused hint bios that will be submitted to the target.
 	 * The bio number can be accessed with dm_bio_get_target_bio_nr.
 	 */
 	unsigned num_unused_hint_bios;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 
 	/*
 	 * The number of WRITE SAME bios that will be submitted to the target.
@@ -432,6 +429,8 @@ void dm_consume_args(struct dm_arg_set *as, unsigned num_args);
  */
 #define DM_ANY_MINOR (-1)
 int dm_create(int minor, struct mapped_device **md);
+int syno_dm_create_with_custom_name(int minor, unsigned int flags,
+									struct mapped_device **result);
 
 /*
  * Reference counting for md.
@@ -661,8 +660,8 @@ static inline unsigned long to_bytes(sector_t n)
 {
 	return (n << SECTOR_SHIFT);
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_DATA_CORRECTION
 #define SYNO_DM_IO_RESERVERD_IO_MASK 0xf
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_DATA_CORRECTION */
 
 #endif	/* _LINUX_DEVICE_MAPPER_H */

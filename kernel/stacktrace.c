@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * kernel/stacktrace.c
@@ -153,9 +150,9 @@ unsigned int stack_trace_save_tsk(struct task_struct *tsk, unsigned long *store,
 	put_task_stack(tsk);
 	return c.len;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXPORT_SYMBOL
 EXPORT_SYMBOL_GPL(stack_trace_save_tsk);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXPORT_SYMBOL */
 
 /**
  * stack_trace_save_regs - Save a stack trace based on pt_regs into a storage array

@@ -17,10 +17,91 @@
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/ratelimit.h>
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+#include <linux/interrupt.h>
+#include <linux/synobios.h>
+#include <linux/kfifo.h>
+#include <linux/spinlock.h>
+#include <linux/syno_microp.h>
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 
 
 #define MIN_TTYB_SIZE	256
 #define TTYB_ALIGN_MASK	255
+
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+
+static DEFINE_KFIFO(syno_microp_fifo, unsigned char, SYNO_MICROP_FIFO_SIZE);
+static DEFINE_SPINLOCK(syno_microp_fifo_lock);
+
+/* Force write to kfifo, drop old data if full */
+static int syno_microp_fifo_force_in(const unsigned char *buf, unsigned int len)
+{
+	unsigned long flags = 0;
+	int ret = -1;
+	unsigned int need_space = 0;
+	unsigned char dummy[256] = {0};
+	unsigned int to_remove = 0;
+	unsigned int removed = 0;
+	unsigned int available = 0;
+
+	if (!buf || 0 == len || len > SYNO_MICROP_FIFO_SIZE) {
+		goto END;
+	}
+	spin_lock_irqsave(&syno_microp_fifo_lock, flags);
+
+	/* If space is not enough, clear some old data */
+	available = kfifo_avail(&syno_microp_fifo);
+	if (available < len) {
+		need_space = len - available;
+
+		while (need_space > 0 && !kfifo_is_empty(&syno_microp_fifo)) {
+			to_remove = min(need_space, (unsigned int)(sizeof(dummy)));
+			removed = kfifo_out(&syno_microp_fifo, dummy, to_remove);
+			need_space -= removed;
+			if (removed == 0) break; /* prevent infinite loop */
+		}
+	}
+
+	ret = kfifo_in(&syno_microp_fifo, buf, len);
+	spin_unlock_irqrestore(&syno_microp_fifo_lock, flags);
+
+END:
+	return ret;
+}
+
+/* Read data from kfifo */
+int syno_microp_kfifo_read(unsigned char *buf, int buf_size)
+{
+	unsigned long flags = 0;
+	int copied = -1;
+	unsigned int kfifo_len = 0;
+
+	if (!buf || buf_size <= 0) {
+		goto END;
+	}
+
+	spin_lock_irqsave(&syno_microp_fifo_lock, flags);
+	kfifo_len = kfifo_len(&syno_microp_fifo);
+	copied = kfifo_out(&syno_microp_fifo, buf, buf_size);
+	spin_unlock_irqrestore(&syno_microp_fifo_lock, flags);
+
+END:
+	return copied;
+}
+EXPORT_SYMBOL(syno_microp_kfifo_read);
+
+/* Module cleanup */
+void syno_microp_kfifo_cleanup(void)
+{
+	unsigned long flags = 0;
+
+	spin_lock_irqsave(&syno_microp_fifo_lock, flags);
+	kfifo_reset(&syno_microp_fifo);
+	spin_unlock_irqrestore(&syno_microp_fifo_lock, flags);
+}
+EXPORT_SYMBOL(syno_microp_kfifo_cleanup);
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 
 /*
  * Byte threshold to limit memory consumption for flip buffers.
@@ -540,6 +621,100 @@ static void flush_to_ldisc(struct work_struct *work)
 
 }
 
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+/*
+ * cleanup_buffers_work - free any fully unused buffers on the head chain
+ *
+ * Runs in process context. It mirrors the cleanup loop used in
+ * tty_buffer_flush but does not call into the line discipline. It will
+ * advance buf->head and free buffers which have no committed data.
+ */
+static void cleanup_buffers_work(struct work_struct *work)
+{
+	struct tty_port *port = container_of(work, struct tty_port, buf.syno_microp_cleanup);
+	struct tty_bufhead *buf = &port->buf;
+	struct tty_buffer *head = NULL;
+	struct tty_buffer *next = NULL;
+
+	mutex_lock(&buf->lock);
+	while (1) {
+		head = buf->head;
+		next = smp_load_acquire(&head->next);
+		if (!next)
+			break;
+
+		/* if there is committed data, stop */
+		if (smp_load_acquire(&head->commit) - head->read)
+			break;
+
+		buf->head = next;
+		tty_buffer_free(port, head);
+	}
+	mutex_unlock(&buf->lock);
+}
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
+
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+void syno_microp_notify_work(struct tty_port *port)
+{
+	syno_microp_v2_wakeup();
+}
+EXPORT_SYMBOL(syno_microp_notify_work);
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
+
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+/*
+ * syno_microp_irq_flip_push - IRQ-path copy of committed flip-buffers
+ * @port: tty port
+ *
+ * Runs in IRQ/atomic context. Copies all committed data from head..tail
+ * into the synobios kfifo without taking the buf lock. For the active
+ * tail buffer we clear bookkeeping so the producer can continue to use
+ * the same buffer; non-tail buffers advance read so cleanup can reclaim
+ * them later.
+ */
+static void syno_microp_irq_flip_push(struct tty_port *port)
+{
+	struct tty_bufhead *buf = &port->buf;
+	struct tty_buffer *b = NULL;
+	struct tty_buffer *next = NULL;
+	int commit = 0;
+	int avail = 0;
+
+	/* Ensure active tail commit reflects any recently written tail->used */
+	smp_store_release(&buf->tail->commit, buf->tail->used);
+
+	if (buf->head) {
+		b = buf->head;
+		while (1) {
+			next = smp_load_acquire(&b->next);
+			commit = smp_load_acquire(&b->commit);
+			avail = commit - b->read;
+
+			if (avail > 0) {
+				syno_microp_fifo_force_in(char_buf_ptr(b, b->read), avail);
+				if (b == buf->tail) {
+					b->used = 0;
+					smp_store_release(&b->commit, 0);
+					b->read = 0;
+				} else {
+					b->read += avail;
+				}
+			}
+			if (!next)
+				break;
+			b = next;
+		}
+	}
+
+	/* Schedule asynchronous cleanup of empty buffers */
+	queue_work(system_unbound_wq, &buf->syno_microp_cleanup);
+
+	/* Notify synobios that data is ready */
+	port->syno_microp_notify(port);
+}
+#endif
+
 /**
  *	tty_flip_buffer_push	-	terminal
  *	@port: tty port to push
@@ -553,7 +728,19 @@ static void flush_to_ldisc(struct work_struct *work)
 
 void tty_flip_buffer_push(struct tty_port *port)
 {
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+	if (port->syno_microp_notify && !READ_ONCE(port->syno_microp_bypass)) {
+		if (likely(in_irq())) {
+			syno_microp_irq_flip_push(port);
+		} else {
+			WARN_ONCE(1, "syno_microp_irq_flip_push called outside IRQ context");
+		}
+	} else {
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 	tty_schedule_flip(port);
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+	}
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 }
 EXPORT_SYMBOL(tty_flip_buffer_push);
 
@@ -577,6 +764,9 @@ void tty_buffer_init(struct tty_port *port)
 	atomic_set(&buf->mem_used, 0);
 	atomic_set(&buf->priority, 0);
 	INIT_WORK(&buf->work, flush_to_ldisc);
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+	INIT_WORK(&buf->syno_microp_cleanup, cleanup_buffers_work);
+#endif
 	buf->mem_limit = TTYB_DEFAULT_MEM_LIMIT;
 }
 

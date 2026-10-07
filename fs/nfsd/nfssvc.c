@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Central processing for nfsd.
@@ -33,9 +30,9 @@
 #include "filecache.h"
 #include "trace.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 #include "syno_io_stat.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 
 #define NFSDDBG_FACILITY	NFSDDBG_SVC
 
@@ -435,9 +432,9 @@ static void nfsd_shutdown_net(struct net *net)
 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
 
 	nfsd_file_cache_shutdown_net(net);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_LATENCY_REPORT
 	syno_nfsd_clients_destroy_all();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_LATENCY_REPORT */
 	nfs4_state_shutdown_net(net);
 	if (nn->lockd_up) {
 		lockd_down(net);
@@ -1083,9 +1080,9 @@ int nfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp)
 	resv->iov_len += sizeof(__be32);
 
 	*statp = proc->pc_func(rqstp);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NFSD_TRACE
 	trace_syno_nfsd_dispatch(rqstp);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NFSD_TRACE */
 	if (*statp == rpc_drop_reply || test_bit(RQ_DROPME, &rqstp->rq_flags))
 		goto out_update_drop;
 

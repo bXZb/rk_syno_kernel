@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
   File: fs/ext4/xattr.h
@@ -27,17 +24,17 @@
 #define EXT4_XATTR_INDEX_SECURITY	        6
 #define EXT4_XATTR_INDEX_SYSTEM			7
 #define EXT4_XATTR_INDEX_RICHACL		8
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_XATTR
 #define EXT4_XATTR_INDEX_SYNO			EXT4_XATTR_INDEX_RICHACL // 8
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT4_XATTR */
+#ifdef CONFIG_SYNO_EXT4_WINACL
 #define EXT4_XATTR_INDEX_SYNO_ACL_ACCESS	EXT4_XATTR_INDEX_SYSTEM // 7
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_WINACL */
 #define EXT4_XATTR_INDEX_ENCRYPTION		9
 #define EXT4_XATTR_INDEX_HURD			10 /* Reserved for Hurd */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT3_ARCHIVE_VERSION
 #define EXT3_XATTR_INDEX_SYNO_BAD		7
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT3_ARCHIVE_VERSION */
 
 struct ext4_xattr_header {
 	__le32	h_magic;	/* magic number for identification */
@@ -133,12 +130,12 @@ struct ext4_xattr_inode_array {
 	struct inode *inodes[];
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_WINACL
 extern const struct xattr_handler ext4_xattr_synoacl_access_handler;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT4_WINACL */
+#ifdef CONFIG_SYNO_EXT4_XATTR
 extern const struct xattr_handler ext4_xattr_syno_handler;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_XATTR */
 extern const struct xattr_handler ext4_xattr_user_handler;
 extern const struct xattr_handler ext4_xattr_trusted_handler;
 extern const struct xattr_handler ext4_xattr_security_handler;

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/fs/fat/file.c
@@ -180,10 +177,10 @@ static int fat_file_release(struct inode *inode, struct file *filp)
 	if ((filp->f_mode & FMODE_WRITE) &&
 	     MSDOS_SB(inode->i_sb)->options.flush) {
 		fat_flush_inodes(inode->i_sb, inode, NULL);
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_FAT_SKIP_WAITING_TIME_WHEN_CLOSE_FILE
+#else /* CONFIG_SYNO_FAT_SKIP_WAITING_TIME_WHEN_CLOSE_FILE */
 		congestion_wait(BLK_RW_ASYNC, HZ/10);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FAT_SKIP_WAITING_TIME_WHEN_CLOSE_FILE */
 	}
 	return 0;
 }
@@ -415,7 +412,7 @@ int fat_getattr(const struct path *path, struct kstat *stat,
 }
 EXPORT_SYMBOL_GPL(fat_getattr);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FAT_CREATE_TIME
 int fat_syno_getattr(struct dentry *dentry, struct kstat *kst,
 		unsigned int syno_flags)
 {
@@ -444,7 +441,7 @@ int fat_syno_set_crtime(struct inode *inode, struct timespec64 *crtime)
 	return 0;
 }
 EXPORT_SYMBOL_GPL(fat_syno_set_crtime);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FAT_CREATE_TIME */
 
 static int fat_sanitize_mode(const struct msdos_sb_info *sbi,
 			     struct inode *inode, umode_t *mode_ptr)
@@ -598,9 +595,9 @@ const struct inode_operations fat_file_inode_operations = {
 	.setattr	= fat_setattr,
 	.getattr	= fat_getattr,
 	.update_time	= fat_update_time,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FAT_CREATE_TIME
 	.syno_getattr	= fat_syno_getattr,
 	.syno_get_crtime= fat_syno_get_crtime,
 	.syno_set_crtime= fat_syno_set_crtime,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FAT_CREATE_TIME */
 };

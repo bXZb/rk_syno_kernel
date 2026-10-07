@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  Copyright (C) 1991, 1992  Linus Torvalds
@@ -1082,6 +1079,9 @@ void tty_write_message(struct tty_struct *tty, char *msg)
 	return;
 }
 
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+extern int gSynoMicropSeries;
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 
 /**
  *	tty_write		-	write method for tty device file
@@ -1118,8 +1118,13 @@ static ssize_t file_tty_write(struct file *file, struct kiocb *iocb, struct iov_
 	if (!ld->ops->write)
 		ret = -EIO;
 	else
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_TTY_MICROP_CTRL
 	{
+#ifdef CONFIG_SYNO_MICROP_COMMAND_V2
+		if (1 < gSynoMicropSeries) {
+			goto skip_uP_prefix;
+		}
+#endif /* CONFIG_SYNO_MICROP_COMMAND_V2 */
 		if (0 == strcmp(tty->name, "ttyS1")) {
 			char *prefix = "-";
 			struct kvec iov = {
@@ -1127,7 +1132,7 @@ static ssize_t file_tty_write(struct file *file, struct kiocb *iocb, struct iov_
 				.iov_len	= 1,
 			};
 			struct iov_iter iter;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_TTY_AES_COMMAND
 			char first_char = '\0';
 
 			if (copy_from_iter(&first_char, 1, from) != 1)
@@ -1138,7 +1143,7 @@ static ssize_t file_tty_write(struct file *file, struct kiocb *iocb, struct iov_
 			if ('+' == first_char) {
 				goto skip_uP_prefix;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_TTY_AES_COMMAND */
 			iov_iter_kvec(&iter, WRITE, &iov, 1, iov.iov_len);
 			ret = do_tty_write(ld->ops->write, tty, file, &iter);
 			if (0 > ret) {
@@ -1146,14 +1151,14 @@ static ssize_t file_tty_write(struct file *file, struct kiocb *iocb, struct iov_
 			}
 		}
 
-#ifdef MY_ABC_HERE
+#if defined(CONFIG_SYNO_TTY_AES_COMMAND) || defined(CONFIG_SYNO_MICROP_COMMAND_V2)
 skip_uP_prefix:
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_TTY_AES_COMMAND || CONFIG_SYNO_MICROP_COMMAND_V2 */
 		ret = do_tty_write(ld->ops->write, tty, file, from);
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_TTY_MICROP_CTRL */
 		ret = do_tty_write(ld->ops->write, tty, file, from);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_TTY_MICROP_CTRL */
 	tty_ldisc_deref(ld);
 	return ret;
 }
@@ -3162,20 +3167,12 @@ int tty_put_char(struct tty_struct *tty, unsigned char ch)
 }
 EXPORT_SYMBOL_GPL(tty_put_char);
 
-#ifdef MY_ABC_HERE
-int syno_ttys_write(const int index, const char* szBuf)
+#ifdef CONFIG_SYNO_TTY_MICROP_CTRL
+int syno_ttys_write_raw(const int index, char* szBuf, int size)
 {
 	int err = -1;
 	struct tty_driver *drv = NULL;
 	struct tty_struct *tty = NULL;
-	char *szX64Buf = NULL;
-	size_t cbX64Buf = strlen(szBuf) + 2;
-
-	szX64Buf = kmalloc(cbX64Buf, GFP_KERNEL);
-	if (!szX64Buf) {
-		err = -ENOMEM;
-		goto Error;
-	}
 
 	mutex_lock(&tty_mutex);
 	list_for_each_entry(drv, &tty_drivers, tty_drivers) {
@@ -3201,14 +3198,34 @@ int syno_ttys_write(const int index, const char* szBuf)
 		goto Error;
 	}
 
-	memset(szX64Buf, 0, cbX64Buf);
-	snprintf(szX64Buf, cbX64Buf, "%c%s", '-', szBuf);
-
-	syno_uart_write(tty->port, szX64Buf, strlen(szX64Buf));
+	syno_uart_write(tty->port, szBuf, size);
 
 	mutex_lock(&tty_mutex);
 	tty_kref_put(tty);
 	mutex_unlock(&tty_mutex);
+
+	err = 0;
+Error:
+	return err;
+}
+EXPORT_SYMBOL(syno_ttys_write_raw);
+
+int syno_ttys_write(const int index, const char* szBuf)
+{
+	int err = -1;
+	char *szX64Buf = NULL;
+	size_t cbX64Buf = strlen(szBuf) + 2;
+
+	szX64Buf = kmalloc(cbX64Buf, GFP_KERNEL);
+	if (!szX64Buf) {
+		err = -ENOMEM;
+		goto Error;
+	}
+
+	memset(szX64Buf, 0, cbX64Buf);
+	snprintf(szX64Buf, cbX64Buf, "%c%s", '-', szBuf);
+
+	syno_ttys_write_raw(index, szX64Buf, strlen(szX64Buf));
 
 	err = 0;
 Error:
@@ -3217,7 +3234,7 @@ Error:
 	return err;
 }
 EXPORT_SYMBOL(syno_ttys_write);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_TTY_MICROP_CTRL */
 
 struct class *tty_class;
 

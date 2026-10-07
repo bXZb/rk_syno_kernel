@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 
 #ifndef BTRFS_EXTENT_IO_TREE_H
@@ -42,9 +39,12 @@ struct io_failure_record;
 				 EXTENT_CLEAR_DATA_RESV)
 #define EXTENT_CTLBITS		(EXTENT_DO_ACCOUNTING | \
 				 EXTENT_ADD_INODE_BYTES)
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS
+#define EXTENT_DEFRAG_COMPRESS		(1U << 29)
+#endif /* CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS */
+#ifdef CONFIG_SYNO_BTRFS_UNUSED_HINT
 #define EXTENT_UNUSED_HINT      (1U << 30)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_UNUSED_HINT */
 
 /*
  * Redefined bits above which are used only in the device allocation tree,
@@ -54,9 +54,9 @@ struct io_failure_record;
  */
 #define CHUNK_ALLOCATED				EXTENT_DIRTY
 #define CHUNK_TRIMMED				EXTENT_DEFRAG
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_UNUSED_HINT
 #define CHUNK_UNUSED_HINT 			EXTENT_UNUSED_HINT
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_UNUSED_HINT */
 #define CHUNK_STATE_MASK			(CHUNK_ALLOCATED |		\
 						 CHUNK_TRIMMED)
 
@@ -224,11 +224,19 @@ static inline int set_extent_delalloc(struct extent_io_tree *tree, u64 start,
 }
 
 static inline int set_extent_defrag(struct extent_io_tree *tree, u64 start,
-		u64 end, struct extent_state **cached_state)
+		u64 end,
+		struct extent_state **cached_state
+#ifdef CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS
+		, bool compress
+#endif /* CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS */
+)
 {
 	return set_extent_bit(tree, start, end,
-			      EXTENT_DELALLOC | EXTENT_DEFRAG,
-			      NULL, cached_state, GFP_NOFS);
+			      EXTENT_DELALLOC | EXTENT_DEFRAG
+#ifdef CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS
+			      | (compress ? EXTENT_DEFRAG_COMPRESS : 0)
+#endif /* CONFIG_SYNO_BTRFS_DEFRAG_COMPRESS */
+			      , NULL, cached_state, GFP_NOFS);
 }
 
 static inline int set_extent_new(struct extent_io_tree *tree, u64 start,
@@ -271,9 +279,9 @@ int clean_io_failure(struct btrfs_fs_info *fs_info,
 		     struct extent_io_tree *failure_tree,
 		     struct extent_io_tree *io_tree, u64 start,
 		     struct page *page, u64 ino, unsigned int pg_offset
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		     , bool should_put_locked
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		     );
 
 #endif /* BTRFS_EXTENT_IO_TREE_H */

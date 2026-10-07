@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kthread.h>
@@ -69,12 +66,12 @@ static int syno_hddmon_data_init(SynoHddMonData_t *pData)
 	/* default wait time 7s */
 	pData->iHddEnWait = SYNO_HDDMON_EN_WAIT_SEC;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_SPINUP_GROUP
 	/* override wait time if setup spinup group */
 	if (0 < giSynoSpinupGroupDelay) {
 		pData->iHddEnWait = giSynoSpinupGroupDelay;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_SPINUP_GROUP */
 
 	iRet = 0;
 END:
@@ -132,7 +129,7 @@ END:
 	return iRet;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_DEEPSLEEP
 extern int iIsSynoIRQOff(const struct ata_port *ap);
 
 static int syno_hddmon_is_disk_deepsleep(int iDiskIdx, SynoHddMonData_t *pData)
@@ -158,7 +155,7 @@ static int syno_hddmon_is_disk_deepsleep(int iDiskIdx, SynoHddMonData_t *pData)
 END:
 	return iErr;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_DEEPSLEEP */
 
 static void syno_hddmon_task(SynoHddMonData_t *pData)
 {
@@ -181,12 +178,12 @@ static void syno_hddmon_task(SynoHddMonData_t *pData)
 		iPrzPinVal = SYNO_CHECK_HDD_DETECT(iIdx);
 
 		if (pData->blHddEnStat[iIdx-1] != iPrzPinVal) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SATA_DEEPSLEEP
 			/*if the disk is plugged in while deep-sleep, do nothing*/
 			if (iPrzPinVal && syno_hddmon_is_disk_deepsleep(iIdx, pData)) {
 				continue;
 			}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SATA_DEEPSLEEP */
 
 			if (iPrzPinVal) {
 				//while starting a port, monitoring other ports for the disks unplugged

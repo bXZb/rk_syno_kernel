@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_STAT_H
 #define _LINUX_STAT_H
@@ -47,22 +44,22 @@ struct kstat {
 	struct timespec64 mtime;
 	struct timespec64 ctime;
 	struct timespec64 btime;			/* File creation time */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CREATE_TIME
 	struct timespec64 syno_create_time;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CREATE_TIME */
 	u64		blocks;
 	u64		mnt_id;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_BIT
 	u32		syno_archive_bit;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_FS_ARCHIVE_VERSION
 	u32		syno_archive_version;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FS_ARCHIVE_VERSION */
+#ifdef CONFIG_SYNO_FS_STAT
 	unsigned int	syno_compressed;
 	bool		is_inline;
 	unsigned int	syno_flags;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_STAT */
 };
 
 #endif

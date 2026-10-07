@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  * Copyright(c) 1999 - 2004 Intel Corporation. All rights reserved.
@@ -60,7 +57,7 @@ struct tlb_client_info {
 				 * packets to a Client that the Hash function
 				 * gave this entry index.
 				 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD
 	u64 tx_bytes;		/* Each Client accumulates the BytesTx that
 				 * were transmitted to it, and after each
 				 * CallBack the LoadHistory is divided
@@ -71,7 +68,7 @@ struct tlb_client_info {
 				 * the server on the previous balance
 				 * interval in Bps.
 				 */
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD */
 	u32 tx_bytes;		/* Each Client accumulates the BytesTx that
 				 * were transmitted to it, and after each
 				 * CallBack the LoadHistory is divided
@@ -82,7 +79,7 @@ struct tlb_client_info {
 				 * the server on the previous balance
 				 * interval in Bps.
 				 */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD */
 	u32 next;		/* The next Hash table entry index, assigned
 				 * to use the same adapter for transmit.
 				 */
@@ -134,24 +131,24 @@ struct tlb_slave_info {
 			 * are the entries that were assigned to use this
 			 * slave for transmit.
 			 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD
 	u64 load;	/* Each slave sums the loadHistory of all clients
 			 * assigned to it
 			 */
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD */
 	u32 load;	/* Each slave sums the loadHistory of all clients
 			 * assigned to it
 			 */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD */
 };
 
 struct alb_bond_info {
 	struct tlb_client_info	*tx_hashtbl; /* Dynamically allocated */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD
 	u64			unbalanced_load;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD */
 	u32			unbalanced_load;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD */
 	int			tx_rebalance_counter;
 	int			lp_counter;
 	/* -------- rlb parameters -------- */
@@ -191,8 +188,8 @@ struct slave *bond_xmit_tlb_slave_get(struct bonding *bond,
 void bond_alb_monitor(struct work_struct *);
 int bond_alb_set_mac_address(struct net_device *bond_dev, void *addr);
 void bond_alb_clear_vlan(struct bonding *bond, unsigned short vlan_id);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_NET_BOND_ALB_INFO)
 void bond_alb_info_show(struct seq_file *seq);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NET_BOND_ALB_INFO */
 #endif /* _NET_BOND_ALB_H */
 

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
     Copyright (c) 1998 - 2002  Frodo Looijaard <frodol@dds.nl>,
@@ -110,10 +107,10 @@
 #include <linux/platform_data/itco_wdt.h>
 #include <linux/pm_runtime.h>
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY
 #include <linux/seq_file.h>
 #include <linux/proc_fs.h>
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY */
 
 #if IS_ENABLED(CONFIG_I2C_MUX_GPIO) && defined CONFIG_DMI
 #include <linux/gpio/machine.h>
@@ -131,10 +128,10 @@
 #define SMBPEC(p)	(8 + (p)->smba)		/* ICH3 and later */
 #define SMBAUXSTS(p)	(12 + (p)->smba)	/* ICH4 and later */
 #define SMBAUXCTL(p)	(13 + (p)->smba)	/* ICH4 and later */
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY
 // SMBUS_PIN_CTL Register (SMBC)—Offset Fh
 #define SMBPINCTL(p)    (15 + (p)->smba)
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY */
 #define SMBSLVSTS(p)	(16 + (p)->smba)	/* ICH3 and later */
 #define SMBSLVCMD(p)	(17 + (p)->smba)	/* ICH3 and later */
 #define SMBNTFDADD(p)	(20 + (p)->smba)	/* ICH3 and later */
@@ -161,9 +158,9 @@
 #define SMBHSTCFG_HST_EN	BIT(0)
 #define SMBHSTCFG_SMB_SMI_EN	BIT(1)
 #define SMBHSTCFG_I2C_EN	BIT(2)
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY
 #define SMBHSTCFG_SSRESET	BIT(3)
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY */
 #define SMBHSTCFG_SPD_WD	BIT(4)
 
 /* TCO configuration bits for TCOCTL */
@@ -207,12 +204,12 @@
 #define SMBHSTSTS_INTR		BIT(1)
 #define SMBHSTSTS_HOST_BUSY	BIT(0)
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY
 /* I801 Pin Control register bits*/
 #define SMBPINCTL_SCL_CTL   BIT(2)
 #define SMBPINCTL_SDATA_STS BIT(1)
 #define SMBPINCTL_SCL_STS   BIT(0)
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY */
 
 /* Host Notify Status register bits */
 #define SMBSLVSTS_HST_NTFY_STS	BIT(0)
@@ -342,7 +339,7 @@ MODULE_PARM_DESC(disable_features, "Disable selected driver features:\n"
 	"\t\t  0x10  don't use interrupts\n"
 	"\t\t  0x20  disable SMBus Host Notify ");
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY
 static int i801_i2c_get_sda(struct i2c_adapter *adap)
 {
 	struct i801_priv *priv = NULL;
@@ -664,7 +661,7 @@ static int proc_i801_smbusbusy_init(struct i801_priv *priv)
 
 	return iResult;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY */
 
 /* Make sure the SMBus host is ready to start transmitting.
    Return 0 if it is, -EBUSY if it is not. */
@@ -673,13 +670,13 @@ static int i801_check_pre(struct i801_priv *priv)
 	int status;
 
 	status = inb_p(SMBHSTSTS(priv));
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY
 	if (i801_smbusbusy || (status & SMBHSTSTS_HOST_BUSY)) {
 		syno_i801_softreset(priv);
 		i801_smbusbusy = 0;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY */
 	if (status & SMBHSTSTS_HOST_BUSY) {
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY */
 		dev_err(&priv->pci_dev->dev, "SMBus is busy, can't use it!\n");
 		return -EBUSY;
 	}
@@ -1203,9 +1200,9 @@ static s32 i801_access(struct i2c_adapter *adap, u16 addr,
 	int block = 0;
 	int ret = 0, xact = 0;
 	struct i801_priv *priv = i2c_get_adapdata(adap);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY
 	int iRunTimes = 0;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY */
 
 	mutex_lock(&priv->acpi_lock);
 	if (priv->acpi_reserved) {
@@ -1215,9 +1212,9 @@ static s32 i801_access(struct i2c_adapter *adap, u16 addr,
 
 	pm_runtime_get_sync(&priv->pci_dev->dev);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY
 redo:
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY */
 
 	hwpec = (priv->features & FEATURE_SMBUS_PEC) && (flags & I2C_CLIENT_PEC)
 		&& size != I2C_SMBUS_QUICK
@@ -1339,7 +1336,7 @@ out:
 	pm_runtime_mark_last_busy(&priv->pci_dev->dev);
 	pm_runtime_put_autosuspend(&priv->pci_dev->dev);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY
 	//Only first run and SDA low we do recover,
 	//We run i2c recovery first, then SMBUS recover if needed
 	if ((-ENXIO == ret) && !(i801_i2c_get_sda(adap))) {
@@ -1361,7 +1358,7 @@ out:
 			goto redo;
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY */
 
 	mutex_unlock(&priv->acpi_lock);
 	return ret;
@@ -2200,9 +2197,9 @@ static int i801_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	}
 	priv->features &= ~disable_features;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_I2C_I801_POLL
 	priv->features &= ~FEATURE_IRQ;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_I2C_I801_POLL */
 
 	err = pcim_enable_device(dev);
 	if (err) {
@@ -2317,14 +2314,14 @@ static int i801_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	pm_runtime_put_autosuspend(&dev->dev);
 	pm_runtime_allow(&dev->dev);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY
 	proc_i801_recovery_init(priv);
 	priv->adapter.bus_recovery_info = &i801_i2c_recovery_info;
 	proc_i801_recovery_cnt_init(priv);
 	proc_i801_softreset_init(priv);
 	proc_i801_softreset_cnt_init(priv);
 	proc_i801_smbusbusy_init(priv);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY */
 
 	return 0;
 }
@@ -2344,13 +2341,13 @@ static void i801_remove(struct pci_dev *dev)
 
 	platform_device_unregister(priv->tco_pdev);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY
 	remove_proc_entry("i801_recovery", NULL);
 	remove_proc_entry("i801_recovery_cnt", NULL);
 	remove_proc_entry("i801_smbusbusy", NULL);
 	remove_proc_entry("i801_softreset", NULL);
 	remove_proc_entry("i801_softreset_cnt", NULL);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_I2C_I801_SUPPORT_RECOVERY */
 	/*
 	 * do not call pci_disable_device(dev) since it can cause hard hangs on
 	 * some systems during power-off (eg. Fujitsu-Siemens Lifebook E8010)

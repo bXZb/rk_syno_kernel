@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * USB Attached SCSI
@@ -97,7 +94,7 @@ static void uas_log_cmd_state(struct scsi_cmnd *cmnd, const char *prefix,
  */
 static struct workqueue_struct *workqueue;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 static void syno_uas_usb_info_enum(struct scsi_device *sdev) {
 	struct uas_dev_info *uasdevinfo = NULL;
 	struct usb_device *udev = NULL;
@@ -116,7 +113,7 @@ static void syno_uas_usb_info_enum(struct scsi_device *sdev) {
 
 	snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%susb_path=%s\n", sdev->syno_block_info, dev_name(&udev->dev));
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
 
 static void uas_do_work(struct work_struct *work)
 {
@@ -936,13 +933,13 @@ static struct scsi_host_template uas_host_template = {
 	.this_id = -1,
 	.skip_settle_delay = 1,
 	.dma_boundary = PAGE_SIZE - 1,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_PORT_MAPPING_V2
 	.syno_port_type = SYNO_PORT_TYPE_USB,
 	.syno_sdev_info_enum = syno_uas_usb_info_enum,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_PORT_MAPPING_V2 */
+#ifdef CONFIG_SYNO_SCSI_UAS_BEEDRIVE_DELAY_REVALIDATE
 	.syno_uas_delay_revalidate = false,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_UAS_BEEDRIVE_DELAY_REVALIDATE */
 };
 
 #define UNUSUAL_DEV(id_vendor, id_product, bcdDeviceMin, bcdDeviceMax, \
@@ -1042,12 +1039,12 @@ static int uas_probe(struct usb_interface *intf, const struct usb_device_id *id)
 	shost->max_lun = 256;
 	shost->max_channel = 0;
 	shost->sg_tablesize = udev->bus->sg_tablesize;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_UAS_BEEDRIVE_DELAY_REVALIDATE
 	if (0 == strncmp("Synology", udev->manufacturer, 8) &&
 		0 == strncmp("BeeDrive", udev->product, 8)) {
 		shost->hostt->syno_uas_delay_revalidate = true;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_UAS_BEEDRIVE_DELAY_REVALIDATE */
 
 	devinfo = (struct uas_dev_info *)shost->hostdata;
 	devinfo->intf = intf;

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * ve1.c
  *
@@ -50,10 +47,10 @@
 #include <linux/pm_runtime.h>
 #include <linux/clk.h>
 #include <linux/reset.h>
-#if defined(MY_ABC_HERE)
-#else /* !MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 #include <linux/soc/realtek/rtk_pd.h>
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
@@ -254,18 +251,18 @@ static void ve1_wrapper_setup(unsigned int coreIdx)
 	}
 }
 
-#if defined(MY_ABC_HERE)
-#else /* !MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 static struct clk *ve_clk;
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 static struct reset_control *ve_rstc;
-#if defined(MY_ABC_HERE)
-#else /* !MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 static struct reset_control *ve_rstc_bist;
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
-#if defined(MY_ABC_HERE)
-#else /* !MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 static void rtk_ve1_power_on(void)
 {
 	pr_debug("%s\n", __func__);
@@ -281,7 +278,7 @@ static void rtk_ve1_power_off(void)
 	reset_control_assert(ve_rstc);
 	reset_control_assert(ve_rstc_bist);
 }
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 int vpu_hw_reset(u32 coreIdx)
 {
@@ -290,8 +287,8 @@ int vpu_hw_reset(u32 coreIdx)
 	return 0;
 }
 
-#if defined(MY_ABC_HERE)
-#else /* !MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 static int rtk_power_callback(struct notifier_block *nb, unsigned long action, void *unused)
 {
 	if (action == RTK_PD_NOTIFY_PRE_ON) {
@@ -310,7 +307,7 @@ static int rtk_power_callback(struct notifier_block *nb, unsigned long action, v
 static struct notifier_block ve_power_nb = {
 	.notifier_call = rtk_power_callback,
 };
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 
 static int vpu_alloc_dma_buffer(vpudrv_buffer_t *vb)
@@ -1339,14 +1336,14 @@ static int vpu_probe(struct platform_device *pdev)
 	pr_info("%s success to probe vpu device with non reserved video memory\n", DEV_NAME);
 #endif /* VPU_SUPPORT_RESERVED_VIDEO_MEMORY */
 
-#if defined(MY_ABC_HERE)
-#else /* !MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	ve_clk = devm_clk_get(dev, NULL);
 	if (IS_ERR(ve_clk)) {
 		dev_warn(dev, "failed to get clk_ve1: %ld\n", PTR_ERR(ve_clk));
 		ve_clk = NULL;
 	}
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 	ve_rstc = devm_reset_control_get_exclusive(dev, "reset");
 	if (IS_ERR(ve_rstc)) {
@@ -1354,8 +1351,8 @@ static int vpu_probe(struct platform_device *pdev)
 		ve_rstc = NULL;
 	}
 
-#if defined(MY_ABC_HERE)
-#else /* !MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	ve_rstc_bist = devm_reset_control_get_optional_exclusive(dev, "bist");
 	if (IS_ERR(ve_rstc_bist)) {
 		dev_warn(dev, "failed to get reset control ve1_bist: %ld\n", PTR_ERR(ve_rstc_bist));
@@ -1364,23 +1361,23 @@ static int vpu_probe(struct platform_device *pdev)
 
 	rtk_pd_dev_pm_add_notifier(dev, &ve_power_nb);
 	rtk_ve1_power_on();
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 	pm_runtime_set_suspended(dev);
 	pm_runtime_use_autosuspend(dev);
 	pm_runtime_set_autosuspend_delay(dev, 15000);
 	pm_runtime_enable(dev);
 
-#if defined(MY_ABC_HERE)
-#else /* !MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	/* toggle it */
 	pm_runtime_get_sync(&pdev->dev);
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	pm_runtime_mark_last_busy(&pdev->dev);
-#if defined(MY_ABC_HERE)
-#else /* !MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	pm_runtime_put_autosuspend(&pdev->dev);
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 	return 0;
 
@@ -1397,10 +1394,10 @@ static int vpu_remove(struct platform_device *pdev)
 	DPRINTK("%s vpu_remove\n", DEV_NAME);
 
 	pm_runtime_disable(&pdev->dev);
-#if defined(MY_ABC_HERE)
-#else /* !MY_ABC_HERE */
+#if defined(CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU)
+#else /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 	rtk_pd_dev_pm_remove_notifier(&pdev->dev);
-#endif /* !MY_ABC_HERE */
+#endif /* !CONFIG_SYNO_LSP_RTD1619B_ENABLE_NPU */
 
 #ifdef VPU_SUPPORT_PLATFORM_DRIVER_REGISTER
 	if (s_instance_pool.base) {

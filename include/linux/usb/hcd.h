@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2001-2002 by David Brownell
@@ -222,12 +219,12 @@ struct usb_hcd {
 	/* memory pool for HCs having local memory, or %NULL */
 	struct gen_pool         *localmem_pool;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_POWER_RESET
 	/* A38X only support 1 port per HC */
 	int vbus_gpio_pin;
 	/* Support power control */
 	int power_control_support;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_POWER_RESET */
 
 	/* more shared queuing code would be good; it should support
 	 * smarter scheduling, handle transaction translators, etc;

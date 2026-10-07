@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Copyright(c) 1999 - 2004 Intel Corporation. All rights reserved.
@@ -162,13 +159,13 @@ static void tlb_deinitialize(struct bonding *bond)
 
 static long long compute_gap(struct slave *slave)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NET_ALB_FIX_OVERFLOW
 	return ((s64) (slave->speed) << 20) - /* Convert to Megabit per sec */
 	       ((s64) (SLAVE_TLB_INFO(slave).load) << 3); /* Bytes to bits */
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NET_ALB_FIX_OVERFLOW */
 	return (s64) (slave->speed << 20) - /* Convert to Megabit per sec */
 	       (s64) (SLAVE_TLB_INFO(slave).load << 3); /* Bytes to bits */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NET_ALB_FIX_OVERFLOW */
 }
 
 static struct slave *tlb_get_least_loaded_slave(struct bonding *bond)
@@ -1834,7 +1831,7 @@ void bond_alb_clear_vlan(struct bonding *bond, unsigned short vlan_id)
 		rlb_clear_vlan(bond, vlan_id);
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_NET_BOND_ALB_INFO)
 void bond_alb_info_show(struct seq_file *seq)
 {
 	struct bonding *bond = PDE_DATA(file_inode(seq->file));
@@ -1881,11 +1878,11 @@ void bond_alb_info_show(struct seq_file *seq)
 	}
 
 	seq_puts(seq, "\n Transmit Load Balancing table:\n");
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD
 	seq_printf(seq,	"  Unbalanced load: %llu\n"
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD */
 	seq_printf(seq,	"  Unbalanced load: %u\n"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD */
 			"  Rebalance interval: %u seconds\n\n",
 			bond_info->unbalanced_load,
 			BOND_TLB_REBALANCE_INTERVAL);
@@ -1897,11 +1894,11 @@ void bond_alb_info_show(struct seq_file *seq)
 			bool tcinfo_visited[TLB_HASH_TABLE_SIZE] = { false };
 			seq_puts(seq, "  Slave    Used  Speed    Duplex"
 				      "  Current load\n");
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD
 			seq_printf(seq, "  %-8s %3s   %-8u %4s      %10llu\n",
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD */
 			seq_printf(seq, "  %-8s %3s   %-8u %4s      %10u\n",
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD */
 				   (slave->dev->name[0] != '\0' ?
 				    slave->dev->name : "none"),
 				   (bond_slave_can_tx(slave) ? "yes" : "no"),
@@ -1923,13 +1920,13 @@ void bond_alb_info_show(struct seq_file *seq)
 				tclient_info = &(bond_info->tx_hashtbl[index]);
 				if (tclient_info)
 					seq_printf(seq,	"            "
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD
 						   "%3u:  %10llu"
 						   "        %10llu\n",
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD */
 						   "%3u:  %10u"
 						   "        %10u\n",
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NET_ALB_USE_64BIT_LOAD */
 					   index,
 						   tclient_info->tx_bytes,
 						   tclient_info->load_history);
@@ -1939,5 +1936,5 @@ void bond_alb_info_show(struct seq_file *seq)
 	}
 	spin_unlock_bh(&bond->mode_lock);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_NET_BOND_ALB_INFO */
 

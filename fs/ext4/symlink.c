@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/ext4/symlink.c
@@ -56,69 +53,69 @@ static const char *ext4_encrypted_get_link(struct dentry *dentry,
 }
 
 const struct inode_operations ext4_encrypted_symlink_inode_operations = {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_STAT
 	.syno_getattr	= ext4_syno_getattr,
-#endif /* MY_ABC_HERE */
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#endif /* CONFIG_SYNO_EXT4_STAT */
+#if defined(CONFIG_SYNO_EXT3_ARCHIVE_BIT) || defined(CONFIG_SYNO_EXT4_ARCHIVE_BIT)
 	.syno_set_archive_bit = ext4_syno_set_archive_bit,
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT3_ARCHIVE_BIT || CONFIG_SYNO_EXT4_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_VERSION
 	.syno_get_archive_version = ext4_syno_get_inode_archive_version,
 	.syno_set_archive_version = ext4_syno_set_inode_archive_version,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_VERSION */
 	.get_link	= ext4_encrypted_get_link,
 	.setattr	= ext4_setattr,
 	.getattr	= ext4_getattr,
 	.listxattr	= ext4_listxattr,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CREATE_TIME
 	.syno_get_crtime = ext4_syno_get_crtime,
 	.syno_set_crtime = ext4_syno_set_crtime,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CREATE_TIME */
 };
 
 const struct inode_operations ext4_symlink_inode_operations = {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_STAT
 	.syno_getattr	= ext4_syno_getattr,
-#endif /* MY_ABC_HERE */
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#endif /* CONFIG_SYNO_EXT4_STAT */
+#if defined(CONFIG_SYNO_EXT3_ARCHIVE_BIT) || defined(CONFIG_SYNO_EXT4_ARCHIVE_BIT)
 	.syno_set_archive_bit = ext4_syno_set_archive_bit,
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT3_ARCHIVE_BIT || CONFIG_SYNO_EXT4_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_VERSION
 	.syno_get_archive_version = ext4_syno_get_inode_archive_version,
 	.syno_set_archive_version = ext4_syno_set_inode_archive_version,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_VERSION */
 	.get_link	= page_get_link,
 	.setattr	= ext4_setattr,
 	.getattr	= ext4_getattr,
 	.listxattr	= ext4_listxattr,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CREATE_TIME
 	.syno_get_crtime = ext4_syno_get_crtime,
 	.syno_set_crtime = ext4_syno_set_crtime,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CREATE_TIME */
 };
 
 const struct inode_operations ext4_fast_symlink_inode_operations = {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_STAT
 	.syno_getattr	= ext4_syno_getattr,
-#endif /* MY_ABC_HERE */
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#endif /* CONFIG_SYNO_EXT4_STAT */
+#if defined(CONFIG_SYNO_EXT3_ARCHIVE_BIT) || defined(CONFIG_SYNO_EXT4_ARCHIVE_BIT)
 	.syno_set_archive_bit = ext4_syno_set_archive_bit,
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT3_ARCHIVE_BIT || CONFIG_SYNO_EXT4_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_EXT4_ARCHIVE_VERSION
 	.syno_get_archive_version = ext4_syno_get_inode_archive_version,
 	.syno_set_archive_version = ext4_syno_set_inode_archive_version,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ARCHIVE_VERSION */
 	.get_link	= simple_get_link,
 	.setattr	= ext4_setattr,
 	.getattr	= ext4_getattr,
 	.listxattr	= ext4_listxattr,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_CREATE_TIME
 	.syno_get_crtime = ext4_syno_get_crtime,
 	.syno_set_crtime = ext4_syno_set_crtime,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_CREATE_TIME */
 };
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_SYMLINK_IOCTL
 const struct file_operations ext4_symlink_file_operations = {
 	.unlocked_ioctl = ext4_symlink_ioctl,
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_SYMLINK_IOCTL */

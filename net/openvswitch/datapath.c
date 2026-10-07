@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2007-2014 Nicira, Inc.
@@ -51,9 +48,9 @@
 
 unsigned int ovs_net_id __read_mostly;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OVS_MODE_REFINEMENT
 static DEFINE_MUTEX(syno_ovs_mutex);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OVS_MODE_REFINEMENT */
 
 static struct genl_family dp_packet_genl_family;
 static struct genl_family dp_flow_genl_family;
@@ -2485,7 +2482,7 @@ error:
 	return err;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OVS_MODE_REFINEMENT
 bool syno_is_ovs_bond_name(const char *name)
 {
 	const char SYNO_OVS_BOND[] = "ovs_bond";
@@ -2818,18 +2815,18 @@ static int syno_ovs_create_sysfs(struct ovs_net *ovs_net)
 	}
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OVS_MODE_REFINEMENT */
 
 static int __net_init ovs_init_net(struct net *net)
 {
 	struct ovs_net *ovs_net = net_generic(net, ovs_net_id);
 	int err;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OVS_MODE_REFINEMENT
 	ovs_net->net = net;
 	INIT_LIST_HEAD(&ovs_net->bond_list);
 	syno_ovs_create_sysfs(ovs_net);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OVS_MODE_REFINEMENT */
 
 	INIT_LIST_HEAD(&ovs_net->dps);
 	INIT_WORK(&ovs_net->dp_notify_work, ovs_dp_notify_wq);
@@ -2867,13 +2864,13 @@ static void __net_exit list_vports_from_net(struct net *net, struct net *dnet,
 	}
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OVS_MODE_REFINEMENT
 static void syno_ovs_destroy_sysfs(struct ovs_net *ovs_net)
 {
 	netdev_class_remove_file_ns(&ovs_net->class_attr_syno_ovs_bonds,
 			ovs_net->net);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OVS_MODE_REFINEMENT */
 
 static void __net_exit ovs_exit_net(struct net *dnet)
 {
@@ -2881,13 +2878,13 @@ static void __net_exit ovs_exit_net(struct net *dnet)
 	struct ovs_net *ovs_net = net_generic(dnet, ovs_net_id);
 	struct vport *vport, *vport_next;
 	struct net *net;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OVS_MODE_REFINEMENT
 	struct list_head *pos, *n;
 	struct syno_ovs_bond_list *bondp;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OVS_MODE_REFINEMENT */
 	LIST_HEAD(head);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_OVS_MODE_REFINEMENT
 	syno_ovs_destroy_sysfs(ovs_net);
 	mutex_lock(&syno_ovs_mutex);
 	if (!list_empty(&ovs_net->bond_list)) {
@@ -2900,7 +2897,7 @@ static void __net_exit ovs_exit_net(struct net *dnet)
 		}
 	}
 	mutex_unlock(&syno_ovs_mutex);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_OVS_MODE_REFINEMENT */
 
 	ovs_lock();
 

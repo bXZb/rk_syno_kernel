@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  *  linux/include/linux/console.h
  *
@@ -154,11 +151,11 @@ struct console {
 	short	index;
 	int	cflag;
 	void	*data;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS
 	void __iomem * pcimapaddress;
 	unsigned long pcimapsize;
 	void	(*deinit)(void);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_TTY_FIX_TTYS_FUNCTIONS */
 	struct	 console *next;
 };
 
@@ -170,6 +167,9 @@ struct console {
 
 extern int console_set_on_cmdline;
 extern struct console *early_console;
+#ifdef CONFIG_SYNO_OOB_SERIAL_OVER_LAN
+extern struct console *oob_early_console;
+#endif /* CONFIG_SYNO_OOB_SERIAL_OVER_LAN */
 
 enum con_flush_mode {
 	CONSOLE_FLUSH_PENDING,

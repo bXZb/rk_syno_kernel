@@ -56,7 +56,9 @@ PLATFORMS = [
     Platform.new(:icelaked,         :ICELAKED,              :x86_64,    'Intel Icelake-D'),
     Platform.new(:epyc7002,         :EPYC7002,              :x86_64,    'AMD EPYC Embedded 7002'),
     Platform.new(:epyc7002sofs,     :EPYC7002SOFS,          :x86_64,    'AMD EPYC Embedded 7002 with SOFS'),
+    Platform.new(:epyc7003,         :EPYC7003,              :x86_64,    'AMD EPYC Embedded 7003'),
     Platform.new(:epyc7003ntb,      :EPYC7003NTB,           :x86_64,    'AMD EPYC Embedded 7003 with NTB'),
     Platform.new(:r1000nk,          :R1000NK,               :x86_64,    'AMD Ryzen Embedded R1000'),
+    Platform.new(:raptorlakeu,      :RAPTORLAKEU,           :x86_64,    'Intel Raptor Lake-U'),
 ]
 

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/namei.c
@@ -43,19 +40,19 @@
 #include <linux/init_task.h>
 #include <linux/uaccess.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RENAME_READONLY_SUBVOL
 #include <linux/magic.h>
 #include <linux/btrfs_tree.h>
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_BTRFS_RENAME_READONLY_SUBVOL */
+#ifdef CONFIG_SYNO_FS_WINACL
 #include <linux/syno_acl.h>
 #endif
 #include "internal.h"
 #include "mount.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 extern struct rw_semaphore namespace_sem;
 static DEFINE_RATELIMIT_STATE(_namei_rs, (3600 * HZ), 1);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 /* [Feb-1997 T. Schoebel-Theuer]
  * Fundamental changes in the pathname lookup mechanisms (namei)
@@ -136,7 +133,7 @@ static DEFINE_RATELIMIT_STATE(_namei_rs, (3600 * HZ), 1);
  * PATH_MAX includes the nul terminator --RR.
  */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 int syno_utf8chr_to_utf16chr(u_int16_t *p, const u_int8_t *s, int n);
 int syno_utf16chr_to_utf8chr(u_int8_t *s, u_int16_t wc, int maxlen);
 u_int16_t *syno_generate_default_upcase_table(void);
@@ -432,7 +429,7 @@ END:
 	return result;
 }
 EXPORT_SYMBOL(syno_utf8_strcmp);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 #define EMBEDDED_NAME_MAX	(PATH_MAX - offsetof(struct filename, iname))
 
@@ -833,12 +830,12 @@ struct nameidata {
 	int		dfd;
 	kuid_t		dir_uid;
 	umode_t		dir_mode;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	unsigned char 	*real_filename;
 	unsigned char 	*real_filename_cur_locate;
 	unsigned int 	real_filename_len;
 	struct path 	caseless_path;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 } __randomize_layout;
 
 static void set_nameidata(struct nameidata *p, int dfd, struct filename *name)
@@ -908,10 +905,10 @@ static void terminate_walk(struct nameidata *nd)
 	drop_links(nd);
 	if (!(nd->flags & LOOKUP_RCU)) {
 		int i;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 		nd->caseless_path.dentry = NULL;
 		nd->caseless_path.mnt = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 		path_put(&nd->path);
 		for (i = 0; i < nd->depth; i++)
 			path_put(&nd->stack[i].link);
@@ -1311,13 +1308,13 @@ static inline int may_follow_link(struct nameidata *nd, const struct inode *inod
  *
  * Otherwise returns true.
  */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 static bool safe_hardlink_source(struct dentry *dentry)
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 static bool safe_hardlink_source(struct inode *inode)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	struct inode *inode = d_inode(dentry);
 #endif
 	umode_t mode = inode->i_mode;
@@ -1335,12 +1332,12 @@ static bool safe_hardlink_source(struct inode *inode)
 		return false;
 
 	/* Hardlinking to unreadable or unwritable sources is dangerous. */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(dentry)) {
 		if (synoacl_op_permission(dentry, MAY_READ | MAY_WRITE))
 			return false;
 	} else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	if (inode_permission(inode, MAY_READ | MAY_WRITE))
 		return false;
 
@@ -1373,13 +1370,13 @@ int may_linkat(struct path *link)
 	/* Source inode owner (or CAP_FOWNER) can hardlink all they like,
 	 * otherwise, it must be a safe source.
 	 */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (safe_hardlink_source(link->dentry) || inode_owner_or_capable(inode))
 		return 0;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 	if (safe_hardlink_source(inode) || inode_owner_or_capable(inode))
 		return 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 	audit_log_path_denied(AUDIT_ANOM_LINK, "linkat");
 	return -EPERM;
@@ -1688,14 +1685,14 @@ static bool __follow_mount_rcu(struct nameidata *nd, struct path *path,
 				 * becoming unpinned.
 				 */
 				flags = dentry->d_flags;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 				/*
 				 * We don't care about m_seq because when m_seq
 				 * mismatch it will always switch to ref-walk mode
 				 * and re-walk full path.
 				 */
 				nd->flags |= LOOKUP_MOUNTED;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 				continue;
 			}
 			if (read_seqretry(&mount_lock, nd->m_seq))
@@ -1732,9 +1729,9 @@ static inline int handle_mounts(struct nameidata *nd, struct dentry *dentry,
 			ret = -EXDEV;
 		else
 			nd->flags |= LOOKUP_JUMPED;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 		nd->flags |= LOOKUP_MOUNTED;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 	}
 	if (unlikely(ret)) {
 		dput(path->dentry);
@@ -1807,9 +1804,9 @@ static struct dentry *lookup_fast(struct nameidata *nd,
 {
 	struct dentry *dentry, *parent = nd->path.dentry;
 	int status = 1;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	int caseless = (LOOKUP_CASELESS_COMPARE & nd->flags) ? 1 : 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 	/*
 	 * Rename seqlock is not required here because in the off chance
@@ -1818,14 +1815,14 @@ static struct dentry *lookup_fast(struct nameidata *nd,
 	 */
 	if (nd->flags & LOOKUP_RCU) {
 		unsigned seq;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 		dentry = __d_lookup_rcu(parent, &nd->last, &seq, caseless);
 		// down grade to ref-mode.
 		if (unlikely(caseless) && dentry && unlikely(!dentry->d_inode))
 			return ERR_PTR(-ECHILD);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 		dentry = __d_lookup_rcu(parent, &nd->last, &seq);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 		if (unlikely(!dentry)) {
 			if (!try_to_unlazy(nd))
 				return ERR_PTR(-ECHILD);
@@ -1860,16 +1857,16 @@ static struct dentry *lookup_fast(struct nameidata *nd,
 			/* we'd been told to redo it in non-rcu mode */
 			status = d_revalidate(dentry, nd->flags);
 	} else {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 		dentry = __d_lookup(parent, &nd->last, caseless);
 		if (caseless && dentry && !dentry->d_inode) {
 			d_invalidate(dentry);
 			dput(dentry);
 			dentry = NULL;
 		}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 		dentry = __d_lookup(parent, &nd->last);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 		if (unlikely(!dentry))
 			return NULL;
 		status = d_revalidate(dentry, nd->flags);
@@ -1896,12 +1893,12 @@ static struct dentry *__lookup_slow(const struct qstr *name,
 	if (unlikely(IS_DEADDIR(inode)))
 		return ERR_PTR(-ENOENT);
 again:
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	dentry = d_alloc_parallel_case(dir, name, &wq,
 			(LOOKUP_CASELESS_COMPARE & flags) ? 1 : 0);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 	dentry = d_alloc_parallel(dir, name, &wq);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 	if (IS_ERR(dentry))
 		return dentry;
 	if (unlikely(!d_in_lookup(dentry))) {
@@ -1932,16 +1929,27 @@ static struct dentry *lookup_slow(const struct qstr *name,
 {
 	struct inode *inode = dir->d_inode;
 	struct dentry *res;
-	inode_lock_shared(inode);
-	res = __lookup_slow(name, dir, flags);
-	inode_unlock_shared(inode);
+
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
+	if (flags & LOOKUP_CASELESS_COMPARE) {
+		inode_lock(inode);
+		res = __lookup_slow(name, dir, flags);
+		inode_unlock(inode);
+	} else {
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
+		inode_lock_shared(inode);
+		res = __lookup_slow(name, dir, flags);
+		inode_unlock_shared(inode);
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
+	}
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 	return res;
 }
 
 static inline int may_lookup(struct nameidata *nd)
 {
 	if (nd->flags & LOOKUP_RCU) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 		int err;
 		/*
 		 * 1. nd->path.dentry->d_inode may be changed in RCU-walk, use nd->inode for instead.
@@ -1952,17 +1960,17 @@ static inline int may_lookup(struct nameidata *nd)
 			err = inode_permission(nd->inode, MAY_EXEC|MAY_NOT_BLOCK);
 		else if (err == 1)
 			err = -ECHILD;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 		int err = inode_permission(nd->inode, MAY_EXEC|MAY_NOT_BLOCK);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 		if (err != -ECHILD || !try_to_unlazy(nd))
 			return err;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(nd->path.dentry))
 		return synoacl_op_exec_permission(nd->path.dentry, nd->inode);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 	return inode_permission(nd->inode, MAY_EXEC);
 }
@@ -2082,10 +2090,10 @@ static const char *step_into(struct nameidata *nd, int flags,
 	if (err < 0)
 		return ERR_PTR(err);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	if (nd->flags & LOOKUP_CASELESS_COMPARE)
 		nd->caseless_path = path;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 	if (likely(!d_is_symlink(path.dentry)) ||
 	   ((flags & WALK_TRAILING) && !(nd->flags & LOOKUP_FOLLOW)) ||
@@ -2234,7 +2242,7 @@ static const char *handle_dots(struct nameidata *nd, int type)
 	return NULL;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 static inline int update_real_filename(struct nameidata *nd,
 				       const char *target_name,
 				       const int target_len)
@@ -2296,7 +2304,7 @@ static inline int update_path_to_real_filename(struct nameidata *nd)
 
 	return update_real_filename(nd, target_name, target_len);
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 static const char *walk_component(struct nameidata *nd, int flags)
 {
@@ -2566,18 +2574,18 @@ static int link_path_walk(const char *name, struct nameidata *nd)
 {
 	int depth = 0; // depth <= nd->depth
 	int err;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	int caseless_flag = (LOOKUP_CASELESS_COMPARE ==
 		((LOOKUP_CASELESS_COMPARE | LOOKUP_TO_LASTCOMPONENT) & nd->flags));
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 	nd->last_type = LAST_ROOT;
 	nd->flags |= LOOKUP_PARENT;
 	if (IS_ERR(name))
 		return PTR_ERR(name);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	/* We do case conversions here.
 	 * The filename converted will be stored in nd->real_filename.
 	 *
@@ -2601,10 +2609,10 @@ static int link_path_walk(const char *name, struct nameidata *nd)
 		}
 		name++;
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 	while (*name=='/')
 		name++;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 	if (!*name)
 		return 0;
 
@@ -2613,7 +2621,7 @@ static int link_path_walk(const char *name, struct nameidata *nd)
 		const char *link;
 		u64 hash_len;
 		int type;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 		int slash_count = 0;
 		/*
 		 * We only update user path case, not update symbolic link path,
@@ -2622,7 +2630,7 @@ static int link_path_walk(const char *name, struct nameidata *nd)
 		bool in_link = !!depth;
 
 		nd->flags &= ~LOOKUP_MOUNTED;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 		err = may_lookup(nd);
 		if (err)
@@ -2660,14 +2668,14 @@ static int link_path_walk(const char *name, struct nameidata *nd)
 
 		name += hashlen_len(hash_len);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 		if (caseless_flag && (LAST_DOTDOT == type || LAST_DOT == type) && !in_link) {
 			err = update_real_filename(nd, nd->last.name,
 						   hashlen_len(nd->last.hash_len));
 			if (err)
 				return err;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 		if (!*name)
 			goto OK;
@@ -2677,12 +2685,12 @@ static int link_path_walk(const char *name, struct nameidata *nd)
 		 */
 		do {
 			name++;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 			slash_count++;
 			/* We will count one more slash because there will be one slash
 			 * added in walk_component. Substract it back later.
 			 */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 		} while (unlikely(*name == '/'));
 		if (unlikely(!*name)) {
 OK:
@@ -2691,10 +2699,10 @@ OK:
 				nd->dir_uid = nd->inode->i_uid;
 				nd->dir_mode = nd->inode->i_mode;
 				nd->flags &= ~LOOKUP_PARENT;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 				if (caseless_flag)
 					nd->flags |= LOOKUP_TO_LASTCOMPONENT;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 				return 0;
 			}
 			/* last component of nested symlink */
@@ -2705,7 +2713,7 @@ OK:
 			link = walk_component(nd, WALK_MORE);
 		}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 		if (unlikely(link && IS_ERR(link)))
 			return PTR_ERR(link);
 
@@ -2721,7 +2729,7 @@ OK:
 				slash_count--;
 			}
 		}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 		if (unlikely(link)) {
 			if (IS_ERR(link))
@@ -2759,14 +2767,14 @@ static const char *path_init(struct nameidata *nd, unsigned flags)
 	nd->r_seq = __read_seqcount_begin(&rename_lock.seqcount);
 	smp_rmb();
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	if (flags & LOOKUP_CASELESS_COMPARE) {
 		nd->real_filename_cur_locate = nd->real_filename;
 		nd->real_filename_len = 0;
 	}
 	nd->caseless_path.mnt = NULL;
 	nd->caseless_path.dentry = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 	if (flags & LOOKUP_ROOT) {
 		struct dentry *root = nd->root.dentry;
@@ -2872,9 +2880,9 @@ static int path_lookupat(struct nameidata *nd, unsigned flags, struct path *path
 {
 	const char *s = path_init(nd, flags);
 	int err;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	bool update_last = true;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 	if (unlikely(flags & LOOKUP_DOWN) && !IS_ERR(s)) {
 		err = handle_lookup_down(nd);
@@ -2882,7 +2890,7 @@ static int path_lookupat(struct nameidata *nd, unsigned flags, struct path *path
 			s = ERR_PTR(err);
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 	while (!(err = link_path_walk(s, nd))) {
 		s = lookup_last(nd);
 		if (unlikely(s && IS_ERR(s)))
@@ -2901,11 +2909,11 @@ static int path_lookupat(struct nameidata *nd, unsigned flags, struct path *path
 		if (!s)
 			break;
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_CASELESS_STAT */
 	while (!(err = link_path_walk(s, nd)) &&
 	       (s = lookup_last(nd)) != NULL)
 		;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 	if (!err && unlikely(nd->flags & LOOKUP_MOUNTPOINT)) {
 		err = handle_lookup_down(nd);
@@ -3078,15 +3086,15 @@ static int lookup_one_len_common(const char *name, struct dentry *base,
 			return err;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(base))
 		return synoacl_op_exec_permission(base, d_inode(base));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 	return inode_permission(base->d_inode, MAY_EXEC);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_CASELESS_STAT
 /* copy from d_lookup */
 static struct dentry *d_lookup_caseless(const struct dentry *parent, const struct qstr *name, const int caseless)
 {
@@ -3096,6 +3104,11 @@ static struct dentry *d_lookup_caseless(const struct dentry *parent, const struc
 	do {
 		seq = read_seqbegin(&rename_lock);
 		dentry = __d_lookup(parent, name, caseless);
+		if (caseless && dentry && !dentry->d_inode) {
+			d_invalidate(dentry);
+			dput(dentry);
+			dentry = NULL;
+		}
 		if (dentry)
 			break;
 	} while (read_seqretry(&rename_lock, seq));
@@ -3169,7 +3182,7 @@ int syno_user_path_at(int dfd, const char __user *user_name, unsigned flags,
 	return retval;
 
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_CASELESS_STAT */
 
 /**
  * try_lookup_one_len - filesystem helper to lookup single pathname component
@@ -3362,33 +3375,33 @@ static int may_delete(struct inode *dir, struct dentry *victim, bool isdir)
 
 	audit_inode_child(dir, victim, AUDIT_TYPE_CHILD_DELETE);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_FS_SYNOACL(dir))
 		error = synoacl_op_may_delete(victim, dir);
 	else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
 	if (error)
 		return error;
 	if (IS_APPEND(dir))
 		return -EPERM;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (!IS_SYNOACL(victim->d_parent) && check_sticky(dir, inode))
 		return -EPERM;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 	if (check_sticky(dir, inode))
 		return -EPERM;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_LOCKER
 	/* expired files are still immutable or appendable, but also deletable. */
 	if (!IS_EXPIRED(inode) && (IS_APPEND(inode) || IS_IMMUTABLE(inode)))
 		return -EPERM;
 #else
 	if (IS_APPEND(inode) || IS_IMMUTABLE(inode))
 		return -EPERM;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_LOCKER */
 
 	if (IS_SWAPFILE(inode) || HAS_UNMAPPED_ID(inode))
 		return -EPERM;
@@ -3415,11 +3428,11 @@ static int may_delete(struct inode *dir, struct dentry *victim, bool isdir)
  *  4. We should have write and exec permissions on dir
  *  5. We can't do it if dir is immutable (done in permission())
  */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 static inline int may_create(struct inode *dir, struct dentry *child, int mode)
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 static inline int may_create(struct inode *dir, struct dentry *child)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 {
 	struct user_namespace *s_user_ns;
 	audit_inode_child(dir, child, AUDIT_TYPE_CHILD_CREATE);
@@ -3432,11 +3445,11 @@ static inline int may_create(struct inode *dir, struct dentry *child)
 	    !kgid_has_mapping(s_user_ns, current_fsgid()))
 		return -EOVERFLOW;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(child->d_parent))
 		return synoacl_op_permission(child->d_parent,
 			(S_ISDIR(mode) ? MAY_APPEND : MAY_WRITE) | MAY_EXEC);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 	return inode_permission(dir, MAY_WRITE | MAY_EXEC);
 }
@@ -3488,11 +3501,11 @@ EXPORT_SYMBOL(unlock_rename);
 int vfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 		bool want_excl)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	int error = may_create(dir, dentry, S_IFREG);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 	int error = may_create(dir, dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	if (error)
 		return error;
 
@@ -3506,12 +3519,12 @@ int vfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 	error = dir->i_op->create(dir, dentry, mode, want_excl);
 	if (!error)
 		fsnotify_create(dir, dentry);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (!error && IS_SYNOACL(dentry->d_parent)) {
 		// Assume that inode has been attached to dentry by d_instantiate().
 		synoacl_op_init(dentry);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	return error;
 }
 EXPORT_SYMBOL(vfs_create);
@@ -3521,11 +3534,11 @@ int vfs_mkobj(struct dentry *dentry, umode_t mode,
 		void *arg)
 {
 	struct inode *dir = dentry->d_parent->d_inode;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	int error = may_create(dir, dentry, S_IFREG);
 #else
 	int error = may_create(dir, dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	if (error)
 		return error;
 
@@ -3582,11 +3595,11 @@ static int may_open(const struct path *path, int acc_mode, int flag)
 		break;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(dentry))
 		error = synoacl_op_permission(dentry, MAY_OPEN | acc_mode);
 	else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	error = inode_permission(inode, MAY_OPEN | acc_mode);
 	if (error)
 		return error;
@@ -3595,7 +3608,7 @@ static int may_open(const struct path *path, int acc_mode, int flag)
 	 * An append-only file must be opened in append mode for writing.
 	 */
 	if (IS_APPEND(inode)) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_LOCKER
 		/* no O_APPEND is allowed if it's locker appendable */
 		if (!syno_op_locker_is_appendable(inode) &&
 		    (flag & O_ACCMODE) != O_RDONLY && !(flag & O_APPEND))
@@ -3603,7 +3616,7 @@ static int may_open(const struct path *path, int acc_mode, int flag)
 #else
 		if  ((flag & O_ACCMODE) != O_RDONLY && !(flag & O_APPEND))
 			return -EPERM;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_LOCKER */
 		if (flag & O_TRUNC)
 			return -EPERM;
 	}
@@ -3656,12 +3669,12 @@ static int may_o_create(const struct path *dir, struct dentry *dentry, umode_t m
 	    !kgid_has_mapping(s_user_ns, current_fsgid()))
 		return -EOVERFLOW;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(dir->dentry))
 		error = synoacl_op_permission(dir->dentry,
 				(S_ISDIR(mode)?MAY_APPEND:MAY_WRITE) | MAY_EXEC);
 	else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	error = inode_permission(dir->dentry->d_inode, MAY_WRITE | MAY_EXEC);
 	if (error)
 		return error;
@@ -3804,11 +3817,11 @@ static struct dentry *lookup_open(struct nameidata *nd, struct file *file,
 		dentry = atomic_open(nd, dentry, file, open_flag, mode);
 		if (unlikely(create_error) && dentry == ERR_PTR(-ENOENT))
 			dentry = ERR_PTR(create_error);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 		if (!IS_ERR_OR_NULL(dentry) && (file->f_mode & FMODE_CREATED) &&
 		    IS_SYNOACL(dentry->d_parent))
 			synoacl_op_init(dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 		return dentry;
 	}
 
@@ -3838,10 +3851,10 @@ static struct dentry *lookup_open(struct nameidata *nd, struct file *file,
 						open_flag & O_EXCL);
 		if (error)
 			goto out_dput;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 		if (IS_SYNOACL(dentry->d_parent))
 			synoacl_op_init(dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	}
 	if (unlikely(create_error) && !dentry->d_inode) {
 		error = create_error;
@@ -4004,11 +4017,11 @@ struct dentry *vfs_tmpfile(struct dentry *dentry, umode_t mode, int open_flag)
 	int error;
 
 	/* we want directory to be writable */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(dentry))
 		error = synoacl_op_permission(dentry, MAY_WRITE | MAY_EXEC);
 	else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
 	if (error)
 		goto out_err;
@@ -4267,11 +4280,11 @@ EXPORT_SYMBOL(user_path_create);
 int vfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
 {
 	bool is_whiteout = S_ISCHR(mode) && dev == WHITEOUT_DEV;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	int error = may_create(dir, dentry, mode);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 	int error = may_create(dir, dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 	if (error)
 		return error;
@@ -4372,11 +4385,11 @@ SYSCALL_DEFINE3(mknod, const char __user *, filename, umode_t, mode, unsigned, d
 
 int vfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	int error = may_create(dir, dentry, S_IFDIR);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 	int error = may_create(dir, dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	unsigned max_links = dir->i_sb->s_max_links;
 
 	if (error)
@@ -4396,12 +4409,12 @@ int vfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 	error = dir->i_op->mkdir(dir, dentry, mode);
 	if (!error)
 		fsnotify_mkdir(dir, dentry);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (!error && IS_SYNOACL(dentry->d_parent)) {
 		// Assume that inode has been attached to dentry by d_instantiate().
 		synoacl_op_init(dentry);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 	return error;
 }
@@ -4698,11 +4711,11 @@ SYSCALL_DEFINE1(unlink, const char __user *, pathname)
 
 int vfs_symlink(struct inode *dir, struct dentry *dentry, const char *oldname)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	int error = may_create(dir, dentry, S_IFLNK);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 	int error = may_create(dir, dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 	if (error)
 		return error;
@@ -4791,11 +4804,11 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
 	if (!inode)
 		return -ENOENT;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	error = may_create(dir, new_dentry, inode->i_mode);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 	error = may_create(dir, new_dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 	if (error)
 		return error;
@@ -4933,7 +4946,7 @@ SYSCALL_DEFINE2(link, const char __user *, oldname, const char __user *, newname
 	return do_linkat(AT_FDCWD, oldname, AT_FDCWD, newname, 0);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 void free_rename_path_list(struct synotify_rename_path * rename_path_list)
 {
 	while(rename_path_list) {
@@ -5106,7 +5119,7 @@ struct synotify_rename_path * get_rename_path_list(struct dentry *old_dentry, st
 	return head;
 }
 EXPORT_SYMBOL(get_rename_path_list);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 /**
  * vfs_rename - rename a filesystem object
@@ -5169,9 +5182,9 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	bool new_is_dir = false;
 	unsigned max_links = new_dir->i_sb->s_max_links;
 	struct name_snapshot old_name;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	struct synotify_rename_path *rename_path_list = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	if (source == target)
 		return 0;
@@ -5181,11 +5194,11 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		return error;
 
 	if (!target) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 		error = may_create(new_dir, new_dentry, source->i_mode);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 		error = may_create(new_dir, new_dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	} else {
 		new_is_dir = d_is_dir(new_dentry);
 
@@ -5206,36 +5219,36 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	 */
 	if (new_dir != old_dir) {
 		if (is_dir
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RENAME_READONLY_SUBVOL
 		    && !(old_dentry->d_sb->s_magic == BTRFS_SUPER_MAGIC
 		         && old_dentry->d_inode->i_ino == BTRFS_FIRST_FREE_OBJECTID)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RENAME_READONLY_SUBVOL */
 		) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 			// Skip MAY_WRITE check because only may_delete() is
 			// required for SynoACL
 			if (!IS_SYNOACL(old_dentry))
 				error = inode_permission(source, MAY_WRITE);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 			error = inode_permission(source, MAY_WRITE);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 			if (error)
 				return error;
 		}
 		if ((flags & RENAME_EXCHANGE) && new_is_dir
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_RENAME_READONLY_SUBVOL
 		    && !(new_dentry->d_sb->s_magic == BTRFS_SUPER_MAGIC
 		         && new_dentry->d_inode->i_ino == BTRFS_FIRST_FREE_OBJECTID)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_RENAME_READONLY_SUBVOL */
 		) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 			// Skip MAY_WRITE check because only may_delete() is
 			// required for SynoACL
 			if (!IS_SYNOACL(new_dentry))
 				error = inode_permission(target, MAY_WRITE);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_FS_WINACL */
 			error = inode_permission(target, MAY_WRITE);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 			if (error)
 				return error;
 		}
@@ -5246,9 +5259,9 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	if (error)
 		return error;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	rename_path_list = get_rename_path_list(old_dentry, new_dentry);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	take_dentry_name_snapshot(&old_name, old_dentry);
 	dget(new_dentry);
@@ -5307,24 +5320,24 @@ out:
 	if (!error) {
 		fsnotify_move(old_dir, new_dir, &old_name.name, is_dir,
 			      !(flags & RENAME_EXCHANGE) ? target : NULL, old_dentry
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 			      , rename_path_list, false
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 			      );
 		if (flags & RENAME_EXCHANGE) {
 			fsnotify_move(new_dir, old_dir, &old_dentry->d_name,
 				      new_is_dir, NULL, new_dentry
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 				     , rename_path_list, true
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 				     );
 		}
 	}
 	release_dentry_name_snapshot(&old_name);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SYNOTIFY
 	free_rename_path_list(rename_path_list);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SYNOTIFY */
 
 	return error;
 }

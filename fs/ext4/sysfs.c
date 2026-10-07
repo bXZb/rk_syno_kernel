@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/ext4/sysfs.c
@@ -40,21 +37,21 @@ typedef enum {
 	attr_pointer_string,
 	attr_pointer_atomic,
 	attr_journal_task,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_LAZYINIT_INFO
 	attr_lazyinit_info,
 	attr_lazyinit_speed,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT4_LAZYINIT_INFO */
+#ifdef CONFIG_SYNO_EXT4_ERROR_REPORT
 	attr_syno_fs_error_new_event_flag,
 	attr_syno_fs_error_mounted,
 	attr_syno_fs_error_count,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT4_ERROR_REPORT */
+#ifdef CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP
 	attr_incompat_supp,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP */
+#ifdef CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP
 	attr_compat_ro_supp,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP */
 } attr_id_t;
 
 typedef enum {
@@ -135,7 +132,7 @@ static ssize_t reserved_clusters_store(struct ext4_sb_info *sbi,
 	return count;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_ERROR_REPORT
 static ssize_t syno_fs_error_new_event_flag_store(struct ext4_sb_info *sbi,
 						  const char *buf, size_t count)
 {
@@ -171,7 +168,7 @@ static ssize_t syno_fs_error_mounted_store(struct ext4_sb_info *sbi,
 	spin_unlock(&sbi->s_mount_path_lock);
 	return count;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ERROR_REPORT */
 
 static ssize_t trigger_test_error(struct ext4_sb_info *sbi,
 				  const char *buf, size_t count)
@@ -306,21 +303,21 @@ EXT4_ATTR(last_error_time, 0444, last_error_time);
 EXT4_ATTR(journal_task, 0444, journal_task);
 EXT4_RW_ATTR_SBI_UI(mb_prefetch, s_mb_prefetch);
 EXT4_RW_ATTR_SBI_UI(mb_prefetch_limit, s_mb_prefetch_limit);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_LAZYINIT_INFO
 EXT4_ATTR_FUNC(lazyinit_info, 0444);
 EXT4_ATTR_FUNC(lazyinit_speed, 0444);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT4_LAZYINIT_INFO */
+#ifdef CONFIG_SYNO_EXT4_ERROR_REPORT
 EXT4_ATTR_FUNC(syno_fs_error_new_event_flag, 0644);
 EXT4_ATTR_FUNC(syno_fs_error_mounted, 0644);
 EXT4_ATTR_FUNC(syno_fs_error_count, 0444);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT4_ERROR_REPORT */
+#ifdef CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP
 EXT4_ATTR_FUNC(incompat_supp, 0444);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP */
+#ifdef CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP
 EXT4_ATTR_FUNC(compat_ro_supp, 0444);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP */
 
 static unsigned int old_bump_val = 128;
 EXT4_ATTR_PTR(max_writeback_mb_bump, 0444, pointer_ui, &old_bump_val);
@@ -370,15 +367,15 @@ static struct attribute *ext4_attrs[] = {
 #endif
 	ATTR_LIST(mb_prefetch),
 	ATTR_LIST(mb_prefetch_limit),
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_LAZYINIT_INFO
 	ATTR_LIST(lazyinit_info),
 	ATTR_LIST(lazyinit_speed),
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT4_LAZYINIT_INFO */
+#ifdef CONFIG_SYNO_EXT4_ERROR_REPORT
 	ATTR_LIST(syno_fs_error_new_event_flag),
 	ATTR_LIST(syno_fs_error_mounted),
 	ATTR_LIST(syno_fs_error_count),
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ERROR_REPORT */
 	NULL,
 };
 ATTRIBUTE_GROUPS(ext4);
@@ -416,12 +413,12 @@ static struct attribute *ext4_feat_attrs[] = {
 #endif
 	ATTR_LIST(metadata_csum_seed),
 	ATTR_LIST(fast_commit),
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP
 	ATTR_LIST(incompat_supp),
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP */
+#ifdef CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP
 	ATTR_LIST(compat_ro_supp),
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP */
 	NULL,
 };
 ATTRIBUTE_GROUPS(ext4_feat);
@@ -455,9 +452,9 @@ static ssize_t ext4_attr_show(struct kobject *kobj,
 						s_kobj);
 	struct ext4_attr *a = container_of(attr, struct ext4_attr, attr);
 	void *ptr = calc_ptr(a, sbi);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_ERROR_REPORT
 	int ret = 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ERROR_REPORT */
 
 	switch (a->attr_id) {
 	case attr_delayed_allocation_blocks:
@@ -523,7 +520,7 @@ static ssize_t ext4_attr_show(struct kobject *kobj,
 		return print_tstamp(buf, sbi->s_es, s_last_error_time);
 	case attr_journal_task:
 		return journal_task_show(sbi, buf);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_LAZYINIT_INFO
 	case attr_lazyinit_info:
 		return snprintf(buf, PAGE_SIZE, "%u %u\n",
 				sbi->s_li_request ? sbi->s_li_request->lr_next_group : sbi->s_groups_count,
@@ -531,8 +528,8 @@ static ssize_t ext4_attr_show(struct kobject *kobj,
 	case attr_lazyinit_speed:
 		return snprintf(buf, PAGE_SIZE, "%lu\n",
 				sbi->s_li_request ? sbi->s_li_request->lr_timeout : 0);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT4_LAZYINIT_INFO */
+#ifdef CONFIG_SYNO_EXT4_ERROR_REPORT
 	case attr_syno_fs_error_new_event_flag:
 		return snprintf(buf, PAGE_SIZE, "%d\n", sbi->s_new_error_fs_event_flag);
 	case attr_syno_fs_error_mounted:
@@ -543,15 +540,15 @@ static ssize_t ext4_attr_show(struct kobject *kobj,
 		return ret;
 	case attr_syno_fs_error_count:
 		return snprintf(buf, PAGE_SIZE, "%d\n", sbi->s_es->s_error_count);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_EXT4_ERROR_REPORT */
+#ifdef CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP
 	case attr_incompat_supp:
 		return snprintf(buf, PAGE_SIZE, "%u\n", EXT4_FEATURE_INCOMPAT_SUPP);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FS_SHOW_INCOMPAT_SUPP */
+#ifdef CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP
 	case attr_compat_ro_supp:
 		return snprintf(buf, PAGE_SIZE, "%u\n", EXT4_FEATURE_RO_COMPAT_SUPP);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_SHOW_COMPAT_RO_SUPP */
 	}
 
 	return 0;
@@ -594,12 +591,12 @@ static ssize_t ext4_attr_store(struct kobject *kobj,
 		return inode_readahead_blks_store(sbi, buf, len);
 	case attr_trigger_test_error:
 		return trigger_test_error(sbi, buf, len);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_ERROR_REPORT
 	case attr_syno_fs_error_new_event_flag:
 		return syno_fs_error_new_event_flag_store(sbi, buf, len);
 	case attr_syno_fs_error_mounted:
 		return syno_fs_error_mounted_store(sbi, buf, len);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_ERROR_REPORT */
 	}
 	return 0;
 }

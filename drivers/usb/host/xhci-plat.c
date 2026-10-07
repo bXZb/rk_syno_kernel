@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * xhci-plat.c - xHCI host controller driver platform Bus Glue.
@@ -189,12 +186,12 @@ MODULE_DEVICE_TABLE(of, usb_xhci_of_match);
 
 static int xhci_plat_probe(struct platform_device *pdev)
 {
-#ifdef MY_ABC_HERE
-#ifdef MY_ABC_HERE
-#else /* MY_ABC_HERE */
+#ifdef CONFIG_SYNO_USB_POWER_RESET
+#ifdef CONFIG_SYNO_USB_VBUS_GPIO_CONTROL
+#else /* CONFIG_SYNO_USB_VBUS_GPIO_CONTROL */
 	u32 vbus_gpio_pin = 0;
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_VBUS_GPIO_CONTROL */
+#endif /* CONFIG_SYNO_USB_POWER_RESET */
 	const struct xhci_plat_priv *priv_match;
 	const struct hc_driver	*driver;
 	struct device		*sysdev, *tmpdev;
@@ -348,12 +345,12 @@ static int xhci_plat_probe(struct platform_device *pdev)
 			goto put_usb3_hcd;
 	}
 
-#ifdef MY_ABC_HERE
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_POWER_RESET
+#ifdef CONFIG_SYNO_USB_VBUS_GPIO_CONTROL
 	hcd->power_control_support = 1;
 	dev_info(&pdev->dev, "power control %s\n", hcd->power_control_support ?
 			"enabled" : "disabled");
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_USB_VBUS_GPIO_CONTROL */
 	if (node) {
 		if (of_property_read_bool(node, "power-control-capable")) {
 			hcd->power_control_support = 1;
@@ -375,8 +372,8 @@ static int xhci_plat_probe(struct platform_device *pdev)
 	dev_info(&pdev->dev, "USB2 Vbus gpio %d\n", hcd->vbus_gpio_pin);
 	dev_info(&pdev->dev, "power control %s\n", hcd->power_control_support ?
 			"enabled" : "disabled");
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_VBUS_GPIO_CONTROL */
+#endif /* CONFIG_SYNO_USB_POWER_RESET */
 
 	hcd->tpl_support = of_usb_host_tpl_support(sysdev->of_node);
 	xhci->shared_hcd->tpl_support = hcd->tpl_support;
@@ -397,20 +394,20 @@ static int xhci_plat_probe(struct platform_device *pdev)
 	if (ret)
 		goto disable_usb_phy;
 
-#ifdef MY_ABC_HERE
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_POWER_RESET
+#ifdef CONFIG_SYNO_USB_VBUS_GPIO_CONTROL
 	xhci->shared_hcd->power_control_support = hcd->power_control_support;
 	dev_info(&pdev->dev, "power control %s\n", hcd->power_control_support ?
 		"enabled" : "disabled");
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_USB_VBUS_GPIO_CONTROL */
 	xhci->shared_hcd->vbus_gpio_pin = hcd->vbus_gpio_pin;
 	xhci->shared_hcd->power_control_support = hcd->power_control_support;
 	dev_info(&pdev->dev, "USB3 Vbus gpio %d\n",
 			xhci->shared_hcd->vbus_gpio_pin);
 	dev_info(&pdev->dev, "power control %s\n", hcd->power_control_support ?
 			"enabled" : "disabled");
-#endif /* MY_ABC_HERE */
-#endif /* MY_ABC_HERE */	
+#endif /* CONFIG_SYNO_USB_VBUS_GPIO_CONTROL */
+#endif /* CONFIG_SYNO_USB_POWER_RESET */	
 
 	if (HCC_MAX_PSA(xhci->hcc_params) >= 4)
 		xhci->shared_hcd->can_do_streams = 1;
@@ -485,7 +482,7 @@ static int xhci_plat_remove(struct platform_device *dev)
 	return 0;
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 /* [DEV_FIX]implement New USB reset mechanism with CRT reset to workaround any HW or IP issues
  * commit 319ff9f5c298b94517a10d4ced59812b54994347
@@ -497,14 +494,14 @@ int RTK_xhci_plat_suspend(struct device *dev) {
 #endif // CONFIG_USB_PATCH_ON_RTK
 
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 static int __maybe_unused xhci_plat_suspend(struct device *dev)
 {
 	struct usb_hcd	*hcd = dev_get_drvdata(dev);
 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
 	int ret;
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #ifdef CONFIG_RTK_PLATFORM
 	if (RTK_PM_STATE == PM_SUSPEND_STANDBY) {
@@ -517,7 +514,7 @@ static int __maybe_unused xhci_plat_suspend(struct device *dev)
 #endif // CONFIG_USB_PATCH_ON_RTK
 
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	ret = xhci_priv_suspend_quirk(hcd);
 	if (ret)
 		return ret;
@@ -528,7 +525,7 @@ static int __maybe_unused xhci_plat_suspend(struct device *dev)
 	return xhci_suspend(xhci, device_may_wakeup(dev));
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 /* [DEV_FIX]implement New USB reset mechanism with CRT reset to workaround any HW or IP issues
  * commit 319ff9f5c298b94517a10d4ced59812b54994347
@@ -540,14 +537,14 @@ int RTK_xhci_plat_resume(struct device *dev)
 }
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 static int __maybe_unused xhci_plat_resume(struct device *dev)
 {
 	struct usb_hcd	*hcd = dev_get_drvdata(dev);
 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
 	int ret;
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_RTD1619B)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #ifdef CONFIG_RTK_PLATFORM
 	if (RTK_PM_STATE == PM_SUSPEND_STANDBY) {
@@ -558,7 +555,7 @@ static int __maybe_unused xhci_plat_resume(struct device *dev)
 #endif
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_RTD1619B */
 	ret = xhci_priv_resume_quirk(hcd);
 	if (ret)
 		return ret;

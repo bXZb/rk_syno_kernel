@@ -45,6 +45,10 @@
 #define INTERRUPT_STS_OFF		28
 #define WAKE_STS_OFF			29
 
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+#define IOMUX					(BIT(0)|BIT(1))
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
+
 #define DB_TMR_OUT_MASK	0xFUL
 #define DB_CNTRl_MASK	0x3UL
 #define ACTIVE_LEVEL_MASK	0x3UL
@@ -98,6 +102,10 @@ struct amd_gpio {
 	struct resource         *res;
 	struct platform_device  *pdev;
 	u32			*saved_regs;
+
+#ifdef CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS
+	void __iomem            *iomux_base;
+#endif /* CONFIG_SYNO_I2C_GENERIC_RECOVERY_BY_DTS */
 };
 
 /*  KERNCZ configuration*/

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  linux/fs/open.c
@@ -38,12 +35,12 @@
 
 #include "internal.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_BIT
 #include <uapi/linux/syno.h>
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT */
+#ifdef CONFIG_SYNO_FS_WINACL
 #include <linux/syno_acl.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
 	struct file *filp)
@@ -75,9 +72,9 @@ int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
 	inode_unlock(dentry->d_inode);
 	return ret;
 }
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_AUFS_PATCH
 EXPORT_SYMBOL_GPL(do_truncate);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_AUFS_PATCH */
 
 long vfs_truncate(const struct path *path, loff_t length)
 {
@@ -96,11 +93,11 @@ long vfs_truncate(const struct path *path, loff_t length)
 	if (error)
 		goto out;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(path->dentry))
 		error = synoacl_op_permission(path->dentry, MAY_WRITE);
 	else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	error = inode_permission(inode, MAY_WRITE);
 	if (error)
 		goto mnt_drop_write_and_out;
@@ -136,13 +133,13 @@ out:
 }
 EXPORT_SYMBOL_GPL(vfs_truncate);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXPORT_SYMBOL
 long syno_vfs_truncate(struct path *path, loff_t length)
 {
 	return vfs_truncate(path, length);
 }
 EXPORT_SYMBOL(syno_vfs_truncate);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXPORT_SYMBOL */
 
 long do_sys_truncate(const char __user *pathname, loff_t length)
 {
@@ -361,13 +358,13 @@ int ksys_fallocate(int fd, int mode, loff_t offset, loff_t len)
 	return error;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXPORT_SYMBOL
 int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
 {
 	return vfs_fallocate(file, mode, offset, len);
 }
 EXPORT_SYMBOL(do_fallocate);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXPORT_SYMBOL */
 
 SYSCALL_DEFINE4(fallocate, int, fd, int, mode, loff_t, offset, loff_t, len)
 {
@@ -470,11 +467,11 @@ retry:
 			goto out_path_release;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(path.dentry))
 		res = synoacl_op_may_access(path.dentry, mode);
 	else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	res = inode_permission(inode, mode | MAY_ACCESS);
 	/* SuS v2 requires we report a read only fs too */
 	if (res || !(mode & S_IWOTH) || special_file(inode->i_mode))
@@ -531,11 +528,11 @@ retry:
 	if (error)
 		goto out;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(path.dentry))
 		error = synoacl_op_permission(path.dentry, MAY_EXEC);
 	else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	error = inode_permission(path.dentry->d_inode, MAY_EXEC | MAY_CHDIR);
 	if (error)
 		goto dput_and_out;
@@ -565,11 +562,11 @@ SYSCALL_DEFINE1(fchdir, unsigned int, fd)
 	if (!d_can_lookup(f.file->f_path.dentry))
 		goto out_putf;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(file_dentry(f.file)))
 		error = synoacl_op_permission(file_dentry(f.file), MAY_EXEC);
 	else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	error = inode_permission(file_inode(f.file), MAY_EXEC | MAY_CHDIR);
 	if (!error)
 		set_fs_pwd(current->fs, &f.file->f_path);
@@ -589,11 +586,11 @@ retry:
 	if (error)
 		goto out;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(path.dentry))
 		error = synoacl_op_permission(path.dentry, MAY_EXEC);
 	else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	error = inode_permission(path.dentry->d_inode, MAY_EXEC | MAY_CHDIR);
 	if (error)
 		goto dput_and_out;
@@ -824,23 +821,23 @@ static int do_dentry_open(struct file *f,
 	path_get(&f->f_path);
 	f->f_inode = inode;
 	f->f_mapping = inode->i_mapping;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 	file_sb_list_add(f);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_UNMOUNT */
 	f->f_wb_err = filemap_sample_wb_err(f->f_mapping);
 	f->f_sb_err = file_sample_sb_err(f);
 
 	if (unlikely(f->f_flags & O_PATH)) {
 		f->f_mode = FMODE_PATH | FMODE_OPENED;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_EXT4_SYMLINK_IOCTL
 		if (strcmp(inode->i_sb->s_type->name, "ext4") != 0 || !S_ISLNK(inode->i_mode)) {
 			f->f_op = &empty_fops;
 			return 0;
 		}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_EXT4_SYMLINK_IOCTL */
 		f->f_op = &empty_fops;
 		return 0;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_EXT4_SYMLINK_IOCTL */
 	}
 
 	if (f->f_mode & FMODE_WRITE && !special_file(inode->i_mode)) {
@@ -865,12 +862,12 @@ static int do_dentry_open(struct file *f,
 		goto cleanup_all;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_LOWER_INIT
 	if (inode->i_opflags & IOP_ECRYPTFS_LOWER_INIT) {
 		inode->i_opflags &= ~IOP_ECRYPTFS_LOWER_INIT;
 		error = 0;
 	} else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_LOWER_INIT */
 	error = security_file_open(f);
 	if (error)
 		goto cleanup_all;
@@ -922,9 +919,9 @@ cleanup_all:
 	if (WARN_ON_ONCE(error > 0))
 		error = -EINVAL;
 	fops_put(f->f_op);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_UNMOUNT
 	file_sb_list_del(f);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_UNMOUNT */
 	if (f->f_mode & FMODE_WRITER) {
 		put_write_access(inode);
 		__mnt_drop_write(f->f_path.mnt);
@@ -1467,10 +1464,10 @@ int stream_open(struct inode *inode, struct file *filp)
 
 EXPORT_SYMBOL(stream_open);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SYSTEM_CALL
 SYSCALL_DEFINE2(syno_archive_bit, const char __user *, filename, int, cmd)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_BIT
 	struct path path;
 	long error;
 
@@ -1495,12 +1492,12 @@ out_release:
 	return error;
 #else
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT */
 }
 
 SYSCALL_DEFINE2(syno_archive_overwrite, unsigned int, fd, unsigned int, flags)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_ARCHIVE_BIT
 	struct fd f = fdget(fd);
 	int error = -EBADF;
 
@@ -1519,16 +1516,16 @@ fput_out:
 	return error;
 #else
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_ARCHIVE_BIT */
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_FILENAME_SYSCALL
 #include "ecryptfs/ecryptfs_kernel.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_FILENAME_SYSCALL */
 
 SYSCALL_DEFINE2(syno_ecrypt_name, const char __user *, src, char __user *, dst)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_FILENAME_SYSCALL
 	int err = -1;
 	struct qstr *lower_path = NULL;
 	struct path path;
@@ -1557,12 +1554,12 @@ out_release:
 	path_put(&path);
 
 	return err;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_ECRYPTFS_FILENAME_SYSCALL */
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_FILENAME_SYSCALL */
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_FILENAME_SYSCALL
 /*
  * Since strlcat() will BUG_ON when it meet overflow,
  * We add this api to replace strlcat().
@@ -1576,11 +1573,11 @@ static inline int strcat_check(char *dst, size_t *remain,
 	*remain -= size;
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_FILENAME_SYSCALL */
 
 SYSCALL_DEFINE3(syno_decrypt_name, const char __user *, root, const char __user *, src, char __user *, dst)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ECRYPTFS_FILENAME_SYSCALL
 	int err = -1;
 	size_t plaintext_name_size = 0;
 	char *plaintext_name = NULL;
@@ -1690,8 +1687,8 @@ out_release:
 		putname(root_name);
 	return err;
 
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_ECRYPTFS_FILENAME_SYSCALL */
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ECRYPTFS_FILENAME_SYSCALL */
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SYSTEM_CALL */

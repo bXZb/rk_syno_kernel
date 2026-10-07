@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * AMD 10Gb Ethernet driver
  *
@@ -154,8 +151,13 @@ static void xgbe_default_config(struct xgbe_prv_data *pdata)
 	pdata->rx_sf_mode = MTL_RSF_DISABLE;
 	pdata->rx_threshold = MTL_RX_THRESHOLD_64;
 	pdata->pause_autoneg = 1;
+#if defined(CONFIG_SYNO_AMD_XGBE_PORTING)
+	pdata->tx_pause = 0;
+	pdata->rx_pause = 0;
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	pdata->tx_pause = 1;
 	pdata->rx_pause = 1;
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	pdata->phy_speed = SPEED_UNKNOWN;
 	pdata->power_down = 0;
 
@@ -390,11 +392,11 @@ int xgbe_config_netdev(struct xgbe_prv_data *pdata)
 	netdev->max_mtu = XGMAC_JUMBO_PACKET_MTU;
 
 	/* Use default watchdog timeout */
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_AMD_XGBE_PORTING
 	netdev->watchdog_timeo = 10 * HZ;
-#else /* MY_DEF_HERE */
+#else /* CONFIG_SYNO_AMD_XGBE_PORTING */
 	netdev->watchdog_timeo = 0;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_AMD_XGBE_PORTING */
 
 	xgbe_init_rx_coalesce(pdata);
 	xgbe_init_tx_coalesce(pdata);

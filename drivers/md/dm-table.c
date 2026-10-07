@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Copyright (C) 2001 Sistina Software (UK) Limited.
  * Copyright (C) 2004-2008 Red Hat, Inc. All rights reserved.
@@ -343,6 +340,18 @@ static int upgrade_mode(struct dm_dev_internal *dd, fmode_t new_mode,
 
 	return 0;
 }
+
+#ifdef CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK
+struct mapped_device* SynoGetMdFromDmTarget(struct dm_target *ti)
+{
+	if (ti && ti->table) {
+		return ti->table->md;
+	}
+	return NULL;
+}
+
+EXPORT_SYMBOL(SynoGetMdFromDmTarget);
+#endif /* CONFIG_SYNO_MULTIPATH_RENAME_DM_AS_DISK */
 
 /*
  * Convert the path to a device
@@ -1786,7 +1795,7 @@ static bool dm_table_supports_secure_erase(struct dm_table *t)
 	return true;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 static int device_not_unused_hint_capable(struct dm_target *ti, struct dm_dev *dev,
 				      sector_t start, sector_t len, void *data)
 {
@@ -1813,7 +1822,7 @@ static bool dm_table_supports_unused_hint(struct dm_table *t)
 
 	return true;
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 
 static int device_requires_stable_pages(struct dm_target *ti,
 					struct dm_dev *dev, sector_t start,
@@ -1854,12 +1863,12 @@ void dm_table_set_restrictions(struct dm_table *t, struct request_queue *q,
 	if (dm_table_supports_secure_erase(t))
 		blk_queue_flag_set(QUEUE_FLAG_SECERASE, q);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MD_UNUSED_HINT
 	if (dm_table_supports_unused_hint(t))
 		blk_queue_flag_set(QUEUE_FLAG_UNUSED_HINT, q);
 	else
 		blk_queue_flag_clear(QUEUE_FLAG_UNUSED_HINT, q);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MD_UNUSED_HINT */
 
 	if (dm_table_supports_flush(t, (1UL << QUEUE_FLAG_WC))) {
 		wc = true;
@@ -2052,4 +2061,24 @@ void dm_table_run_md_queue_async(struct dm_table *t)
 		blk_mq_run_hw_queues(t->md->queue, true);
 }
 EXPORT_SYMBOL(dm_table_run_md_queue_async);
+
+#ifdef CONFIG_SYNO_MULTIPATH_NEW_TARGET_DEVICE_UEVENT
+int syno_dm_table_first_target_data_devices_count(struct dm_table *table)
+{
+	struct dm_target *ti;
+	unsigned num_devices = 0;
+
+	if(dm_table_get_num_targets(table) <= 0)
+		return -1;
+
+	ti = dm_table_get_target(table, 0);
+
+	if (!ti->type->iterate_devices)
+		return -1;
+
+	ti->type->iterate_devices(ti, count_device, &num_devices);
+
+	return (int)num_devices;
+}
+#endif /* CONFIG_SYNO_MULTIPATH_NEW_TARGET_DEVICE_UEVENT */
 

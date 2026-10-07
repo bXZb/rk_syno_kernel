@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/mm/vmscan.c
@@ -155,7 +152,7 @@ struct scan_control {
 	struct reclaim_state reclaim_state;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MULTI_KSWAPD
 /*
  * Number of active kswapd threads
  */
@@ -178,7 +175,7 @@ static void kswapd_threads_update_done(void)
 	mutex_unlock(&kswapd_threads_mutex);
 	mem_hotplug_done();
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MULTI_KSWAPD */
 #ifdef ARCH_HAS_PREFETCHW
 #define prefetchw_prev_lru_page(_page, _base, _field)			\
 	do {								\
@@ -4053,7 +4050,7 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
 }
 #endif /* CONFIG_HIBERNATION */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MULTI_KSWAPD
 static void update_kswapd_threads_node(int nid, int threads,
 						int threads_current)
 {
@@ -4088,9 +4085,9 @@ static void update_kswapd_threads_node(int nid, int threads,
 				 */
 				break;
 			}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ADJUST_KSWAPD_NICE
 			set_user_nice(pgdat->kswapd[hid], MIN_NICE);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ADJUST_KSWAPD_NICE */
 		}
 	}
 	clear_bit(PGDAT_SYNO_UPDATING_KSWAPDS, &pgdat->flags);
@@ -4122,7 +4119,7 @@ void update_kswapd_threads(void)
 }
 
 
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MULTI_KSWAPD */
 /*
  * This kswapd start function will be called by init and node-hot-add.
  * On node-hot-add, kswapd will moved to proper cpus if cpus are hot-added.
@@ -4131,18 +4128,18 @@ int kswapd_run(int nid)
 {
 	pg_data_t *pgdat = NODE_DATA(nid);
 	int ret = 0;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MULTI_KSWAPD
 	int hid, nr_threads;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MULTI_KSWAPD */
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MULTI_KSWAPD
 	if (pgdat->kswapd[0])
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MULTI_KSWAPD */
 	if (pgdat->kswapd)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MULTI_KSWAPD */
 		return 0;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MULTI_KSWAPD
 	nr_threads = kswapd_threads;
 	for (hid = 0; hid < nr_threads; hid++) {
 		pgdat->kswapd[hid] = kthread_run(kswapd, pgdat, "kswapd%d:%d",
@@ -4155,12 +4152,12 @@ int kswapd_run(int nid)
 			ret = PTR_ERR(pgdat->kswapd[hid]);
 			pgdat->kswapd[hid] = NULL;
 		}
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_ADJUST_KSWAPD_NICE
 		set_user_nice(pgdat->kswapd[hid], MIN_NICE);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_ADJUST_KSWAPD_NICE */
 	}
 	kswapd_threads_current = nr_threads;
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MULTI_KSWAPD */
 	pgdat->kswapd = kthread_run(kswapd, pgdat, "kswapd%d", nid);
 	if (IS_ERR(pgdat->kswapd)) {
 		/* failure at boot is fatal */
@@ -4169,7 +4166,7 @@ int kswapd_run(int nid)
 		ret = PTR_ERR(pgdat->kswapd);
 		pgdat->kswapd = NULL;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MULTI_KSWAPD */
 	return ret;
 }
 
@@ -4179,7 +4176,7 @@ int kswapd_run(int nid)
  */
 void kswapd_stop(int nid)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_MULTI_KSWAPD
 	struct task_struct *kswapd;
 	int hid;
 	int nr_threads = kswapd_threads_current;
@@ -4191,14 +4188,14 @@ void kswapd_stop(int nid)
 			NODE_DATA(nid)->kswapd[hid] = NULL;
 		}
 	}
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_MULTI_KSWAPD */
 	struct task_struct *kswapd = NODE_DATA(nid)->kswapd;
 
 	if (kswapd) {
 		kthread_stop(kswapd);
 		NODE_DATA(nid)->kswapd = NULL;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_MULTI_KSWAPD */
 }
 
 static int __init kswapd_init(void)

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  *
@@ -83,10 +80,10 @@ struct acm_rb {
 	struct acm		*instance;
 };
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 #define SYNO_EUNIT_QUEUE_SIZE 128
 #define SYNO_ACM_UUID_SIZE 64
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 struct acm {
 	struct usb_device *dev;				/* the corresponding usb device */
@@ -136,7 +133,7 @@ struct acm {
 	u8 bInterval;
 	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
 	unsigned long quirks;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	rwlock_t status_lock;                 /* prevent reading and updating expstatus at same time */
 	char **cached_expstatus;              /* for key-value table of each eunit status */
 	struct list_head syno_device_list;    /* for disk name in an eunit controlled by this acm microP */
@@ -152,7 +149,7 @@ struct acm {
 	int cmd_idx_tail;
 	struct completion *syno_acm_ack_to_cmpl[SYNO_EUNIT_QUEUE_SIZE];
 	unsigned char uuid[SYNO_ACM_UUID_SIZE];
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 };
 
 /* constants describing various quirks and errors */

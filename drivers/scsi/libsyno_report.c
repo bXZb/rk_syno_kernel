@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // Copyright (c) 2000-2020 Synology Inc. All rights reserved.
 
 #include <linux/synolib.h>
@@ -8,7 +5,7 @@
 
 #include "libsyno_report.h"
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SCSI_DISK_ERROR_REPORT
 void SynoSendScsiErrorEvent(struct work_struct *work)
 {
 	struct scsi_device *psdev =
@@ -67,5 +64,5 @@ void SynoScsiTimeoutReport(struct scsi_device *psdev,
 		schedule_work(&(psdev->sendScsiErrorEventTask));
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SCSI_DISK_ERROR_REPORT */
 

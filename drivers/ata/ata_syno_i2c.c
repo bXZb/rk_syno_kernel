@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/libata.h>
@@ -8,9 +5,9 @@
 #include <linux/i2c.h>
 #include <linux/synolib.h>
 #include <linux/synobios.h>
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 #include "libata.h"
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
 
 #define HDDBP_TCA9555_PORT0_PRESENT 0x0
 #define HDDBP_TCA9555_PORT1_PRESENT 0x1
@@ -46,6 +43,7 @@ extern int gSynoHostPresentAdapter;
 extern int gSynoHostPresentAddr;
 extern int gSynoHostPresentReg;
 extern int gSynoHostPresentVal;
+extern int gSynoHostMicropMapping[SYNO_MAX_SMBUS_HDD_COUNT];
 
 bool gblIsTca9555Init = false;
 bool gbIsTca9555Enabled = false;
@@ -376,13 +374,34 @@ END:
 	return iRet;
 }
 
-int syno_microp_hdd_present_read(int adapter, int address, int index)
+/**
+ * Turn the slot index to its microp mapping index.
+ * If there is no mapping provided in dts, return the original index.
+ * @param iSlotIndex: The slot index to be mapped. range is 1 ~ SYNO_MAX_SMBUS_HDD_COUNT.
+ * @return: The mapped index.
+ */
+static inline int syno_smbus_microp_index_mpapping(int iSlotIndex)
+{
+	int iRet = iSlotIndex;
+	if (0 >= iSlotIndex || SYNO_MAX_SMBUS_HDD_COUNT < iSlotIndex) {
+		printk(KERN_ERR "Invalid slot index: %d\n", iSlotIndex);
+		goto END;
+	}
+	if (gSynoHostMicropMapping[iSlotIndex-1] != 0) {
+		iRet = gSynoHostMicropMapping[iSlotIndex-1];
+	}
+END:
+	return iRet;
+}
+
+int syno_microp_hdd_present_read(int adapter, int address, int iSlotIndex)
 {
 	int iRet = -1;
 	union i2c_smbus_data data;
 	struct i2c_adapter *pAdapter = NULL;
 	unsigned int iI2c_REG = 0;
 	unsigned int iBitToAccess = 0;
+	int iMicropIndex = syno_smbus_microp_index_mpapping(iSlotIndex);
 
 	mutex_lock(&smbus_hdd_powerctl_mutex_spin);
 	pAdapter = i2c_get_adapter(adapter);
@@ -393,16 +412,16 @@ int syno_microp_hdd_present_read(int adapter, int address, int index)
 
 	//disk  1 ~  8 is on port0
 	//      9 ~ 16 is on port1
-	//     17 ~ 24 is on port2   
-	if (8 >= index) {
+	//     17 ~ 24 is on port2
+	if (8 >= iMicropIndex) {
 		iI2c_REG = HDDBP_MICROP_PORT0_PRESENT;
-		iBitToAccess = index - 1;
-	} else if (16 >= index) {
+		iBitToAccess = iMicropIndex - 1;
+	} else if (16 >= iMicropIndex) {
 		iI2c_REG = HDDBP_MICROP_PORT1_PRESENT;
-		iBitToAccess = index - 9;
+		iBitToAccess = iMicropIndex - 9;
 	} else {
 		iI2c_REG = HDDBP_MICROP_PORT2_PRESENT;
-		iBitToAccess = index - 17;
+		iBitToAccess = iMicropIndex - 17;
 	}
 
 	// read present data from i2c
@@ -485,13 +504,14 @@ END:
 	return iRet;
 }
 
-int syno_microp_hdd_enable_write(int adapter, int address, int index, int val)
+int syno_microp_hdd_enable_write(int adapter, int address, int iSlotIndex, int val)
 {
 	int iRet = -1;
 	union i2c_smbus_data data;
 	struct i2c_adapter *pAdapter = NULL;
 	unsigned int uiI2cManualReg = 0;
 	unsigned int iBitToAccess = 0;
+	int iMicropIndex = syno_smbus_microp_index_mpapping(iSlotIndex);
 
 	mutex_lock(&smbus_hdd_powerctl_mutex_spin);
 	pAdapter = i2c_get_adapter(adapter);
@@ -503,15 +523,15 @@ int syno_microp_hdd_enable_write(int adapter, int address, int index, int val)
 	//disk  1 ~  8 is on port0
 	//      9 ~ 16 is on port1
 	//     17 ~ 24 is on port2
-	if (8 >= index) {
+	if (8 >= iMicropIndex) {
 		uiI2cManualReg = HDDBP_MICROP_PORT0_MANUAL_ENABLE;
-		iBitToAccess = index - 1;
-	} else if (16 >= index) {
+		iBitToAccess = iMicropIndex - 1;
+	} else if (16 >= iMicropIndex) {
 		uiI2cManualReg = HDDBP_MICROP_PORT1_MANUAL_ENABLE;
-		iBitToAccess = index - 9;
+		iBitToAccess = iMicropIndex - 9;
 	} else {
 		uiI2cManualReg = HDDBP_MICROP_PORT2_MANUAL_ENABLE;
-		iBitToAccess = index - 17;
+		iBitToAccess = iMicropIndex - 17;
 	}
 
 	// read current enable data from i2c
@@ -561,13 +581,14 @@ END:
 	return iRet;
 }
 
-int syno_microp_hdd_enable_read(int adapter, int address, int index)
+int syno_microp_hdd_enable_read(int adapter, int address, int iSlotIndex)
 {
 	int iRet = -1;
 	union i2c_smbus_data data;
 	struct i2c_adapter *pAdapter = NULL;
 	unsigned int iI2c_REG = 0;
 	unsigned int iBitToAccess = 0;
+	int iMicropIndex = syno_smbus_microp_index_mpapping(iSlotIndex);
 
 	mutex_lock(&smbus_hdd_powerctl_mutex_spin);
 	pAdapter = i2c_get_adapter(adapter);
@@ -578,16 +599,16 @@ int syno_microp_hdd_enable_read(int adapter, int address, int index)
 
 	//disk  1 ~  8 is on port0
 	//      9 ~ 16 is on port1
-	//     17 ~ 24 is on port2   
-	if (8 >= index) {
+	//     17 ~ 24 is on port2
+	if (8 >= iMicropIndex) {
 		iI2c_REG = HDDBP_MICROP_PORT0_ENABLE;
-		iBitToAccess = index - 1;
-	} else if (16 >= index) {
+		iBitToAccess = iMicropIndex - 1;
+	} else if (16 >= iMicropIndex) {
 		iI2c_REG = HDDBP_MICROP_PORT1_ENABLE;
-		iBitToAccess = index - 9;
+		iBitToAccess = iMicropIndex - 9;
 	} else {
 		iI2c_REG = HDDBP_MICROP_PORT2_ENABLE;
-		iBitToAccess = index - 17;
+		iBitToAccess = iMicropIndex - 17;
 	}
 
 	//read current enable data from i2c
@@ -764,7 +785,7 @@ END:
 	}
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_PCI_EUNIT_SUPPORT
 int syno_pci_eunit_i2c_read(int iBus, SYNO_JMB575_I2C_DEV_INFO *pI2C)
 {
 	int iRet = -1;
@@ -856,7 +877,7 @@ END:
 	return iRet;
 }
 EXPORT_SYMBOL(syno_pci_eunit_i2c_write);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_PCI_EUNIT_SUPPORT */
 
 void syno_smbus_hdd_powerctl_init(void){
 	syno_smbus_switch_config();

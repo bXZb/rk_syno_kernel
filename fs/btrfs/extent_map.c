@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 
 #include <linux/err.h>
@@ -10,18 +7,18 @@
 #include "volumes.h"
 #include "extent_map.h"
 #include "compression.h"
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 #include "btrfs_inode.h"
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 
 
 static struct kmem_cache *extent_map_cache;
 
 int __init extent_map_init(void)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 	(void)btrfs_global_syno_extent_map_init();
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 
 	extent_map_cache = kmem_cache_create("btrfs_extent_map",
 			sizeof(struct extent_map), 0,
@@ -33,9 +30,9 @@ int __init extent_map_init(void)
 
 void __cold extent_map_exit(void)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 	WARN_ON_ONCE(btrfs_global_syno_extent_map_nr());
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 
 	kmem_cache_destroy(extent_map_cache);
 }
@@ -52,12 +49,12 @@ void extent_map_tree_init(struct extent_map_tree *tree)
 	tree->map = RB_ROOT_CACHED;
 	INIT_LIST_HEAD(&tree->modified_extents);
 	rwlock_init(&tree->lock);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 	atomic_set(&tree->nr_extent_maps, 0);
 	atomic_set(&tree->nr_can_free_extent_maps, 0);
 	INIT_LIST_HEAD(&tree->not_modified_extents);
 	INIT_LIST_HEAD(&tree->syno_modified_extents);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 }
 
 /**
@@ -79,10 +76,10 @@ struct extent_map *alloc_extent_map(void)
 	em->generation = 0;
 	refcount_set(&em->refs, 1);
 	INIT_LIST_HEAD(&em->list);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 	INIT_LIST_HEAD(&em->free_list);
 	em->bl_increase = false;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 	return em;
 }
 
@@ -101,9 +98,9 @@ void free_extent_map(struct extent_map *em)
 	if (refcount_dec_and_test(&em->refs)) {
 		WARN_ON(extent_map_in_tree(em));
 		WARN_ON(!list_empty(&em->list));
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 		WARN_ON(!list_empty(&em->free_list));
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 		if (test_bit(EXTENT_FLAG_FS_MAPPING, &em->flags))
 			kfree(em->map_lookup);
 		kmem_cache_free(extent_map_cache, em);
@@ -259,7 +256,7 @@ static int mergable_maps(struct extent_map *prev, struct extent_map *next)
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 static void check_and_insert_extent_map_to_global_extent(
 		struct extent_map_tree *tree,
 		struct extent_map *em, int modified)
@@ -351,7 +348,7 @@ static void check_and_decrease_global_extent(struct extent_map_tree *tree,
 	}
 #endif
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 
 static void try_merge_map(struct extent_map_tree *tree, struct extent_map *em)
 {
@@ -385,9 +382,9 @@ static void try_merge_map(struct extent_map_tree *tree, struct extent_map *em)
 
 			rb_erase_cached(&merge->rb_node, &tree->map);
 			RB_CLEAR_NODE(&merge->rb_node);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 			check_and_decrease_global_extent(tree, merge);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 			free_extent_map(merge);
 		}
 	}
@@ -402,9 +399,9 @@ static void try_merge_map(struct extent_map_tree *tree, struct extent_map *em)
 		RB_CLEAR_NODE(&merge->rb_node);
 		em->mod_len = (merge->mod_start + merge->mod_len) - em->mod_start;
 		em->generation = max(em->generation, merge->generation);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 		check_and_decrease_global_extent(tree, merge);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 		free_extent_map(merge);
 	}
 }
@@ -437,7 +434,7 @@ int unpin_extent_cache(struct extent_map_tree *tree, u64 start, u64 len,
 
 	em->generation = gen;
 	clear_bit(EXTENT_FLAG_PINNED, &em->flags);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 	list_move_tail(&em->free_list, &tree->syno_modified_extents);
 	if (!em->bl_increase) {
 		btrfs_global_syno_extent_map_inc();
@@ -445,7 +442,7 @@ int unpin_extent_cache(struct extent_map_tree *tree, u64 start, u64 len,
 		atomic_inc(&tree->nr_can_free_extent_maps);
 		em->bl_increase = true;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 	em->mod_start = em->start;
 	em->mod_len = em->len;
 
@@ -541,9 +538,9 @@ int add_extent_mapping(struct extent_map_tree *tree,
 	if (ret)
 		goto out;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 	check_and_insert_extent_map_to_global_extent(tree, em, modified);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 	setup_extent_mapping(tree, em, modified);
 	if (test_bit(EXTENT_FLAG_FS_MAPPING, &em->flags)) {
 		extent_map_device_set_bits(em, CHUNK_ALLOCATED);
@@ -633,9 +630,9 @@ void remove_extent_mapping(struct extent_map_tree *tree, struct extent_map *em)
 	if (test_bit(EXTENT_FLAG_FS_MAPPING, &em->flags))
 		extent_map_device_clear_bits(em, CHUNK_ALLOCATED);
 	RB_CLEAR_NODE(&em->rb_node);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 	check_and_decrease_global_extent(tree, em);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 }
 
 void replace_extent_mapping(struct extent_map_tree *tree,
@@ -650,10 +647,10 @@ void replace_extent_mapping(struct extent_map_tree *tree,
 	rb_replace_node_cached(&cur->rb_node, &new->rb_node, &tree->map);
 	RB_CLEAR_NODE(&cur->rb_node);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 	check_and_decrease_global_extent(tree, cur);
 	check_and_insert_extent_map_to_global_extent(tree, new, modified);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */
 	setup_extent_mapping(tree, new, modified);
 }
 
@@ -795,7 +792,7 @@ int btrfs_add_extent_mapping(struct btrfs_fs_info *fs_info,
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS
 static u64 global_syno_extent_map_max = 0;
 static atomic64_t global_syno_extent_map_nr = ATOMIC64_INIT(0);
 
@@ -994,4 +991,4 @@ static long btrfs_free_cached_objects(struct super_block *sb, struct shrink_cont
 	return (long)(sc->nr_to_scan - nr_to_drop);
 }
 #endif
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FREE_EXTENT_MAPS */

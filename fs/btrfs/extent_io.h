@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 
 #ifndef BTRFS_EXTENT_IO_H
@@ -9,9 +6,9 @@
 #include <linux/rbtree.h>
 #include <linux/refcount.h>
 #include <linux/fiemap.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 #include <linux/btrfs_tree.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 #include "ulist.h"
 
 /*
@@ -19,9 +16,9 @@
  * type for this bio
  */
 #define EXTENT_BIO_COMPRESSED 1
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA
 #define EXTENT_BIO_TREE_LOG 2
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_USE_SINGLE_METADATA */
 #define EXTENT_BIO_FLAG_SHIFT 16
 
 enum {
@@ -39,12 +36,12 @@ enum {
 	EXTENT_BUFFER_IN_TREE,
 	/* write IO error */
 	EXTENT_BUFFER_WRITE_ERR,
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	/* one and only one process can do the repair in repair_eb_io_failure() */
 	EXTENT_BUFFER_SHOULD_REPAIR,
 	/* no more redundancies in lower layer */
 	EXTENT_BUFFER_RETRY_ERR,
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 };
 
 /* these are flags for __process_pages_contig */
@@ -89,10 +86,10 @@ typedef blk_status_t (submit_bio_hook_t)(struct inode *inode, struct bio *bio,
 typedef blk_status_t (extent_submit_bio_start_t)(void *private_data,
 		struct bio *bio, u64 bio_offset);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 #define EXTENT_BUFFER_SHOULD_ABORT_RETRY ((u8)-2)
 #define EXTENT_BUFFER_RETRY_ABORTED ((u8)-1)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 #define INLINE_EXTENT_BUFFER_PAGES 16
 #define MAX_INLINE_EXTENT_BUFFER_SIZE (INLINE_EXTENT_BUFFER_PAGES * PAGE_SIZE)
@@ -134,13 +131,13 @@ struct extent_buffer {
 	int write_locks;
 	struct list_head leak_list;
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	bool can_retry;
 	u8 nr_retry;
 	u8 prev_bad_csum[BTRFS_CSUM_SIZE];
 	u64 parent_transid;
 	u64 prev_bad_transid;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 };
 
 /*
@@ -148,27 +145,27 @@ struct extent_buffer {
  */
 struct extent_changeset {
 	/* How many bytes are set/cleared in this operation */
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 	u64 bytes_changed;
 #else
 	unsigned int bytes_changed;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 	/* Changed ranges */
 	struct ulist range_changed;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 	struct ulist_node *prealloc_ulist_node;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 };
 
 static inline void extent_changeset_init(struct extent_changeset *changeset)
 {
 	changeset->bytes_changed = 0;
 	ulist_init(&changeset->range_changed);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 	changeset->prealloc_ulist_node = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 }
 
 static inline struct extent_changeset *extent_changeset_alloc(void)
@@ -189,10 +186,10 @@ static inline void extent_changeset_release(struct extent_changeset *changeset)
 		return;
 	changeset->bytes_changed = 0;
 	ulist_release(&changeset->range_changed);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED
 	kfree(changeset->prealloc_ulist_node);
 	changeset->prealloc_ulist_node = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_FIX_BUG_WEHN_QGROUP_ATOMIC_ALLOC_FAILED */
 }
 
 static inline void extent_changeset_free(struct extent_changeset *changeset)
@@ -256,10 +253,10 @@ void free_extent_buffer_stale(struct extent_buffer *eb);
 #define WAIT_PAGE_LOCK	2
 int read_extent_buffer_pages(struct extent_buffer *eb, int wait,
 			     int mirror_num
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 			     , bool *can_retry
 			     , u64 parent_transid
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 			     );
 void wait_on_extent_buffer_writeback(struct extent_buffer *eb);
 void btrfs_readahead_tree_block(struct btrfs_fs_info *fs_info,
@@ -277,13 +274,13 @@ static inline int extent_buffer_uptodate(const struct extent_buffer *eb)
 	return test_bit(EXTENT_BUFFER_UPTODATE, &eb->bflags);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_CASELESS_STAT
 int memcmp_caseless_extent_buffer(const struct extent_buffer *eb,
 				  const void *ptrv,
 				  unsigned long len_ptrv,
 				  unsigned long start,
 				  unsigned long len);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_CASELESS_STAT */
 int memcmp_extent_buffer(const struct extent_buffer *eb, const void *ptrv,
 			 unsigned long start, unsigned long len);
 void read_extent_buffer(const struct extent_buffer *eb, void *dst,
@@ -340,16 +337,16 @@ struct btrfs_inode;
 int repair_io_failure(struct btrfs_fs_info *fs_info, u64 ino, u64 start,
 		      u64 length, u64 logical, struct page *page,
 		      unsigned int pg_offset, int mirror_num
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 		      , int abort_correction
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 		      );
 void end_extent_writepage(struct page *page, int err, u64 start, u64 end);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 int btrfs_repair_eb_io_failure(struct extent_buffer *eb, int mirror_num);
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 int btrfs_repair_eb_io_failure(const struct extent_buffer *eb, int mirror_num);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 /*
  * When IO fails, either with EIO or csum verification fails, we
@@ -368,9 +365,9 @@ struct io_failure_record {
 	int this_mirror;
 	int failed_mirror;
 	int in_validation;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 	bool io_error;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 };
 
 
@@ -379,10 +376,10 @@ blk_status_t btrfs_submit_read_repair(struct inode *inode,
 				      struct page *page, unsigned int pgoff,
 				      u64 start, u64 end, int failed_mirror,
 				      submit_bio_hook_t *submit_bio_hook
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 				      , bool do_correction
 				      , bool *run_out_all_copy
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 				      );
 
 #ifdef CONFIG_BTRFS_FS_RUN_SANITY_TESTS
@@ -398,7 +395,7 @@ void btrfs_extent_buffer_leak_debug_check(struct btrfs_fs_info *fs_info);
 #else
 #define btrfs_extent_buffer_leak_debug_check(fs_info)	do {} while (0)
 #endif
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_DATA_CORRECTION
 void add_cksumfailed_file(u64 rootid, u64 i_ino, struct btrfs_fs_info *fs_info);
 
 struct correction_record {
@@ -409,6 +406,6 @@ struct correction_record {
 void correction_get_locked_record(struct btrfs_fs_info *fs_info, u64 logical);
 void correction_put_locked_record(struct btrfs_fs_info *fs_info, u64 logical);
 void correction_destroy_locked_record(struct btrfs_fs_info *fs_info);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_DATA_CORRECTION */
 
 #endif

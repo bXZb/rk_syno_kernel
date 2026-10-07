@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2011 STRATO.  All rights reserved.
@@ -20,7 +17,7 @@ struct inode_fs_paths {
 	struct btrfs_data_container	*fspath;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 /*
  * This mode will check whether EXTENT_ITEM is referenced prior to
  * an offset in an inode of a desiganted subvolume.
@@ -39,13 +36,13 @@ struct quota_check {
 	u64 offset;
 	bool in_run_delayed;
 };
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 
 typedef int (iterate_extent_inodes_t)(u64 inum, u64 offset, u64 root,
 				      void *ctx
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SEARCH_BY_EXTENT_TYPE
 				      , int extent_type
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SEARCH_BY_EXTENT_TYPE */
 				      );
 
 int extent_from_logical(struct btrfs_fs_info *fs_info, u64 logical,
@@ -76,9 +73,9 @@ int btrfs_find_all_leafs(struct btrfs_trans_handle *trans,
 int btrfs_find_all_roots(struct btrfs_trans_handle *trans,
 			 struct btrfs_fs_info *fs_info, u64 bytenr,
 			 u64 time_seq, struct ulist **roots, bool ignore_offset);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SYNO_QUOTA
 int check_root_inode_ref(struct btrfs_trans_handle *trans, struct quota_check *qc);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SYNO_QUOTA */
 char *btrfs_ref_to_path(struct btrfs_root *fs_root, struct btrfs_path *path,
 			u32 name_len, unsigned long name_off,
 			struct extent_buffer *eb_in, u64 parent,
@@ -95,13 +92,13 @@ int btrfs_find_one_extref(struct btrfs_root *root, u64 inode_objectid,
 			  u64 *found_off);
 int btrfs_check_shared(struct btrfs_root *root, u64 inum, u64 bytenr,
 		struct ulist *roots, struct ulist *tmp_ulist);
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION
 int btrfs_check_shared_inlist(struct btrfs_fs_info *fs_info,
 			      u64 root_objectid, u64 inum, u64 file_offset,
 			      u64 datao, u64 bytenr,
 			      struct ulist *shared_roots, u64 parent_bytenr,
 			      u64 *owner_id);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_SNAPSHOT_SIZE_CALCULATION */
 
 int __init btrfs_prelim_ref_init(void);
 void __cold btrfs_prelim_ref_exit(void);

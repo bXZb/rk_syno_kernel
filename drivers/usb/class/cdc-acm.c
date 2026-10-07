@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * cdc-acm.c
@@ -21,7 +18,7 @@
 #undef DEBUG
 #undef VERBOSE_DEBUG
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 //TODO:check headers dependency, move the segment to below
 #include <linux/libata.h>
 #include <scsi/scsi_device.h>
@@ -51,7 +48,7 @@ extern struct klist syno_ata_port_head;
 extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
 extern void device_pm_move_to_tail(struct device *dev);
 
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 #include <linux/kernel.h>
 #include <linux/sched/signal.h>
 #include <linux/errno.h>
@@ -74,10 +71,10 @@ extern void device_pm_move_to_tail(struct device *dev);
 
 #include "cdc-acm.h"
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 #define CREATE_TRACE_POINTS
 #include "cdc-acm-trace.h"
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 #define DRIVER_AUTHOR "Armin Fuerst, Pavel Machek, Johannes Erdfelt, Vojtech Pavlik, David Kubicek, Johan Hovold"
 #define DRIVER_DESC "USB Abstract Control Model driver for USB modems and ISDN adapters"
@@ -91,7 +88,7 @@ static DEFINE_MUTEX(acm_minors_lock);
 static void acm_tty_set_termios(struct tty_struct *tty,
 				struct ktermios *termios_old);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 static DEFINE_SPINLOCK(acm_list_lock);
 struct syno_acm_list {
 	struct acm* acm;
@@ -106,7 +103,7 @@ static bool syno_is_synology_acm(struct acm *acm)
 	}
 	return false;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 /*
  * acm_minors accessors
@@ -538,7 +535,7 @@ static void acm_process_read_urb(struct acm *acm, struct urb *urb)
 	tty_flip_buffer_push(&acm->port);
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 static const char * const syno_usb_eunit_names[] = {
 	[EUNIT_STATUS_EXPCTRL] = DT_EUNIT_STATUS_EXPCTRL,
 	[EUNIT_STATUS_FANPWM] = DT_EUNIT_STATUS_FANPWM,
@@ -714,7 +711,7 @@ static void syno_expstatus_parsing(struct acm *acm)
 
 	return;
 }
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 static void acm_read_bulk_callback(struct urb *urb)
 {
@@ -724,9 +721,9 @@ static void acm_read_bulk_callback(struct urb *urb)
 	bool stopped = false;
 	bool stalled = false;
 	bool cooldown = false;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	unsigned long flags;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	dev_vdbg(&acm->data->dev, "%s - urb %d, len %d\n", __func__,
 					rb->index, urb->actual_length);
@@ -737,7 +734,7 @@ static void acm_read_bulk_callback(struct urb *urb)
 		return;
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	if (acm->acm_buffer && urb->actual_length) {
 		write_lock_irqsave(&acm->status_lock, flags);
 		strncat(acm->acm_buffer, urb->transfer_buffer,
@@ -746,7 +743,7 @@ static void acm_read_bulk_callback(struct urb *urb)
 		syno_expstatus_parsing(acm);
 		write_unlock_irqrestore(&acm->status_lock, flags);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	switch (status) {
 	case 0:
@@ -1045,15 +1042,15 @@ static int acm_tty_write(struct tty_struct *tty,
 	unsigned long flags;
 	int wbn;
 	struct acm_wb *wb;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	int iWaitTime = 0;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	if (!count)
 		return 0;
 
 	dev_vdbg(&acm->data->dev, "%d bytes from tty layer\n", count);
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	trace_acm_tty_write(acm, buf, count);
 
 	if (syno_is_synology_acm(acm)) {
@@ -1064,7 +1061,7 @@ static int acm_tty_write(struct tty_struct *tty,
 			msleep(SYNO_EUNIT_ACM_WAITING_TRANSMIT_DELAY_MS);
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	spin_lock_irqsave(&acm->write_lock, flags);
 	wbn = acm_wb_alloc(acm);
@@ -1415,7 +1412,7 @@ static int acm_write_buffers_alloc(struct acm *acm)
 	return 0;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 
 int syno_acm_slotindex_get(int *slot_index, struct acm *acm) {
 	int ret = -1;
@@ -2242,9 +2239,9 @@ END:
 	schedule_delayed_work(&acm->cmd_issue_work, SYNO_EUNIT_PERIODIC_CMD_ISSUE_INTERVAL);
 }
 
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 static struct acm *syno_acm_get_by_usbport(const char *usb_port)
 {
 	struct acm *acm = NULL;
@@ -2733,7 +2730,9 @@ static int syno_acm_ready_check(struct acm *acm)
 		if (!disk_count) {
 			disk_count = syno_usb_get_hdd_count(acm->cached_expstatus[EUNIT_STATUS_EXPIDSET]);
 		}
-		if (strlen(acm->cached_expstatus[EUNIT_STATUS_HDDPRESENT]) != (2 * disk_count)) {
+		// usb eunit use same uP version for different disk count model (5 or 4 disk models)
+		// so we do not check disk present status is exactly same as disk count * 2
+		if (strlen(acm->cached_expstatus[EUNIT_STATUS_HDDPRESENT]) < (2 * disk_count)) {
 			continue;
 		}
 		if (strchr(acm->cached_expstatus[EUNIT_STATUS_HDDPRESENT], SYNO_EUNIT_STATUS_ERROR)) {
@@ -2816,7 +2815,7 @@ END:
 	return ret;
 }
 
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 static int acm_probe(struct usb_interface *intf,
 		     const struct usb_device_id *id)
@@ -2845,13 +2844,13 @@ static int acm_probe(struct usb_interface *intf,
 	struct device *tty_dev;
 	int rv = -ENOMEM;
 	int res;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	struct syno_device_list *sdl = NULL;
 	struct acm_device_temp *adt = NULL, *tmp = NULL;
 	struct syno_acm_list *sal = NULL;
 	unsigned long flags = 0;
 	unsigned char tmp_uuid[16];
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	/* normal quirks */
 	quirks = (unsigned long)id->driver_info;
@@ -3170,7 +3169,7 @@ skip_countries:
 	usb_driver_claim_interface(&acm_driver, data_interface, acm);
 	usb_set_intfdata(data_interface, acm);
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	if (syno_is_synology_acm(acm)) {
 		rwlock_init(&acm->status_lock);
 		generate_random_uuid(tmp_uuid);
@@ -3238,7 +3237,7 @@ skip_countries:
 
 		syno_acm_adjust_disk_poweroff_seq(acm);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	tty_dev = tty_port_register_device(&acm->port, acm_tty_driver, minor,
 			&control_interface->dev);
@@ -3260,7 +3259,7 @@ alloc_fail6:
 		usb_driver_release_interface(&acm_driver, data_interface);
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	if (syno_is_synology_acm(acm)) {
 		cancel_delayed_work_sync(&acm->cache_update_work);
 		cancel_delayed_work_sync(&acm->cmd_issue_work);
@@ -3286,7 +3285,7 @@ alloc_fail6:
 			kfree(acm->cached_expstatus);
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	if (acm->country_codes) {
 		device_remove_file(&acm->control->dev,
@@ -3319,10 +3318,10 @@ static void acm_disconnect(struct usb_interface *intf)
 	struct acm *acm = usb_get_intfdata(intf);
 	struct tty_struct *tty;
 	int i;
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	struct syno_acm_list *sal = NULL, *sal_tmp = NULL;
 	unsigned long flags = 0;
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	/* sibling interface is already cleaning up */
 	if (!acm)
@@ -3330,7 +3329,7 @@ static void acm_disconnect(struct usb_interface *intf)
 
 	acm->disconnected = true;
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	mutex_lock(&acm->mutex);
 	if (syno_is_synology_acm(acm)) {
 		spin_lock_irqsave(&acm_list_lock, flags);
@@ -3368,7 +3367,7 @@ static void acm_disconnect(struct usb_interface *intf)
 		}
 	}
 	mutex_unlock(&acm->mutex);
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	/*
 	 * there is a circular dependency. acm_softint() can resubmit
@@ -3775,11 +3774,11 @@ static const struct usb_device_id acm_ids[] = {
 	.driver_info = IGNORE_DEVICE,
 	},
 
-#ifdef MY_DEF_HERE
+#ifdef CONFIG_SYNO_USB_EUNIT_CONTROL
 	{ USB_DEVICE(0x4d8, 0xa),
 	.driver_info = DISABLE_ECHO, /* DISABLE ECHO in termios flag */
 	},
-#endif /* MY_DEF_HERE */
+#endif /* CONFIG_SYNO_USB_EUNIT_CONTROL */
 
 	/* control interfaces without any protocol set */
 	{ USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ACM,

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  *  linux/fs/attr.c
@@ -21,9 +18,9 @@
 #include <linux/evm.h>
 #include <linux/ima.h>
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 #include <linux/syno_acl.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 
 static bool chown_ok(const struct inode *inode, kuid_t uid)
 {
@@ -250,13 +247,13 @@ int notify_change(struct dentry * dentry, struct iattr * attr, struct inode **de
 		if (IS_IMMUTABLE(inode))
 			return -EPERM;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 		if (IS_SYNOACL(dentry)) {
 			error = synoacl_op_permission(dentry, MAY_WRITE_ATTR | MAY_WRITE_EXT_ATTR);
 			if (error)
 				return error;
 		} else
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 		if (!inode_owner_or_capable(inode)) {
 			error = inode_permission(inode, MAY_WRITE);
 			if (error)
@@ -346,23 +343,23 @@ int notify_change(struct dentry * dentry, struct iattr * attr, struct inode **de
 	if (error)
 		return error;
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	if (IS_SYNOACL(dentry)) {
 		error = synoacl_op_setattr_prepare(dentry, attr);
 		if (error)
 			return error;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 	if (inode->i_op->setattr)
 		error = inode->i_op->setattr(dentry, attr);
 	else
 		error = simple_setattr(dentry, attr);
 
 	if (!error) {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 		if (IS_SYNOACL(dentry))
 			synoacl_op_setattr_post(dentry, attr);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 		fsnotify_change(dentry, ia_valid);
 		ima_inode_post_setattr(dentry);
 		evm_inode_post_setattr(dentry, ia_valid);

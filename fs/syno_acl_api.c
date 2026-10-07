@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2000-2022 Synology Inc.
@@ -159,12 +156,12 @@ int synoacl_mod_init(struct dentry *dentry, struct inode *inode)
 }
 EXPORT_SYMBOL(synoacl_mod_init);
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_SYSTEM_CALL
 #include <linux/syscalls.h>
 
 SYSCALL_DEFINE2(syno_acl_check_perm, const char __user *, filename, int, mask)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	struct path path;
 	int error;
 
@@ -181,12 +178,12 @@ SYSCALL_DEFINE2(syno_acl_check_perm, const char __user *, filename, int, mask)
 	return error;
 #else
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 }
 
 SYSCALL_DEFINE3(syno_acl_is_support, const char __user *, filename, int, fd, int, tag)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	int is_path_get = 0;
 	struct path path;
 	struct file *fp = NULL;
@@ -229,12 +226,12 @@ out:
 	return error;
 #else
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 }
 
 SYSCALL_DEFINE2(syno_acl_get_perm, const char __user *, filename, int __user *, out_perm)
 {
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_FS_WINACL
 	unsigned int perm_allow = 0;
 	int error;
 	struct path path;
@@ -265,6 +262,6 @@ err:
 	return error;
 #else
 	return -EOPNOTSUPP;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_FS_WINACL */
 }
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_SYSTEM_CALL */

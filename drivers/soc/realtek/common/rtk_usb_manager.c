@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  rtk-usb-manager.c RTK Manager Driver for All USB.
@@ -331,9 +328,9 @@ int rtk_usb_manager_schedule_work(struct device *usb_dev,
 	dev_dbg(data->dev, "%s Exit ..\n", __func__);
 	return 0;
 }
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 EXPORT_SYMBOL(rtk_usb_manager_schedule_work);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 
 /* enable hw_pm (L4 ICG)
  *   The hw_pm function will be reset after doing soft_reset, so
@@ -963,9 +960,9 @@ int rtk_usb_port_power_on_off(struct device *usb_dev, bool on)
 
 	return ret;
 }
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 EXPORT_SYMBOL(rtk_usb_port_power_on_off);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 
 static int __gpio_on_off(struct device *dev, int port,
 	    struct gpio_data *gpio, bool on)
@@ -1221,9 +1218,9 @@ int rtk_usb_init_port_power_on(struct device *usb_dev)
 	mutex_unlock(&data->lock);
 	return 0;
 }
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 EXPORT_SYMBOL(rtk_usb_init_port_power_on);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
  
 static int __usb_port_enable(struct manager_data *data, struct port_data *port,
 	    struct device_node *usb_node, bool enable)
@@ -1276,9 +1273,9 @@ int rtk_usb_init_port_power_on_off(struct device *usb_dev, bool on)
 	mutex_unlock(&data->lock);
 	return 0;
 }
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 EXPORT_SYMBOL(rtk_usb_init_port_power_on_off);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 
 int rtk_usb_remove_port_power_on_off(struct device *usb_dev, bool on)
 {
@@ -1312,9 +1309,9 @@ int rtk_usb_remove_port_power_on_off(struct device *usb_dev, bool on)
 	mutex_unlock(&data->lock);
 	return 0;
 }
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 EXPORT_SYMBOL(rtk_usb_remove_port_power_on_off);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 
 static void __usb_gpio_init(struct device *dev, struct gpio_data *gpio)
 {
@@ -2752,9 +2749,9 @@ static void __exit rtk_usb_manager_driver_exit(void)
 {
 	platform_driver_unregister(&(rtk_usb_manager_driver));
 }
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_RTD1619B)
 module_exit(rtk_usb_manager_driver_exit);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_RTD1619B */
 
 MODULE_ALIAS("platform:rtk-usb-manager");
 MODULE_LICENSE("GPL");

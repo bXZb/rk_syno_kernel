@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __LINUX_USB_H
 #define __LINUX_USB_H
@@ -25,6 +22,10 @@
 #include <linux/sched.h>	/* for current && schedule_timeout */
 #include <linux/mutex.h>	/* for struct mutex */
 #include <linux/pm_runtime.h>	/* for runtime PM */
+
+#ifdef CONFIG_SYNO_USB_FORBID
+#include <uapi/linux/synobios.h>	/* for SYNO_EUNIT_NAME_HEAD */
+#endif
 
 struct usb_device;
 struct usb_driver;
@@ -691,12 +692,12 @@ struct usb_device {
 	int maxchild;
 
 	u32 quirks;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_SERIAL_FIX
 	char *syno_old_serial;
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* CONFIG_SYNO_USB_SERIAL_FIX */
+#ifdef CONFIG_SYNO_USB_DEVICE_QUIRKS
 	u32 syno_quirks;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_USB_DEVICE_QUIRKS */
 	atomic_t urbnum;
 
 	unsigned long active_duration;
@@ -2046,9 +2047,16 @@ extern void usb_led_activity(enum usb_led_event ev);
 static inline void usb_led_activity(enum usb_led_event ev) {}
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_USB_FORBID
 #define IS_SYNO_FLASH(VENDOR, PROD) ((0xf400 == VENDOR && 0xf400 == PROD) || (0xf401 == VENDOR && 0xf401 == PROD))
-#endif /* MY_ABC_HERE */
+
+static inline bool is_synology_acm_device(const char *product)
+{
+	if (!product)
+		return false;
+	return strncmp(product, SYNO_EUNIT_NAME_HEAD, strlen(SYNO_EUNIT_NAME_HEAD)) == 0;
+}
+#endif /* CONFIG_SYNO_USB_FORBID */
 
 #endif  /* __KERNEL__ */
 

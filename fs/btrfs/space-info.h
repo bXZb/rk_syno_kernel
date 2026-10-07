@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 
 #ifndef BTRFS_SPACE_INFO_H
@@ -77,7 +74,7 @@ struct btrfs_space_info {
 	struct kobject kobj;
 	struct kobject *block_group_kobjs[BTRFS_NR_RAID_TYPES];
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ALLOCATOR
 	struct {
 		spinlock_t lock;
 		/* for trim/bg_ro */
@@ -91,13 +88,13 @@ struct btrfs_space_info {
 		bool force_cluster_disable;
 		struct btrfs_block_group *cache_bg;
 		u64 cache_offset;
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA
 		u64 log_bg_offset;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_LOG_TREE_RSV_METADATA */
 		atomic64_t fallback_relink_count;
 		atomic64_t fallback_full_scan_count;
 	} syno_allocator;
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ALLOCATOR */
 };
 
 struct reserve_ticket {
@@ -194,12 +191,12 @@ static inline void btrfs_mod_total_bytes_pinned(struct btrfs_fs_info *fs_info,
 	__btrfs_mod_total_bytes_pinned(space_info, mod);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_BTRFS_ASYNC_METADATA_FLUSH_AND_THROTTLE
 void btrfs_syno_btree_balance_dirty(struct btrfs_fs_info *fs_info, bool throttle);
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_BTRFS_ASYNC_METADATA_FLUSH_AND_THROTTLE */
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK) || defined(CONFIG_SYNO_BTRFS_ASYNC_METADATA_FLUSH_AND_THROTTLE)
 void syno_perf_indicator_dirty_limit_update(struct btrfs_fs_info *fs_info);
-#endif /* defined(MY_ABC_HERE) || defined(MY_ABC_HERE) */
+#endif /* defined(CONFIG_SYNO_BTRFS_MULTIPLE_WRITEBACK) || defined(CONFIG_SYNO_BTRFS_ASYNC_METADATA_FLUSH_AND_THROTTLE) */
 
 #endif /* BTRFS_SPACE_INFO_H */
