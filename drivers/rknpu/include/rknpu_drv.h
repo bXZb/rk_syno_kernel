@@ -118,7 +118,7 @@ struct rknpu_device {
 #endif
 #ifdef CONFIG_ROCKCHIP_RKNPU_DMA_HEAP
 	struct miscdevice miscdev;
-	struct rk_dma_heap *heap;
+	struct dma_heap *heap;
 #endif
 	atomic_t sequence;
 	spinlock_t lock;

@@ -5,7 +5,7 @@
  */
 
 #include <linux/version.h>
-#include <linux/rk-dma-heap.h>
+#include <linux/dma-heap.h>
 
 #if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
 #include <linux/dma-map-ops.h>
@@ -71,9 +71,8 @@ int rknpu_mem_create_ioctl(struct rknpu_device *rknpu_dev, struct file *file,
 		rknpu_obj->owner = 0;
 	} else {
 		/* Start test kernel alloc/free dma buf */
-		dmabuf = rk_dma_heap_buffer_alloc(rknpu_dev->heap, args.size,
-						  O_CLOEXEC | O_RDWR, 0x0,
-						  dev_name(rknpu_dev->dev));
+		dmabuf = dma_heap_buffer_alloc(rknpu_dev->heap, args.size,
+						  O_CLOEXEC | O_RDWR, 0x0);
 		if (IS_ERR(dmabuf)) {
 			LOG_ERROR("dmabuf alloc failed, args.size = %llu\n",
 				  args.size);
@@ -190,7 +189,7 @@ err_detach_dma_buf:
 
 err_free_dma_buf:
 	if (rknpu_obj->owner)
-		rk_dma_heap_buffer_free(dmabuf);
+		dma_buf_put(dmabuf);
 	else
 		dma_buf_put(dmabuf);
 
