@@ -407,6 +407,9 @@ int rknpu_mem_create_ioctl(struct rknpu_device *rknpu_dev, struct file *file,
 	rknpu_obj->size = PAGE_ALIGN(args.size);
 	rknpu_obj->dma_addr = phys;
 	rknpu_obj->sgt = table;
+	pr_err("RKNPU-DBG create-tail: obj=%p sgt=%p sgl=%p nents=%d orig=%d dmabuf=%p owner=%u\n",
+		rknpu_obj, table, table->sgl, table->nents,
+		table->orig_nents, dmabuf, rknpu_obj->owner);
 
 	args.size = rknpu_obj->size;
 	args.obj_addr = (__u64)(uintptr_t)rknpu_obj;
@@ -532,8 +535,24 @@ static void __maybe_unused rknpu_dma_buf_sync(
 {
 	struct device *dev = rknpu_dev->dev;
 	struct sg_table *sgt = rknpu_obj->sgt;
-	struct scatterlist *sg = sgt->sgl;
-	dma_addr_t sg_dma_addr = sg_dma_address(sg);
+	struct scatterlist *sg;
+	dma_addr_t sg_dma_addr;
+
+	pr_err("RKNPU-DBG sync: obj=%p sgt=%p sgl=%p nents=%d orig=%d dmabuf=%p flags=%lx off=%u len=%u\n",
+		rknpu_obj, sgt, sgt ? sgt->sgl : NULL,
+		sgt ? sgt->nents : -1, sgt ? sgt->orig_nents : -1,
+		rknpu_obj->dmabuf, rknpu_obj->flags, offset, length);
+	if (!sgt || !sgt->sgl || !sgt->nents) {
+		LOG_ERROR("%s: bad sgt %p sgl, using dmabuf cpu access\n",
+			__func__, sgt);
+		if (for_cpu)
+			dma_buf_begin_cpu_access(rknpu_obj->dmabuf, dir);
+		else
+			dma_buf_end_cpu_access(rknpu_obj->dmabuf, dir);
+		return;
+	}
+	sg = sgt->sgl;
+	sg_dma_addr = sg_dma_address(sg);
 	unsigned int len = 0;
 	int i;
 
