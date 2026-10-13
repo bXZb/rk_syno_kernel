@@ -537,6 +537,8 @@ static void __maybe_unused rknpu_dma_buf_sync(
 	struct sg_table *sgt = rknpu_obj->sgt;
 	struct scatterlist *sg;
 	dma_addr_t sg_dma_addr;
+	unsigned int len = 0;
+	int i;
 
 	pr_err("RKNPU-DBG sync: obj=%p sgt=%p sgl=%p nents=%d orig=%d dmabuf=%p flags=%lx off=%u len=%u\n",
 		rknpu_obj, sgt, sgt ? sgt->sgl : NULL,
@@ -553,8 +555,6 @@ static void __maybe_unused rknpu_dma_buf_sync(
 	}
 	sg = sgt->sgl;
 	sg_dma_addr = sg_dma_address(sg);
-	unsigned int len = 0;
-	int i;
 
 	for_each_sgtable_dma_sg(sgt, sg, i) {
 		unsigned int sg_offset, sg_left, size = 0;
