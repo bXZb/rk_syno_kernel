@@ -5,7 +5,9 @@
  */
 
 #include <linux/version.h>
-#include <linux/dma-heap.h>
+#include <linux/dma-buf.h>
+#include <linux/dma-mapping.h>
+#include <linux/slab.h>
 
 #if KERNEL_VERSION(5, 10, 0) <= LINUX_VERSION_CODE
 #include <linux/dma-map-ops.h>
@@ -16,6 +18,124 @@
 #include "rknpu_mem.h"
 
 #ifdef CONFIG_ROCKCHIP_RKNPU_DMA_HEAP
+
+/* Built-in coherent dmabuf exporter: dma_alloc_coherent on the NPU device
+ * (IOMMU-aware) wrapped with dma_buf_export. 5.10 has no dma_heap_find(),
+ * so we do not depend on the heap subsystem at all.
+ */
+struct rknpu_cma_buf {
+	struct device *dev;
+	size_t size;
+	void *vaddr;
+	dma_addr_t dma_addr;
+};
+
+static int rknpu_cma_attach(struct dma_buf *dbuf,
+			    struct dma_buf_attachment *attachment)
+{
+	return 0;
+}
+
+static void rknpu_cma_detach(struct dma_buf *dbuf,
+			     struct dma_buf_attachment *attachment)
+{
+}
+
+static struct sg_table *rknpu_cma_map(struct dma_buf_attachment *attachment,
+				      enum dma_data_direction dir)
+{
+	struct rknpu_cma_buf *b = attachment->dmabuf->priv;
+	struct sg_table *sgt;
+	struct scatterlist *sg;
+	int i, ret;
+	dma_addr_t da;
+
+	sgt = kzalloc(sizeof(*sgt), GFP_KERNEL);
+	if (!sgt)
+		return ERR_PTR(-ENOMEM);
+
+	ret = dma_get_sgtable(b->dev, sgt, b->vaddr, b->dma_addr, b->size);
+	if (ret) {
+		kfree(sgt);
+		return ERR_PTR(ret);
+	}
+
+	da = b->dma_addr;
+	for_each_sg(sgt->sgl, sg, sgt->nents, i) {
+		sg_dma_address(sg) = da;
+		sg_dma_len(sg) = sg->length;
+		da += sg->length;
+	}
+
+	return sgt;
+}
+
+static void rknpu_cma_unmap(struct dma_buf_attachment *attachment,
+			    struct sg_table *sgt,
+			    enum dma_data_direction dir)
+{
+	sg_free_table(sgt);
+	kfree(sgt);
+}
+
+static int rknpu_cma_mmap(struct dma_buf *dbuf, struct vm_area_struct *vma)
+{
+	struct rknpu_cma_buf *b = dbuf->priv;
+
+	return dma_mmap_coherent(b->dev, vma, b->vaddr, b->dma_addr,
+				 vma->vm_end - vma->vm_start);
+}
+
+static void rknpu_cma_release(struct dma_buf *dbuf)
+{
+	struct rknpu_cma_buf *b = dbuf->priv;
+
+	dma_free_coherent(b->dev, b->size, b->vaddr, b->dma_addr);
+	kfree(b);
+}
+
+static const struct dma_buf_ops rknpu_cma_dmabuf_ops = {
+	.attach = rknpu_cma_attach,
+	.detach = rknpu_cma_detach,
+	.map_dma_buf = rknpu_cma_map,
+	.unmap_dma_buf = rknpu_cma_unmap,
+	.mmap = rknpu_cma_mmap,
+	.release = rknpu_cma_release,
+};
+
+static struct dma_buf *rknpu_cma_alloc(struct device *dev, size_t size)
+{
+	struct rknpu_cma_buf *b;
+	struct dma_buf *dbuf;
+	DEFINE_DMA_BUF_EXPORT_INFO(exp_info);
+
+	b = kzalloc(sizeof(*b), GFP_KERNEL);
+	if (!b)
+		return ERR_PTR(-ENOMEM);
+
+	b->dev = dev;
+	b->size = PAGE_ALIGN(size);
+	b->vaddr = dma_alloc_coherent(dev, b->size, &b->dma_addr, GFP_KERNEL);
+	if (!b->vaddr) {
+		kfree(b);
+		return ERR_PTR(-ENOMEM);
+	}
+
+	exp_info.ops = &rknpu_cma_dmabuf_ops;
+	exp_info.size = b->size;
+	exp_info.priv = b;
+	exp_info.flags = O_RDWR | O_CLOEXEC;
+
+	dbuf = dma_buf_export(&exp_info);
+	if (IS_ERR(dbuf)) {
+		dma_free_coherent(dev, b->size, b->vaddr, b->dma_addr);
+		kfree(b);
+		return ERR_CAST(dbuf);
+	}
+
+	return dbuf;
+}
+
 
 int rknpu_mem_create_ioctl(struct rknpu_device *rknpu_dev, struct file *file,
 			   unsigned int cmd, unsigned long data)
@@ -71,8 +191,7 @@ int rknpu_mem_create_ioctl(struct rknpu_device *rknpu_dev, struct file *file,
 		rknpu_obj->owner = 0;
 	} else {
 		/* Start test kernel alloc/free dma buf */
-		dmabuf = dma_heap_buffer_alloc(rknpu_dev->heap, args.size,
-						  O_CLOEXEC | O_RDWR, 0x0);
+		dmabuf = rknpu_cma_alloc(rknpu_dev->dev, args.size);
 		if (IS_ERR(dmabuf)) {
 			LOG_ERROR("dmabuf alloc failed, args.size = %llu\n",
 				  args.size);

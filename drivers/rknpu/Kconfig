@@ -49,7 +49,6 @@ config ROCKCHIP_RKNPU_DRM_GEM
 
 config ROCKCHIP_RKNPU_DMA_HEAP
 	bool "RKNPU DMA heap"
-	depends on DMABUF_HEAPS_CMA
 	help
 	  Enable RKNPU memory manager by DMA Heap.
 
