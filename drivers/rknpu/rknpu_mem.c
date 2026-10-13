@@ -164,6 +164,9 @@ static struct sg_table *rknpu_sc_map(struct dma_buf_attachment *attachment,
 {
 	struct rknpu_sc_buf *b = attachment->dmabuf->priv;
 
+	pr_err("RKNPU-DBG sc_map: nents=%d orig_nents=%d first_iova=%pad len=%u\n",
+		b->sgt.nents, b->sgt.orig_nents,
+		&sg_dma_address(b->sgt.sgl), (unsigned int)sg_dma_len(b->sgt.sgl));
 	return &b->sgt;
 }
 
@@ -248,6 +251,9 @@ static struct dma_buf *rknpu_sc_alloc(struct device *dev, size_t size)
 	}
 
 	ret = dma_map_sgtable(dev, &b->sgt, DMA_BIDIRECTIONAL, 0);
+	pr_err("RKNPU-DBG sc_alloc: npages=%d nents=%d orig_nents=%d map_ret=%d first_iova=%pad len=%u\n",
+		b->npages, b->sgt.nents, b->sgt.orig_nents, ret,
+		&sg_dma_address(b->sgt.sgl), (unsigned int)sg_dma_len(b->sgt.sgl));
 	if (ret) {
 		sg_free_table(&b->sgt);
 		for (i = 0; i < b->npages; i++)
