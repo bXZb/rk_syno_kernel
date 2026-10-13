@@ -6,6 +6,7 @@
  *			Daniel Kurtz <djkurtz@chromium.org>
  */
 
+#include <linux/atomic.h>
 #include <linux/clk.h>
 #include <linux/compiler.h>
 #include <linux/delay.h>
@@ -139,6 +140,9 @@ static const struct rk_iommu_ops *rk_ops;
 static struct rk_iommu *rk_iommu_from_dev(struct device *dev);
 static char reserve_range[PAGE_SIZE] __aligned(PAGE_SIZE);
 static phys_addr_t res_page;
+static atomic_t rk_map_probe_cnt = ATOMIC_INIT(0);
+static atomic_t rk_unmap_probe_cnt = ATOMIC_INIT(0);
+static atomic_t rk_i2p_probe_cnt = ATOMIC_INIT(0);
 
 static inline void rk_table_flush(struct rk_iommu_domain *dom, dma_addr_t dma,
 				  unsigned int count)
@@ -803,7 +807,7 @@ static phys_addr_t rk_iommu_iova_to_phys(struct iommu_domain *domain,
 	struct rk_iommu_domain *rk_domain = to_rk_domain(domain);
 	unsigned long flags;
 	phys_addr_t pt_phys, phys = 0;
-	u32 dte, pte;
+	u32 dte = 0, pte = 0;
 	u32 *page_table;
 
 	spin_lock_irqsave(&rk_domain->dt_lock, flags);
@@ -821,6 +825,11 @@ static phys_addr_t rk_iommu_iova_to_phys(struct iommu_domain *domain,
 	phys = rk_ops->pt_address(pte) + rk_iova_page_offset(iova);
 out:
 	spin_unlock_irqrestore(&rk_domain->dt_lock, flags);
+
+	if (atomic_inc_return(&rk_i2p_probe_cnt) < 30000)
+		pr_info("IOMMU-PROBE I2P #%d dom=%p dt=%pa iova=%pad dte=%#08x pte=%#08x -> phys=%pa res_page=%pa\n",
+			 atomic_read(&rk_i2p_probe_cnt), domain, &rk_domain->dt_dma,
+			 &iova, dte, pte, &phys, &res_page);
 
 	return phys;
 }
@@ -955,6 +964,7 @@ static int rk_iommu_map_iova(struct rk_iommu_domain *rk_domain, u32 *pte_addr,
 	unsigned int pte_count;
 	unsigned int pte_total = size / SPAGE_SIZE;
 	phys_addr_t page_phys;
+	phys_addr_t paddr0 = paddr;
 
 	assert_spin_locked(&rk_domain->dt_lock);
 
@@ -974,6 +984,12 @@ static int rk_iommu_map_iova(struct rk_iommu_domain *rk_domain, u32 *pte_addr,
 	}
 
 	rk_table_flush(rk_domain, pte_dma, pte_total);
+
+	if (atomic_inc_return(&rk_map_probe_cnt) < 20000)
+		pr_info("IOMMU-PROBE MAP #%d dom=%p dt=%pa iova=%pad size=%zx prot=%#x paddr0=%pa pte0=%#08x pteN=%#08x res_page=%pa\n",
+			 atomic_read(&rk_map_probe_cnt), rk_domain, &rk_domain->dt_dma,
+			 &iova, size, prot, &paddr0,
+			 pte_addr[0], pte_addr[pte_total - 1], &res_page);
 
 	/*
 	 * Zap the first and last iova to evict from iotlb any previously
@@ -1072,6 +1088,11 @@ static size_t rk_iommu_unmap(struct iommu_domain *domain, unsigned long _iova,
 
 	/* Shootdown iotlb entries for iova range that was just unmapped */
 	rk_iommu_zap_iova(rk_domain, iova, unmap_size);
+
+	if (atomic_inc_return(&rk_unmap_probe_cnt) < 20000)
+		pr_info("IOMMU-PROBE UNMAP #%d dom=%p dt=%pa iova=%pad size=%zx unmap=%zx pte0=%#08x res_page=%pa\n",
+			 atomic_read(&rk_unmap_probe_cnt), rk_domain, &rk_domain->dt_dma,
+			 &iova, size, unmap_size, pte_addr[0], &res_page);
 
 	return unmap_size;
 }
