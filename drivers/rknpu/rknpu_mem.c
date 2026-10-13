@@ -542,10 +542,6 @@ static void __maybe_unused rknpu_dma_buf_sync(
 {
 	struct device *dev = rknpu_dev->dev;
 	struct sg_table *sgt = rknpu_obj->sgt;
-	struct scatterlist *sg;
-	dma_addr_t sg_dma_addr;
-	unsigned int len = 0;
-	int i;
 
 	pr_err("RKNPU-DBG sync: obj=%p sgt=%p sgl=%p nents=%d orig=%d dmabuf=%p flags=%lx off=%u len=%u\n",
 		rknpu_obj, sgt, sgt ? sgt->sgl : NULL,
@@ -560,38 +556,18 @@ static void __maybe_unused rknpu_dma_buf_sync(
 			dma_buf_end_cpu_access(rknpu_obj->dmabuf, dir);
 		return;
 	}
-	sg = sgt->sgl;
-	sg_dma_addr = sg_dma_address(sg);
-
-	for_each_sgtable_dma_sg(sgt, sg, i) {
-		unsigned int sg_offset, sg_left, size = 0;
-		unsigned int sg_len = sg_dma_len(sg);
-
-		len += sg_len;
-		if (len <= offset) {
-			sg_dma_addr += sg_len;
-			continue;
-		}
-
-		sg_left = len - offset;
-		sg_offset = sg_len - sg_left;
-
-		size = (length < sg_left) ? length : sg_left;
-
-		if (for_cpu)
-			dma_sync_single_range_for_cpu(dev, sg_dma_addr,
-						      sg_offset, size, dir);
-		else
-			dma_sync_single_range_for_device(dev, sg_dma_addr,
-							 sg_offset, size, dir);
-
-		offset += size;
-		length -= size;
-		sg_dma_addr += sg_len;
-
-		if (length == 0)
-			break;
-	}
+	/* sg_dma_address() is an IOVA on IOMMU domains: the single-range
+	 * sync API decodes it back to phys via iommu_iova_to_phys(), which
+	 * can read stale/represent PTEs and invalidate unrelated pages
+	 * (kernel Oops in __dma_inv_area). The sgtable sync walks sg_phys()
+	 * instead, i.e. the real pages behind this object. Partial
+	 * offset/length sync degrades to whole-table sync, which is a
+	 * superset and safe.
+	 */
+	if (for_cpu)
+		dma_sync_sgtable_for_cpu(dev, sgt, dir);
+	else
+		dma_sync_sgtable_for_device(dev, sgt, dir);
 }
 
 int rknpu_mem_sync_ioctl(struct rknpu_device *rknpu_dev, unsigned long data)
