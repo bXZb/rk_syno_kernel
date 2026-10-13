@@ -54,7 +54,7 @@
 #endif
 
 #ifdef CONFIG_ROCKCHIP_RKNPU_DMA_HEAP
-#include <linux/rk-dma-heap.h>
+#include <linux/dma-heap.h>
 #include "rknpu_mem.h"
 #endif
 
