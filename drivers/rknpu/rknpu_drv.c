@@ -54,7 +54,6 @@
 #endif
 
 #ifdef CONFIG_ROCKCHIP_RKNPU_DMA_HEAP
-#include <linux/dma-heap.h>
 #include "rknpu_mem.h"
 #endif
 
@@ -1416,11 +1415,6 @@ static int rknpu_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	rknpu_dev->heap = dma_heap_find("linux,cma");
-	if (!rknpu_dev->heap) {
-		LOG_DEV_ERROR(dev, "failed to find cma heap\n");
-		return -ENOMEM;
-	}
 	LOG_DEV_INFO(dev, "Initialized %s: v%d.%d.%d for %s\n", DRIVER_DESC,
 		     DRIVER_MAJOR, DRIVER_MINOR, DRIVER_PATCHLEVEL,
 		     DRIVER_DATE);
