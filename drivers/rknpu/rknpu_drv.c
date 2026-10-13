@@ -543,6 +543,14 @@ static int rknpu_release(struct inode *inode, struct file *file)
 		vunmap(entry->kv_addr);
 		entry->kv_addr = NULL;
 
+		if (entry->attachment) {
+			dma_buf_unmap_attachment(entry->attachment,
+						 entry->sgt,
+						 DMA_BIDIRECTIONAL);
+			dma_buf_detach(entry->dmabuf,
+					       entry->attachment);
+		}
+
 		if (!entry->owner)
 			dma_buf_put(entry->dmabuf);
 

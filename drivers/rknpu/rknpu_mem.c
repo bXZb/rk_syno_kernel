@@ -428,8 +428,7 @@ int rknpu_mem_create_ioctl(struct rknpu_device *rknpu_dev, struct file *file,
 		goto err_unmap_kv_addr;
 	}
 
-	dma_buf_unmap_attachment(attachment, table, DMA_BIDIRECTIONAL);
-	dma_buf_detach(dmabuf, attachment);
+	rknpu_obj->attachment = attachment;
 
 	spin_lock(&rknpu_dev->lock);
 
@@ -515,6 +514,14 @@ int rknpu_mem_destroy_ioctl(struct rknpu_device *rknpu_dev, struct file *file,
 	if (rknpu_obj == entry) {
 		vunmap(rknpu_obj->kv_addr);
 		rknpu_obj->kv_addr = NULL;
+
+		if (rknpu_obj->attachment) {
+			dma_buf_unmap_attachment(rknpu_obj->attachment,
+						 rknpu_obj->sgt,
+						 DMA_BIDIRECTIONAL);
+			dma_buf_detach(rknpu_obj->dmabuf,
+					       rknpu_obj->attachment);
+		}
 
 		if (!rknpu_obj->owner)
 			dma_buf_put(rknpu_obj->dmabuf);
