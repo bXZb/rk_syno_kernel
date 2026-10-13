@@ -370,7 +370,7 @@ int rknpu_mem_create_ioctl(struct rknpu_device *rknpu_dev, struct file *file,
 		goto err_free_dma_buf;
 	}
 
-	for_each_sgtable_sg(table, sgl, i) {
+	for_each_sgtable_dma_sg(table, sgl, i) {
 		phys = sg_dma_address(sgl);
 		page = sg_page(sgl);
 		length = sg_dma_len(sgl);
@@ -537,17 +537,18 @@ static void __maybe_unused rknpu_dma_buf_sync(
 	unsigned int len = 0;
 	int i;
 
-	for_each_sgtable_sg(sgt, sg, i) {
+	for_each_sgtable_dma_sg(sgt, sg, i) {
 		unsigned int sg_offset, sg_left, size = 0;
+		unsigned int sg_len = sg_dma_len(sg);
 
-		len += sg->length;
+		len += sg_len;
 		if (len <= offset) {
-			sg_dma_addr += sg->length;
+			sg_dma_addr += sg_len;
 			continue;
 		}
 
 		sg_left = len - offset;
-		sg_offset = sg->length - sg_left;
+		sg_offset = sg_len - sg_left;
 
 		size = (length < sg_left) ? length : sg_left;
 
@@ -560,7 +561,7 @@ static void __maybe_unused rknpu_dma_buf_sync(
 
 		offset += size;
 		length -= size;
-		sg_dma_addr += sg->length;
+		sg_dma_addr += sg_len;
 
 		if (length == 0)
 			break;
