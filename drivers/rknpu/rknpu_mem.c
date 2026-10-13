@@ -401,8 +401,7 @@ int rknpu_mem_create_ioctl(struct rknpu_device *rknpu_dev, struct file *file,
 		pages = NULL;
 	}
 
-	pr_err("RKNPU-DBG fill: table=%p nents=%d orig=%d sgl=%p sgl_iova=%pad phys=%pad len=%u flags=%u
-",
+	pr_err("RKNPU-DBG fill: table=%p nents=%d orig=%d sgl=%p sgl_iova=%pad phys=%pad len=%u flags=%u\n",
 		table, table->nents, table->orig_nents, table->sgl,
 		&sg_dma_address(table->sgl), &phys, length, args.flags);
 	rknpu_obj->size = PAGE_ALIGN(args.size);
