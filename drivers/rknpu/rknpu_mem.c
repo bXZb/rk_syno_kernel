@@ -164,9 +164,6 @@ static struct sg_table *rknpu_sc_map(struct dma_buf_attachment *attachment,
 {
 	struct rknpu_sc_buf *b = attachment->dmabuf->priv;
 
-	pr_err("RKNPU-DBG sc_map: nents=%d orig_nents=%d first_iova=%pad len=%u\n",
-		b->sgt.nents, b->sgt.orig_nents,
-		&sg_dma_address(b->sgt.sgl), (unsigned int)sg_dma_len(b->sgt.sgl));
 	return &b->sgt;
 }
 
@@ -251,9 +248,6 @@ static struct dma_buf *rknpu_sc_alloc(struct device *dev, size_t size)
 	}
 
 	ret = dma_map_sgtable(dev, &b->sgt, DMA_BIDIRECTIONAL, 0);
-	pr_err("RKNPU-DBG sc_alloc: npages=%d nents=%d orig_nents=%d map_ret=%d first_iova=%pad len=%u\n",
-		b->npages, b->sgt.nents, b->sgt.orig_nents, ret,
-		&sg_dma_address(b->sgt.sgl), (unsigned int)sg_dma_len(b->sgt.sgl));
 	if (ret) {
 		sg_free_table(&b->sgt);
 		for (i = 0; i < b->npages; i++)
@@ -401,15 +395,9 @@ int rknpu_mem_create_ioctl(struct rknpu_device *rknpu_dev, struct file *file,
 		pages = NULL;
 	}
 
-	pr_err("RKNPU-DBG fill: table=%p nents=%d orig=%d sgl=%p sgl_iova=%pad phys=%pad len=%u flags=%u\n",
-		table, table->nents, table->orig_nents, table->sgl,
-		&sg_dma_address(table->sgl), &phys, length, args.flags);
 	rknpu_obj->size = PAGE_ALIGN(args.size);
 	rknpu_obj->dma_addr = phys;
 	rknpu_obj->sgt = table;
-	pr_err("RKNPU-DBG create-tail: obj=%p sgt=%p sgl=%p nents=%d orig=%d dmabuf=%p owner=%u\n",
-		rknpu_obj, table, table->sgl, table->nents,
-		table->orig_nents, dmabuf, rknpu_obj->owner);
 
 	args.size = rknpu_obj->size;
 	args.obj_addr = (__u64)(uintptr_t)rknpu_obj;
@@ -543,10 +531,6 @@ static void __maybe_unused rknpu_dma_buf_sync(
 	struct device *dev = rknpu_dev->dev;
 	struct sg_table *sgt = rknpu_obj->sgt;
 
-	pr_err("RKNPU-DBG sync: obj=%p sgt=%p sgl=%p nents=%d orig=%d dmabuf=%p flags=%lx off=%u len=%u\n",
-		rknpu_obj, sgt, sgt ? sgt->sgl : NULL,
-		sgt ? sgt->nents : -1, sgt ? sgt->orig_nents : -1,
-		rknpu_obj->dmabuf, rknpu_obj->flags, offset, length);
 	if (!sgt || !sgt->sgl || !sgt->nents) {
 		LOG_ERROR("%s: bad sgt %p sgl, using dmabuf cpu access\n",
 			__func__, sgt);
