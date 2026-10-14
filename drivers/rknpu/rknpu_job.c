@@ -377,22 +377,8 @@ static inline int rknpu_job_subcore_commit_pc(struct rknpu_job *job,
 	job->last_task = last_task;
 	job->int_mask[core_index] = job_int_mask;
 
-	pr_err("RKNPU-PC submit: base=%llx start=%d num=%d first(flags=%#x op=%#x intmask=%#x regcfg=%u regcmd=%llx) lastint=%#x pre(raw=%#x ctrl=%#x amt=%#x)\n",
-		(unsigned long long)args->task_base_addr, task_start,
-		task_number, first_task->flags, first_task->op_idx,
-		first_task->int_mask, first_task->regcfg_amount,
-		(unsigned long long)first_task->regcmd_addr,
-		job_int_mask,
-		REG_READ(RKNPU_OFFSET_INT_RAW_STATUS),
-		REG_READ(RKNPU_OFFSET_PC_TASK_CONTROL),
-		REG_READ(RKNPU_OFFSET_PC_DATA_AMOUNT));
 	REG_WRITE(0x1, RKNPU_OFFSET_PC_OP_EN);
 	REG_WRITE(0x0, RKNPU_OFFSET_PC_OP_EN);
-	pr_err("RKNPU-PC kicked: post(raw=%#x status=%#x op_en=%#x amt=%#x)\n",
-		REG_READ(RKNPU_OFFSET_INT_RAW_STATUS),
-		REG_READ(RKNPU_OFFSET_INT_STATUS),
-		REG_READ(RKNPU_OFFSET_PC_OP_EN),
-		REG_READ(RKNPU_OFFSET_PC_DATA_AMOUNT));
 
 	return 0;
 }
@@ -624,19 +610,7 @@ static void rknpu_job_abort(struct rknpu_job *job)
 						       job->timestamp));
 			}
 		}
-		pr_err("RKNPU-RST pre: op_en=%#x raw=%#x daddr=%#x damt=%#x ctrl=%#x\n",
-			_REG_READ(rknpu_dev->base[0], RKNPU_OFFSET_PC_OP_EN),
-			_REG_READ(rknpu_dev->base[0], RKNPU_OFFSET_INT_RAW_STATUS),
-			_REG_READ(rknpu_dev->base[0], RKNPU_OFFSET_PC_DATA_ADDR),
-			_REG_READ(rknpu_dev->base[0], RKNPU_OFFSET_PC_DATA_AMOUNT),
-			_REG_READ(rknpu_dev->base[0], RKNPU_OFFSET_PC_TASK_CONTROL));
 		rknpu_soft_reset(rknpu_dev);
-		pr_err("RKNPU-RST post: op_en=%#x raw=%#x daddr=%#x damt=%#x ctrl=%#x\n",
-			_REG_READ(rknpu_dev->base[0], RKNPU_OFFSET_PC_OP_EN),
-			_REG_READ(rknpu_dev->base[0], RKNPU_OFFSET_INT_RAW_STATUS),
-			_REG_READ(rknpu_dev->base[0], RKNPU_OFFSET_PC_DATA_ADDR),
-			_REG_READ(rknpu_dev->base[0], RKNPU_OFFSET_PC_DATA_AMOUNT),
-			_REG_READ(rknpu_dev->base[0], RKNPU_OFFSET_PC_TASK_CONTROL));
 	} else {
 		LOG_ERROR(
 			"job abort, flags: %#x, ret: %d, elapsed time: %lldus\n",
@@ -712,11 +686,6 @@ static inline irqreturn_t rknpu_irq_handler(int irq, void *data, int core_index)
 		return IRQ_HANDLED;
 	}
 
-	pr_err("RKNPU-IRQ done: status=%#x counter=%#x raw=%#x\n",
-		status,
-		(REG_READ(rknpu_dev->config->pc_task_status_offset) &
-		 rknpu_dev->config->pc_task_number_mask),
-		REG_READ(RKNPU_OFFSET_INT_RAW_STATUS));
 	REG_WRITE(RKNPU_INT_CLEAR, RKNPU_OFFSET_INT_CLEAR);
 
 	rknpu_job_done(job, 0, core_index);
