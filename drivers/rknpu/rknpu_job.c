@@ -292,6 +292,7 @@ static inline int rknpu_job_subcore_commit_pc(struct rknpu_job *job,
 	int task_pp_en = args->flags & RKNPU_JOB_PINGPONG ? 1 : 0;
 	int pc_data_amount_scale = rknpu_dev->config->pc_data_amount_scale;
 	int pc_task_number_bits = rknpu_dev->config->pc_task_number_bits;
+	uint32_t job_int_mask;
 	int i = 0;
 	int submit_index = atomic_read(&job->submit_count[core_index]);
 	int max_submit_number = rknpu_dev->config->max_submit_number;
@@ -355,7 +356,15 @@ static inline int rknpu_job_subcore_commit_pc(struct rknpu_job *job,
 			  1,
 		  RKNPU_OFFSET_PC_DATA_AMOUNT);
 
-	REG_WRITE(last_task->int_mask, RKNPU_OFFSET_INT_MASK);
+	/* Long task chains from some runtimes carry int_mask == 0 on the
+	 * last task; the completion interrupt is then masked and every
+	 * blocking job times out (raw done bit 0x100 is set at timeout).
+	 * Fall back to the mask observed on all working jobs.
+	 */
+	job_int_mask = last_task->int_mask;
+	if (!job_int_mask && !(args->flags & RKNPU_JOB_NONBLOCK))
+		job_int_mask = 0x300;
+	REG_WRITE(job_int_mask, RKNPU_OFFSET_INT_MASK);
 
 	REG_WRITE(first_task->int_mask, RKNPU_OFFSET_INT_CLEAR);
 
@@ -366,14 +375,14 @@ static inline int rknpu_job_subcore_commit_pc(struct rknpu_job *job,
 
 	job->first_task = first_task;
 	job->last_task = last_task;
-	job->int_mask[core_index] = last_task->int_mask;
+	job->int_mask[core_index] = job_int_mask;
 
 	pr_err("RKNPU-PC submit: base=%llx start=%d num=%d first(flags=%#x op=%#x intmask=%#x regcfg=%u regcmd=%llx) lastint=%#x pre(raw=%#x ctrl=%#x amt=%#x)\n",
 		(unsigned long long)args->task_base_addr, task_start,
 		task_number, first_task->flags, first_task->op_idx,
 		first_task->int_mask, first_task->regcfg_amount,
 		(unsigned long long)first_task->regcmd_addr,
-		last_task->int_mask,
+		job_int_mask,
 		REG_READ(RKNPU_OFFSET_INT_RAW_STATUS),
 		REG_READ(RKNPU_OFFSET_PC_TASK_CONTROL),
 		REG_READ(RKNPU_OFFSET_PC_DATA_AMOUNT));
