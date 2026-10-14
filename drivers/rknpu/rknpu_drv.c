@@ -1298,6 +1298,16 @@ static int rknpu_probe(struct platform_device *pdev)
 	rknpu_dev->dev = dev;
 	dev_set_drvdata(dev, rknpu_dev);
 
+	/* The NPU PC engine wraps task-chain IOVA at the 4 GiB boundary:
+	 * when iommu_dma hands the top pages (0xfffff000 etc.) to task
+	 * buffers, jobs stall with task counter 0 until timeout. Keep
+	 * all IOVA of this device below 2 GiB.
+	 */
+	ret = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(31));
+	if (ret)
+		LOG_DEV_ERROR(dev, "failed to set 31-bit DMA mask: %d\n",
+			       ret);
+
 	rknpu_dev->iommu_en = rknpu_is_iommu_enable(dev);
 	if (rknpu_dev->iommu_en) {
 		rknpu_dev->iommu_group = iommu_group_get(dev);
