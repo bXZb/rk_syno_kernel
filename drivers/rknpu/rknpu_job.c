@@ -363,7 +363,7 @@ static inline int rknpu_job_subcore_commit_pc(struct rknpu_job *job,
 	 */
 	job_int_mask = last_task->int_mask;
 	if (!job_int_mask && !(args->flags & RKNPU_JOB_NONBLOCK))
-		job_int_mask = 0x300;
+		job_int_mask = 0xfff;
 	REG_WRITE(job_int_mask, RKNPU_OFFSET_INT_MASK);
 
 	REG_WRITE(first_task->int_mask, RKNPU_OFFSET_INT_CLEAR);
@@ -698,7 +698,10 @@ static inline irqreturn_t rknpu_irq_handler(int irq, void *data, int core_index)
 
 	job->int_status[core_index] = status;
 
-	if (rknpu_fuzz_status(status) != job->int_mask[core_index]) {
+	/* Accept any intersection: runtimes emit varying masks per job and
+	 * the completion status can be a strict subset of the mask.
+	 */
+	if ((rknpu_fuzz_status(status) & job->int_mask[core_index]) == 0) {
 		LOG_ERROR(
 			"invalid irq status: %#x, raw status: %#x, require mask: %#x, task counter: %#x\n",
 			status, REG_READ(RKNPU_OFFSET_INT_RAW_STATUS),
