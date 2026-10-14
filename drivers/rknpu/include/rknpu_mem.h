@@ -32,6 +32,7 @@ struct rknpu_mem_object {
 	dma_addr_t dma_addr;
 	struct page **pages;
 	struct sg_table *sgt;
+	struct dma_buf_attachment *attachment;
 	struct dma_buf *dmabuf;
 	struct list_head head;
 	unsigned int owner;

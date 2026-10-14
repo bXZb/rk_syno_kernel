@@ -803,7 +803,7 @@ static phys_addr_t rk_iommu_iova_to_phys(struct iommu_domain *domain,
 	struct rk_iommu_domain *rk_domain = to_rk_domain(domain);
 	unsigned long flags;
 	phys_addr_t pt_phys, phys = 0;
-	u32 dte, pte;
+	u32 dte = 0, pte = 0;
 	u32 *page_table;
 
 	spin_lock_irqsave(&rk_domain->dt_lock, flags);

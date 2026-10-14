@@ -292,6 +292,7 @@ static inline int rknpu_job_subcore_commit_pc(struct rknpu_job *job,
 	int task_pp_en = args->flags & RKNPU_JOB_PINGPONG ? 1 : 0;
 	int pc_data_amount_scale = rknpu_dev->config->pc_data_amount_scale;
 	int pc_task_number_bits = rknpu_dev->config->pc_task_number_bits;
+	uint32_t job_int_mask;
 	int i = 0;
 	int submit_index = atomic_read(&job->submit_count[core_index]);
 	int max_submit_number = rknpu_dev->config->max_submit_number;
@@ -355,7 +356,15 @@ static inline int rknpu_job_subcore_commit_pc(struct rknpu_job *job,
 			  1,
 		  RKNPU_OFFSET_PC_DATA_AMOUNT);
 
-	REG_WRITE(last_task->int_mask, RKNPU_OFFSET_INT_MASK);
+	/* Long task chains from some runtimes carry int_mask == 0 on the
+	 * last task; the completion interrupt is then masked and every
+	 * blocking job times out (raw done bit 0x100 is set at timeout).
+	 * Fall back to the mask observed on all working jobs.
+	 */
+	job_int_mask = last_task->int_mask;
+	if (!job_int_mask && !(args->flags & RKNPU_JOB_NONBLOCK))
+		job_int_mask = 0xfff;
+	REG_WRITE(job_int_mask, RKNPU_OFFSET_INT_MASK);
 
 	REG_WRITE(first_task->int_mask, RKNPU_OFFSET_INT_CLEAR);
 
@@ -366,7 +375,7 @@ static inline int rknpu_job_subcore_commit_pc(struct rknpu_job *job,
 
 	job->first_task = first_task;
 	job->last_task = last_task;
-	job->int_mask[core_index] = last_task->int_mask;
+	job->int_mask[core_index] = job_int_mask;
 
 	REG_WRITE(0x1, RKNPU_OFFSET_PC_OP_EN);
 	REG_WRITE(0x0, RKNPU_OFFSET_PC_OP_EN);
@@ -663,7 +672,10 @@ static inline irqreturn_t rknpu_irq_handler(int irq, void *data, int core_index)
 
 	job->int_status[core_index] = status;
 
-	if (rknpu_fuzz_status(status) != job->int_mask[core_index]) {
+	/* Accept any intersection: runtimes emit varying masks per job and
+	 * the completion status can be a strict subset of the mask.
+	 */
+	if ((rknpu_fuzz_status(status) & job->int_mask[core_index]) == 0) {
 		LOG_ERROR(
 			"invalid irq status: %#x, raw status: %#x, require mask: %#x, task counter: %#x\n",
 			status, REG_READ(RKNPU_OFFSET_INT_RAW_STATUS),
