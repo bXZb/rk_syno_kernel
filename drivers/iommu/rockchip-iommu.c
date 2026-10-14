@@ -822,8 +822,6 @@ static phys_addr_t rk_iommu_iova_to_phys(struct iommu_domain *domain,
 out:
 	spin_unlock_irqrestore(&rk_domain->dt_lock, flags);
 
-	if (atomic_inc_return(&rk_i2p_probe_cnt) < 30000)
-
 	return phys;
 }
 
@@ -978,8 +976,6 @@ static int rk_iommu_map_iova(struct rk_iommu_domain *rk_domain, u32 *pte_addr,
 
 	rk_table_flush(rk_domain, pte_dma, pte_total);
 
-	if (atomic_inc_return(&rk_map_probe_cnt) < 20000)
-
 	/*
 	 * Zap the first and last iova to evict from iotlb any previously
 	 * mapped cachelines holding stale values for its dte and pte.
@@ -1077,8 +1073,6 @@ static size_t rk_iommu_unmap(struct iommu_domain *domain, unsigned long _iova,
 
 	/* Shootdown iotlb entries for iova range that was just unmapped */
 	rk_iommu_zap_iova(rk_domain, iova, unmap_size);
-
-	if (atomic_inc_return(&rk_unmap_probe_cnt) < 20000)
 
 	return unmap_size;
 }
